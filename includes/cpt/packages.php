@@ -5,6 +5,10 @@
  * @package    HK_Funeral_Suite
  * @subpackage CPT
  * @version    1.0.3  
+ * @since      1.0.0
+ * @changelog  
+ *   1.0.3 - Google sheet / pricing sync
+ *   1.0.0 - Initial version
  */
 
 // If this file is called directly, abort.
@@ -452,12 +456,12 @@ function hk_fs_register_pricing_package_template() {
 		$post_type_object->template = array(
 			array('hk-funeral-suite/pricing-package'),
 			array('core/paragraph', array(
-				'placeholder' => __('Add package description...', 'hk-funeral-cpt')
+				'placeholder' => __('Add pricing package description...', 'hk-funeral-cpt')
 			))
 		);
 		
 		// Lock the template so users can't move or delete the block
-		$post_type_object->template_lock = 'insert';
+		$post_type_object->template_lock = false;
 	}
 }
 add_action('init', 'hk_fs_register_pricing_package_template', 11); // Run after CPT registration
