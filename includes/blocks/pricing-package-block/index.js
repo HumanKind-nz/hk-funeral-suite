@@ -2,7 +2,6 @@
  * Pricing Package Block for Gutenberg
  * Simple version that works without a build step
  */
-
 (function(wp) {
 	// Extract the components we need
 	var registerBlockType = wp.blocks.registerBlockType;
@@ -13,7 +12,6 @@
 	var __ = wp.i18n.__;
 	var createElement = wp.element.createElement;
 	var Fragment = wp.element.Fragment;
-
 	// Register the block
 	registerBlockType('hk-funeral-suite/pricing-package', {
 		title: 'Pricing Package Info',
@@ -32,7 +30,6 @@
 				default: '10'
 			}
 		},
-
 		edit: function(props) {
 			var attributes = props.attributes;
 			var setAttributes = props.setAttributes;
@@ -40,7 +37,13 @@
 			var blockProps = useBlockProps({
 				className: 'pricing-package-block',
 			});
-
+			
+			// Check if price is managed by Google Sheets
+			var isPriceManaged = false;
+			if (window.hkFsPackageData !== undefined) {
+				isPriceManaged = window.hkFsPackageData.is_price_managed || false;
+			}
+			
 			// Try to load initial data if available
 			if (window.hkFsPackageData !== undefined && 
 				attributes.price === '' && 
@@ -51,7 +54,34 @@
 					order: window.hkFsPackageData.order || '10'
 				});
 			}
-
+			
+			// Create price field notice for Google Sheets integration
+			var sheetNotice = null;
+			if (isPriceManaged) {
+				sheetNotice = createElement(
+					'div',
+					{ className: 'sheet-integration-notice' },
+					createElement(
+						'p',
+						{ style: { color: '#d63638', display: 'flex', alignItems: 'center' } },
+						createElement('span', { 
+							className: 'dashicons dashicons-cloud',
+							style: { marginRight: '5px' }
+						}),
+						createElement(
+							'strong',
+							null,
+							'Managed via Google Sheets'
+						)
+					),
+					createElement(
+						'p',
+						{ className: 'components-base-control__help' },
+						'Price is managed through Google Sheets integration and cannot be modified here.'
+					)
+				);
+			}
+			
 			// Create main fields component
 			var fields = createElement(
 				'div',
@@ -62,14 +92,19 @@
 						label: 'Price ($)',
 						value: attributes.price,
 						onChange: function(value) {
-							setAttributes({ price: value });
+							if (!isPriceManaged) {
+								setAttributes({ price: value });
+							}
 						},
 						placeholder: 'Enter price...',
 						type: 'number',
 						step: '0.01',
-						min: '0'
+						min: '0',
+						disabled: isPriceManaged,
+						className: isPriceManaged ? 'is-disabled' : ''
 					}
 				),
+				isPriceManaged ? sheetNotice : null,
 				createElement(
 					TextControl,
 					{
@@ -85,8 +120,8 @@
 					}
 				)
 			);
-
-			// Create sidebar controls
+			
+			// Create sidebar controls with similar Google Sheets integration handling
 			var inspectorControls = createElement(
 				InspectorControls,
 				null,
@@ -104,13 +139,22 @@
 							label: 'Price ($)',
 							value: attributes.price,
 							onChange: function(value) {
-								setAttributes({ price: value });
+								if (!isPriceManaged) {
+									setAttributes({ price: value });
+								}
 							},
 							type: 'number',
 							step: '0.01',
-							min: '0'
+							min: '0',
+							disabled: isPriceManaged,
+							className: isPriceManaged ? 'is-disabled' : ''
 						}
 					),
+					isPriceManaged ? createElement(
+						'p',
+						{ style: { color: '#d63638', fontSize: '12px', marginTop: '-8px' } },
+						'Price is managed via Google Sheets'
+					) : null,
 					createElement(
 						TextControl,
 						{
@@ -127,7 +171,7 @@
 					)
 				)
 			);
-
+			
 			// Return the complete block
 			return createElement(
 				Fragment,
@@ -149,7 +193,6 @@
 				inspectorControls
 			);
 		},
-
 		save: function() {
 			// Dynamic block, render nothing on save
 			return null;
