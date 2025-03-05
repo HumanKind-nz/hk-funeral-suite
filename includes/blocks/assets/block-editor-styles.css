@@ -156,6 +156,30 @@
 	font-family: var(--hk-fs-font-family) !important;
 }
 
+/* Google Sheets integration styles for blocks */
+.pricing-package-editor .components-text-control__input:disabled {
+    background-color: #f0f0f1;
+    border-color: #dcdcde;
+    color: #8c8f94;
+    box-shadow: none;
+}
+
+.pricing-package-editor .sheet-integration-notice {
+    background-color: rgba(214, 54, 56, 0.05);
+    border-left: 4px solid #d63638;
+    padding: 8px;
+    margin-top: 5px;
+    margin-bottom: 15px;
+    border-radius: 2px;
+}
+
+.components-panel .is-disabled .components-text-control__input {
+    background-color: #f0f0f1;
+    border-color: #dcdcde;
+    color: #8c8f94;
+    box-shadow: none;
+}
+
 /* Casket block styling */
 .casket-block {
 	background: #f8f9fa;
