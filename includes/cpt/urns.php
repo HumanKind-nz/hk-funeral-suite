@@ -6,7 +6,8 @@
  * @subpackage CPT
  * @version    1.0.3  
  * @since      1.0.0
- * @changelog  
+ * @changelog
+ *   1.0.3 - Google sheet / pricing sync
  *   1.0.0 - Initial version
  *   - Added urns post type
  *   - Added category taxonomy 
@@ -452,7 +453,7 @@ function hk_fs_register_urn_template() {
 		);
 		
 		// Lock the template so users can't move or delete the block
-		$post_type_object->template_lock = 'insert';
+		$post_type_object->template_lock = false;
 	}
 }
 add_action('init', 'hk_fs_register_urn_template', 11); // Run after CPT registration
