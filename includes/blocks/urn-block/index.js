@@ -92,7 +92,7 @@
 					createElement(
 						'p',
 						{ className: 'components-base-control__help' },
-						'Price is managed through Google Sheets integration and cannot be modified here.'
+						'Pricing is managed through a Google Sheets and cannot be modified here.'
 					)
 				);
 			}
@@ -235,13 +235,13 @@
 							disabled: isPriceManaged,
 							className: isPriceManaged ? 'is-disabled' : ''
 						}),
-						isPriceManaged ? sheetNotice : null,
 						createElement(SelectControl, {
 							label: 'Category',
 							value: attributes.selectedCategory,
 							options: getCategoryOptions(),
 							onChange: updateCategory
-						})
+						}),
+						isPriceManaged ? sheetNotice : null
 					)
 				),
 				createElement(
@@ -266,7 +266,7 @@
 						isPriceManaged ? createElement(
 							'p',
 							{ style: { color: '#d63638', fontSize: '12px', marginTop: '-8px' } },
-							'Price is managed via Google Sheets'
+							'Pricing is managed via Google Sheets'
 						) : null,
 						createElement(
 							SelectControl,
