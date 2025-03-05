@@ -77,7 +77,7 @@
 					createElement(
 						'p',
 						{ className: 'components-base-control__help' },
-						'Price is managed through Google Sheets integration and cannot be modified here.'
+						'Pricing is managed through Google Sheets and cannot be modified here.'
 					)
 				);
 			}
@@ -104,7 +104,6 @@
 						className: isPriceManaged ? 'is-disabled' : ''
 					}
 				),
-				isPriceManaged ? sheetNotice : null,
 				createElement(
 					TextControl,
 					{
@@ -118,7 +117,8 @@
 						step: '1',
 						min: '0'
 					}
-				)
+				),
+				isPriceManaged ? sheetNotice : null
 			);
 			
 			// Create sidebar controls with similar Google Sheets integration handling
@@ -153,7 +153,7 @@
 					isPriceManaged ? createElement(
 						'p',
 						{ style: { color: '#d63638', fontSize: '12px', marginTop: '-8px' } },
-						'Price is managed via Google Sheets'
+						'Pricing is managed via Google Sheets'
 					) : null,
 					createElement(
 						TextControl,
