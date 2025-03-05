@@ -6,16 +6,13 @@
  * @subpackage Blocks
  * @version    1.0.0
  */
-
 // Exit if accessed directly
 if (!defined('ABSPATH')) {
 	exit;
 }
-
 /**
  * Register the Casket block and its scripts
  */
-
  function hk_fs_register_casket_block() {
 	 if (!function_exists('register_block_type')) {
 		 return;
@@ -47,7 +44,6 @@ if (!defined('ABSPATH')) {
  }
  add_action('init', 'hk_fs_register_casket_block', 20);
  
-
 /**
  * Render callback for the Casket block
  */
@@ -55,7 +51,6 @@ function hk_fs_render_casket_block($attributes, $content) {
 	// Just return empty for admin blocks
 	return '';
 }
-
 /**
  * Save block data to post meta when the post is saved
  */
@@ -63,14 +58,17 @@ function hk_fs_save_casket_block_data($post_id, $post) {
 	 if ($post->post_type !== 'hk_fs_casket') {
 		 return;
 	 }
+	 
+	 // Check if pricing is managed by Google Sheets
+	 $managed_by_sheets = get_option('hk_fs_casket_price_google_sheets', false);
  
 	 $blocks = parse_blocks($post->post_content);
 	 foreach ($blocks as $block) {
 		 if ($block['blockName'] === 'hk-funeral-suite/casket') {
 			 $attrs = $block['attrs'];
  
-			 // Save price to post meta
-			 if (isset($attrs['price'])) {
+			 // Save price to post meta only if not managed by Google Sheets
+			 if (!$managed_by_sheets && isset($attrs['price'])) {
 				 update_post_meta($post_id, '_hk_fs_casket_price', sanitize_text_field($attrs['price']));
 			 }
  
@@ -91,7 +89,6 @@ function hk_fs_save_casket_block_data($post_id, $post) {
 	 }
  }
  add_action('save_post', 'hk_fs_save_casket_block_data', 10, 2);
-
 /**
  * Load block data from post meta when editing
  */
@@ -105,7 +102,8 @@ function hk_fs_load_casket_block_data() {
 	
 	// Get meta values
 	$meta_values = array(
-		'price' => get_post_meta($post->ID, '_hk_fs_casket_price', true)
+		'price' => get_post_meta($post->ID, '_hk_fs_casket_price', true),
+		'is_price_managed' => get_option('hk_fs_casket_price_google_sheets', false)
 	);
 	
 	// Get taxonomy terms
