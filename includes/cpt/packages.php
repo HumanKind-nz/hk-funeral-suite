@@ -4,7 +4,7 @@
  *
  * @package    HK_Funeral_Suite
  * @subpackage CPT
- * @version    1.0.0  
+ * @version    1.0.3  
  */
 
 // If this file is called directly, abort.
@@ -181,13 +181,29 @@ function hk_fs_package_pricing_callback($post) {
 	wp_nonce_field('hk_fs_package_pricing_nonce', 'hk_fs_package_pricing_nonce');
 	
 	$price = get_post_meta($post->ID, '_hk_fs_package_price', true);
+	$managed_by_sheets = get_option('hk_fs_package_price_google_sheets', false);
 	
 	?>
-	<p>
-		<label for="hk_fs_package_price"><?php _e('Price ($):', 'hk-funeral-cpt'); ?></label>
-		<input type="number" id="hk_fs_package_price" name="hk_fs_package_price" 
-			   value="<?php echo esc_attr($price); ?>" step="0.01" min="0" style="width: 100%;">
-	</p>
+	<div class="price-field-container <?php echo $managed_by_sheets ? 'sheet-managed' : ''; ?>">
+		<p>
+			<label for="hk_fs_package_price"><?php _e('Price ($):', 'hk-funeral-cpt'); ?></label>
+			<input type="number" id="hk_fs_package_price" name="hk_fs_package_price" 
+				   value="<?php echo esc_attr($price); ?>" step="0.01" min="0" style="width: 100%;"
+				   <?php echo $managed_by_sheets ? 'disabled="disabled"' : ''; ?>>
+		</p>
+		
+		<?php if ($managed_by_sheets): ?>
+		<div class="sheet-integration-notice">
+			<p style="color: #d63638; margin-top: 8px; display: flex; align-items: center;">
+				<span class="dashicons dashicons-cloud" style="margin-right: 5px;"></span>
+				<strong><?php _e('Managed via Google Sheets', 'hk-funeral-cpt'); ?></strong>
+			</p>
+			<p class="description" style="margin-top: 5px;">
+				<?php _e('Price is managed through Google Sheets integration and cannot be modified here.', 'hk-funeral-cpt'); ?>
+			</p>
+		</div>
+		<?php endif; ?>
+	</div>
 	<?php
 }
 
@@ -220,7 +236,10 @@ function hk_fs_save_package_meta($post_id) {
 	if (isset($_POST['hk_fs_package_pricing_nonce']) && 
 		wp_verify_nonce($_POST['hk_fs_package_pricing_nonce'], 'hk_fs_package_pricing_nonce')) {
 		
-		if (isset($_POST['hk_fs_package_price'])) {
+		// Only update price if not managed by Google Sheets
+		$managed_by_sheets = get_option('hk_fs_package_price_google_sheets', false);
+		
+		if (!$managed_by_sheets && isset($_POST['hk_fs_package_price'])) {
 			update_post_meta($post_id, '_hk_fs_package_price', 
 				sanitize_text_field($_POST['hk_fs_package_price']));
 		}
@@ -264,9 +283,15 @@ add_filter('manage_hk_fs_package_posts_columns', 'hk_fs_add_package_columns');
 function hk_fs_display_package_columns($column, $post_id) {
 	if ($column === 'price') {
 		$price = get_post_meta($post_id, '_hk_fs_package_price', true);
+		$managed_by_sheets = get_option('hk_fs_package_price_google_sheets', false);
 		
 		if (!empty($price)) {
 			echo '$' . number_format((float)$price, 2);
+			
+			// Add icon for Google Sheets managed prices
+			if ($managed_by_sheets) {
+				echo ' <span class="dashicons dashicons-cloud" style="color:#0073aa;" title="Managed via Google Sheets"></span>';
+			}
 		} else {
 			echo '—';
 		}
@@ -325,6 +350,74 @@ function hk_fs_package_orderby($query) {
 	}
 }
 add_action('pre_get_posts', 'hk_fs_package_orderby');
+
+/**
+ * Add admin notice for Google Sheets integration
+ */
+function hk_fs_package_admin_notices() {
+	$screen = get_current_screen();
+	
+	if (!$screen || $screen->post_type !== 'hk_fs_package') {
+		return;
+	}
+	
+	$managed_by_sheets = get_option('hk_fs_package_price_google_sheets', false);
+	
+	if ($managed_by_sheets) {
+		?>
+		<div class="notice notice-info">
+			<p>
+				<span class="dashicons dashicons-cloud" style="color:#0073aa; font-size:18px; vertical-align:middle;"></span>
+				<strong><?php _e('Google Sheets Integration Active:', 'hk-funeral-cpt'); ?></strong>
+				<?php _e('Package pricing is currently managed via Google Sheets. Price fields are disabled in the admin interface.', 'hk-funeral-cpt'); ?>
+				<a href="<?php echo admin_url('options-general.php?page=hk-funeral-suite-settings'); ?>">
+					<?php _e('Change this setting', 'hk-funeral-cpt'); ?>
+				</a>
+			</p>
+		</div>
+		<?php
+	}
+}
+add_action('admin_notices', 'hk_fs_package_admin_notices');
+
+/**
+ * Add styles for Google Sheets integration
+ */
+function hk_fs_package_admin_styles() {
+	$screen = get_current_screen();
+	
+	if (!$screen || $screen->post_type !== 'hk_fs_package') {
+		return;
+	}
+	
+	$managed_by_sheets = get_option('hk_fs_package_price_google_sheets', false);
+	
+	if ($managed_by_sheets) {
+		?>
+		<style type="text/css">
+			#hk_fs_package_price[disabled] {
+				background-color: #f0f0f1;
+				border-color: #dcdcde;
+				color: #8c8f94;
+				box-shadow: none;
+			}
+			
+			.price-field-container.sheet-managed {
+				position: relative;
+			}
+			
+			.sheet-integration-notice {
+				background-color: rgba(214, 54, 56, 0.05);
+				border-left: 4px solid #d63638;
+				padding: 8px;
+				margin-top: 10px;
+				border-radius: 2px;
+			}
+		</style>
+		<?php
+	}
+}
+add_action('admin_head', 'hk_fs_package_admin_styles');
 
 /**
  * Auto-insert the Pricing Package block into new package posts
