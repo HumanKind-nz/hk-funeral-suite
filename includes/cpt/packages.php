@@ -4,9 +4,11 @@
  *
  * @package    HK_Funeral_Suite
  * @subpackage CPT
- * @version    1.0.3  
+ * @version    1.0.5  
  * @since      1.0.0
  * @changelog  
+ *   1.0.5 - Change price field to txt
+ *   1.0.4 - Added Intro Paragraph field
  *   1.0.3 - Google sheet / pricing sync
  *   1.0.0 - Initial version
  */
@@ -32,7 +34,7 @@ if (!defined('WPINC')) {
  * 
  * 2. REST API Access:
  *    - Packages are available at: /wp-json/wp/v2/hk_fs_package
- *    - Price and order fields are registered to show in REST API
+ *    - Price, intro, and order fields are registered to show in REST API
  *    - Example: /wp-json/wp/v2/hk_fs_package?orderby=meta_value_num&meta_key=_hk_fs_package_order
  */
 
@@ -108,6 +110,15 @@ if (!defined('WPINC')) {
  * Register meta fields for REST API
  */
 function hk_fs_register_meta_fields() {
+	register_post_meta('hk_fs_package', '_hk_fs_package_intro', array(
+		'show_in_rest' => true,
+		'single' => true,
+		'type' => 'string',
+		'auth_callback' => function() {
+			return current_user_can('manage_funeral_content');
+		}
+	));
+	
 	register_post_meta('hk_fs_package', '_hk_fs_package_price', array(
 		'show_in_rest' => true,
 		'single' => true,
@@ -159,6 +170,15 @@ add_filter('enter_title_here', 'hk_fs_package_change_title_text');
  */
 function hk_fs_add_package_meta_boxes() {
 	add_meta_box(
+		'hk_fs_package_intro',
+		__('Intro Paragraph', 'hk-funeral-cpt'),
+		'hk_fs_package_intro_callback',
+		'hk_fs_package',
+		'normal',
+		'high'
+	);
+	
+	add_meta_box(
 		'hk_fs_package_pricing',
 		__('Price Information', 'hk-funeral-cpt'),
 		'hk_fs_package_pricing_callback',
@@ -179,6 +199,24 @@ function hk_fs_add_package_meta_boxes() {
 add_action('add_meta_boxes', 'hk_fs_add_package_meta_boxes');
 
 /**
+ * Intro paragraph meta box callback
+ */
+function hk_fs_package_intro_callback($post) {
+ wp_nonce_field('hk_fs_package_intro_nonce', 'hk_fs_package_intro_nonce');
+ 
+ $intro = get_post_meta($post->ID, '_hk_fs_package_intro', true);
+ 
+ ?>
+ <p>
+	 <input type="text" id="hk_fs_package_intro" name="hk_fs_package_intro" 
+			value="<?php echo esc_attr($intro); ?>" style="width: 100%;" 
+			placeholder="<?php _e('Enter brief summary to be shown at top ...', 'hk-funeral-cpt'); ?>">
+	 <span class="description"><?php _e('Enter an optional introductory sentence for this pricing package.', 'hk-funeral-cpt'); ?></span>
+ </p>
+ <?php
+}
+
+/**
  * Pricing meta box callback
  */
 function hk_fs_package_pricing_callback($post) {
@@ -191,9 +229,12 @@ function hk_fs_package_pricing_callback($post) {
 	<div class="price-field-container <?php echo $managed_by_sheets ? 'sheet-managed' : ''; ?>">
 		<p>
 			<label for="hk_fs_package_price"><?php _e('Price ($):', 'hk-funeral-cpt'); ?></label>
-			<input type="number" id="hk_fs_package_price" name="hk_fs_package_price" 
-				   value="<?php echo esc_attr($price); ?>" step="0.01" min="0" style="width: 100%;"
+			<input type="text" id="hk_fs_package_price" name="hk_fs_package_price" 
+				   value="<?php echo esc_attr($price); ?>" style="width: 100%;"
 				   <?php echo $managed_by_sheets ? 'disabled="disabled"' : ''; ?>>
+			<span class="description" style="font-size: 11px; color: #757575;">
+				<?php _e('Enter a numeric price (e.g., 1295.00) or text like "P.O.A."', 'hk-funeral-cpt'); ?>
+			</span>
 		</p>
 		
 		<?php if ($managed_by_sheets): ?>
@@ -236,6 +277,16 @@ function hk_fs_package_ordering_callback($post) {
  * Save the meta box data
  */
 function hk_fs_save_package_meta($post_id) {
+	// Check intro nonce
+	if (isset($_POST['hk_fs_package_intro_nonce']) && 
+		wp_verify_nonce($_POST['hk_fs_package_intro_nonce'], 'hk_fs_package_intro_nonce')) {
+		
+		if (isset($_POST['hk_fs_package_intro'])) {
+			update_post_meta($post_id, '_hk_fs_package_intro', 
+				sanitize_textarea_field($_POST['hk_fs_package_intro']));
+		}
+	}
+	
 	// Check pricing nonce
 	if (isset($_POST['hk_fs_package_pricing_nonce']) && 
 		wp_verify_nonce($_POST['hk_fs_package_pricing_nonce'], 'hk_fs_package_pricing_nonce')) {
@@ -270,6 +321,7 @@ function hk_fs_add_package_columns($columns) {
 	foreach($columns as $key => $value) {
 		if ($key === 'title') {
 			$new_columns[$key] = $value;
+			$new_columns['intro'] = __('Intro', 'hk-funeral-cpt');
 			$new_columns['price'] = __('Price', 'hk-funeral-cpt');
 			$new_columns['order'] = __('Order', 'hk-funeral-cpt');
 		} else {
@@ -285,12 +337,23 @@ add_filter('manage_hk_fs_package_posts_columns', 'hk_fs_add_package_columns');
  * Display package data in custom columns
  */
 function hk_fs_display_package_columns($column, $post_id) {
+	if ($column === 'intro') {
+		$intro = get_post_meta($post_id, '_hk_fs_package_intro', true);
+		echo !empty($intro) ? wp_trim_words($intro, 10, '...') : '—';
+	}
+	
 	if ($column === 'price') {
 		$price = get_post_meta($post_id, '_hk_fs_package_price', true);
 		$managed_by_sheets = get_option('hk_fs_package_price_google_sheets', false);
 		
 		if (!empty($price)) {
-			echo '$' . number_format((float)$price, 2);
+			// Check if the price is numeric
+			if (is_numeric($price)) {
+				echo '$' . number_format((float)$price, 2);
+			} else {
+				// Display the text as-is
+				echo esc_html($price);
+			}
 			
 			// Add icon for Google Sheets managed prices
 			if ($managed_by_sheets) {
@@ -314,6 +377,7 @@ add_action('manage_hk_fs_package_posts_custom_column', 'hk_fs_display_package_co
 function hk_fs_sortable_package_columns($columns) {
 	$columns['price'] = 'price';
 	$columns['order'] = 'order';
+	$columns['intro'] = 'intro';
 	return $columns;
 }
 add_filter('manage_edit-hk_fs_package_sortable_columns', 'hk_fs_sortable_package_columns');
@@ -335,9 +399,10 @@ function hk_fs_package_orderby($query) {
 				$query->set('order', 'ASC');
 			}
 		} else {
-			// On frontend, default sort by price
+			// On frontend, default sort by display order instead of price
+			// (since price may now contain text values)
 			if (!$query->get('orderby')) {
-				$query->set('meta_key', '_hk_fs_package_price');
+				$query->set('meta_key', '_hk_fs_package_order');
 				$query->set('orderby', 'meta_value_num');
 				$query->set('order', 'ASC');
 			}
@@ -346,10 +411,14 @@ function hk_fs_package_orderby($query) {
 		// Handle explicit sorting requests
 		if ($query->get('orderby') === 'price') {
 			$query->set('meta_key', '_hk_fs_package_price');
-			$query->set('orderby', 'meta_value_num');
+			// Changed from meta_value_num to meta_value to handle text
+			$query->set('orderby', 'meta_value');
 		} elseif ($query->get('orderby') === 'order') {
 			$query->set('meta_key', '_hk_fs_package_order');
 			$query->set('orderby', 'meta_value_num');
+		} elseif ($query->get('orderby') === 'intro') {
+			$query->set('meta_key', '_hk_fs_package_intro');
+			$query->set('orderby', 'meta_value');
 		}
 	}
 }
