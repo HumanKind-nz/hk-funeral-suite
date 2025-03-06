@@ -6,16 +6,16 @@
 
 This document explains how to use the `[hk_formatted_price]` shortcode provided by the HK Funeral Suite plugin.
 
-**Note:** If the price meta field contains a non-numeric value (for example, "P.O.A"), the shortcode will simply output that value without formatting
-
+**Note:** If the price meta field contains a non-numeric value (for example, "P.O.A"), the shortcode will simply output that value without formatting, but it will add a **text suffix** if specified.
 
 ## Shortcode Attributes
 
-- **key** (required): The meta key from which the price is retrieved.
-  `_hk_fs_urn_price` or `_hk_fs_casket_price` or `_hk_fs_package_price`
+- **key** (required): The meta key from which the price is retrieved.  
+  Example: `_hk_fs_urn_price`, `_hk_fs_casket_price`, or `_hk_fs_package_price`
 - **symbol** (optional): The currency symbol. Default is `$`.
 - **prefix** (optional): A string that will be displayed before the formatted price.
-- **suffix** (optional): A string that will be displayed after the formatted price.
+- **suffix** (optional): A string that will be displayed after the formatted price for numeric fields.
+- **text_suffix** (optional): A suffix to append when the meta value is a non-numeric string.
 - **decimals** (optional): The number of decimal places to display. Default is `2`. Set to `0` if you don't want any decimals.
 
 ## Basic Usage
@@ -36,11 +36,12 @@ This might output: `€2,000.00`
 
 ## Adding a Prefix or Suffix
 
-You can add text before or after the price:
+You can add text before or after the price (for numeric values):
 ```html
 [hk_formatted_price key="_hk_fs_package_price" prefix="From" suffix="inc gst"]
 ```
-This might output: `From $2,000.00 inc gst`
+This might output: `From <span class="hk-item-price">$2,000.00</span> inc gst`  
+*(Note: Only the price is wrapped in a span for styling.)*
 
 ## Changing Decimal Places
 
@@ -48,72 +49,55 @@ Control the number of decimal places with the `decimals` attribute. For example,
 ```html
 [hk_formatted_price key="_hk_fs_package_price" decimals="0"]
 ```
-This might output: `$2,000`
+This might output: `<span class="hk-item-price">$2,000</span>`
+
+## Example for Non-Numeric Value with Text Suffix
+
+When the meta field contains a non-numeric value, you can add a suffix using the `text_suffix` attribute:
+```html
+[hk_formatted_price key="_hk_fs_package_price" text_suffix="(price on application)"]
+```
+If the stored value is "P.O.A", the output will be:
+```html
+<span class="hk-item-price-container">
+	<span class="hk-item-price">P.O.A</span> (price on application)
+</span>
+```
 
 ## Combined Example
 
-A fully customized example:
+A fully customised example:
 ```html
 [hk_formatted_price key="_hk_fs_package_price" symbol="£" prefix="Starting at" suffix="plus VAT" decimals="2"]
 ```
-This might output: `Starting at £2,000.00 plus VAT`
-
-## Non-numeric Values
-
-If the meta field contains a non-numeric value (for example, "P.O.A"), the shortcode will simply output that value without formatting:
+This might output:
 ```html
-[hk_formatted_price key="_hk_fs_package_price"]
-```
-If the stored value is "P.O.A", the output will be:
-```
-P.O.A
+<span class="hk-item-price-container">
+	Starting at <span class="hk-item-price">£2,000.00</span> plus VAT
+</span>
 ```
 
 ---
 
 # Output HTML Structure of `[hk_formatted_price]` Shortcode
 
-When the shortcode outputs a numeric price value, it generates a block of HTML with multiple spans to allow for easy styling. The structure is as follows:
-
+When the shortcode outputs a numeric price value, it generates HTML similar to the following:
 ```html
-<span class="hk-price-container">
-	<span class="hk-price-prefix">From</span>
-	<span class="hk-price">$2,000.00</span>
-	<span class="hk-price-suffix">inc gst</span>
+<span class="hk-item-price-container">
+	From <span class="hk-item-price">$2,000.00</span> inc gst
 </span>
 ```
 
 ## Explanation
 
-- **.hk-price-container**  
-  This outer span wraps the entire pricing output. It serves as the main container, so you can style the whole block (for example, set margins or apply background colours).
+- **.hk-item-price-container**  
+  The outer container that wraps the entire pricing output. Use this class for styling the overall block (e.g., margins, background, etc.).
 
-- **.hk-price-prefix**  
-  This span holds any prefix text you provide via the shortcode (for example, "From"). It is optional and will only appear if a prefix attribute is specified.
+- **.hk-item-price**  
+  This inner span wraps only the formatted price (which combines the currency symbol and the numeric value). This allows you to specifically style the price display.
 
-- **.hk-price**  
-  This is the primary span that displays the formatted price. It combines the currency symbol and the numeric value (formatted with the specified number of decimals).
-
-- **.hk-price-suffix**  
-  This span displays any suffix text (such as "inc gst"). Like the prefix, it will only appear if a suffix attribute is provided.
-
-## Example Usage
-
-For the shortcode:
-```html
-[hk_formatted_price key="_hk_fs_package_price" symbol="$" prefix="From" suffix="inc gst" decimals="2"]
-```
-
-Assuming the meta value for `_hk_fs_package_price` is `2000`, the rendered HTML will be:
-```html
-<span class="hk-price-container">
-	<span class="hk-price-prefix">From</span>
-	<span class="hk-price">$2,000.00</span>
-	<span class="hk-price-suffix">inc gst</span>
-</span>
-```
-
-This structure gives you fine-grained control over each component of the price display via CSS.
+*Note:* Both the prefix and suffix (or text suffix for non-numeric values) are output directly (without additional span wrappers) to simplify the HTML structure.
 
 ---
+
 Use these examples as a reference when integrating the `[hk_formatted_price]` shortcode into your Beaver Builder templates or anywhere else on your site.
