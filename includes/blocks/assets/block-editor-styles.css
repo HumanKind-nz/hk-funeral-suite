@@ -17,7 +17,8 @@
 	font-weight: var(--hk-fs-body-weight);
 	letter-spacing: 0.01em;
 }
-.editor-styles-wrapper p {
+.editor-styles-wrapper p,
+.editor-styles-wrapper li {
 	font-family: var(--hk-fs-font-family) !important;
 	font-size: 16px;
 	line-height: 1.6;
