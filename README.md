@@ -135,7 +135,7 @@ When Google Sheets integration is enabled, the plugin adds hooks to:
 1. Navigate to "Packages" in the admin menu
 2. Click "Add New"
 3. Enter the package name as the title
-4. Use the Pricing Package block to enter price and display order
+4. Use the Pricing Package block to enter an intro, price and display order
 5. Add description and details of what's included in the package
 6. Publish when ready
 
