@@ -4,7 +4,11 @@ This document provides information on how to integrate HK Funeral Suite custom p
 
 ## Staff Custom Post Type
 
-### Beaver Builder Integration
+```
+hk_fs_staff
+```
+
+### Staff Beaver Builder Integration
 When using field connections in Beaver Builder Themer, you'll always use the original meta field names regardless of UI labels:
 
 | Field | Meta Key for Beaver Themer |
@@ -14,7 +18,7 @@ When using field connections in Beaver Builder Themer, you'll always use the ori
 | Phone | `_hk_fs_staff_phone` |
 | Email | `_hk_fs_staff_email` |
 
-### Beaver Themer Shortcodes
+### Staff Beaver Themer Shortcodes
 For Beaver Themer layouts, you can use these shortcodes to display team member fields:
 ```
 [wpbb post:custom_field key='_hk_fs_staff_position']
@@ -46,14 +50,18 @@ You can also use these taxonomies in Beaver Themer:
 
 ## Urns Custom Post Type
 
-### Beaver Builder Integration
+```
+hk_fs_urn
+```
+
+### Urn Beaver Builder Integration
 When using field connections in Beaver Builder Themer, you'll always use the original meta field names regardless of UI labels:
 
 | Field | Meta Key for Beaver Themer |
 |-------|----------------------------|
 | Price | `_hk_fs_urn_price` |
 
-### Beaver Themer Shortcodes
+### Urn Beaver Themer Shortcodes
 For Beaver Themer layouts, you can use these shortcodes to display urn fields:
 ```
 [wpbb post:custom_field key='_hk_fs_urn_price']
@@ -74,38 +82,62 @@ You can also use the urn category taxonomy in Beaver Themer:
 
 ## Pricing Packages Custom Post Type
 
-### Beaver Builder Integration
+```
+hk_fs_package
+```
+
+### Pricing Packages Beaver Builder Integration
 When using field connections in Beaver Builder Themer, you'll always use the original meta field names regardless of UI labels:
 
 | Field | Meta Key for Beaver Themer |
 |-------|----------------------------|
+| Intro | `_hk_fs_package_intro` |
 | Price | `_hk_fs_package_price` |
 | Display Order | `_hk_fs_package_order` |
 
-### Beaver Themer Shortcodes
+### Packages Beaver Themer Shortcodes
 For Beaver Themer layouts, you can use these shortcodes to display package fields:
 ```
+[wpbb post:custom_field key='_hk_fs_package_intro']
 [wpbb post:custom_field key='_hk_fs_package_price']
 [wpbb post:custom_field key='_hk_fs_package_order']
 ```
 
 You can also add formatting around these fields:
 ```
+<div class="package-intro">
+    [wpbb post:custom_field key='_hk_fs_package_intro']
+</div>
 <div class="package-pricing">
     <strong>Package Price:</strong> $[wpbb post:custom_field key='_hk_fs_package_price']
 </div>
 ```
 
+### Conditional Display Example for Intro
+Only show the intro section if the field has content:
+
+```
+[wpbb if:post:custom_field key='_hk_fs_package_intro']
+    <div class="package-intro">
+        [wpbb post:custom_field key='_hk_fs_package_intro']
+    </div>
+[/wpbb]
+```
+
 ## Caskets Custom Post Type
 
-### Beaver Builder Integration
+```
+hk_fs_casket
+```
+
+### Casket Beaver Builder Integration
 When using field connections in Beaver Builder Themer, you'll always use the original meta field names regardless of UI labels:
 
 | Field | Meta Key for Beaver Themer |
 |-------|----------------------------|
 | Price | `_hk_fs_casket_price` |
 
-### Beaver Themer Shortcodes
+### Casket Beaver Themer Shortcodes
 For Beaver Themer layouts, you can use these shortcodes to display casket fields:
 ```
 [wpbb post:custom_field key='_hk_fs_casket_price']
@@ -124,9 +156,9 @@ You can also use the casket category taxonomy in Beaver Themer:
 [wpbb term:hk_fs_casket_category]
 ```
 
-## Advanced Beaver Themer Examples
+## Advanced Beaver Themer Casket Examples
 
-### Price Formatting Example
+### Casket Price Formatting Example
 Format prices with commas for thousands:
 ```
 <div class="price-display">
