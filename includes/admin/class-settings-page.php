@@ -112,7 +112,7 @@ class HK_Funeral_Settings {
 		
 		add_settings_section(
 			'hk_fs_visibility_section',
-			'Public Visibility Settings',
+			'Post Type Visibility & Display Settings',
 			array($this, 'render_visibility_section'),
 			'hk-funeral-suite-settings'
 		);
@@ -183,7 +183,7 @@ class HK_Funeral_Settings {
 		// Add fields for public visibility
 		add_settings_field(
 			'hk_fs_visibility_field',
-			'Public Pages',
+			'Show Public Single & Archive Pages',
 			array($this, 'render_visibility_field'),
 			'hk-funeral-suite-settings',
 			'hk_fs_visibility_section'
@@ -210,9 +210,8 @@ class HK_Funeral_Settings {
 	 * Render the visibility section description
 	 */
 	public function render_visibility_section() {
-		echo '<p>Enable a publicly accessible single pages and archives for each:</p>';
-		echo '<p class="description">Enabling public pages will make "View" buttons appear in the editor and allow visitors to access individual pages for these items. Not needed if creating your own loops.</p>';
-		echo '<p class="description"><strong>Note:</strong> After changing these settings, please visit the <a href="' . admin_url('options-permalink.php') . '">Permalinks page</a> to refresh URL structures.</p>';
+		echo '<p>Toggle the public accessibility of single pages and archive views for each content type. Although these content types are always registered as public (to ensure compatibility with builders like Beaver Builder), disabling this option (the default) will hide their individual pages and extended admin UI (such as the "View" button) from visitors. This is ideal if you plan to use these posts only in custom loops or page builder layouts.</p>';
+		echo '<p class="description">Enabling public pages will allow visitors to view full single pages and archive listings. <strong>Note:</strong> After making changes, please visit the <a href="' . admin_url('options-permalink.php') . '">Permalinks page</a> to refresh your URL structures.</p>';
 	}
 	
 	/**
@@ -260,13 +259,13 @@ class HK_Funeral_Settings {
 				</label>
 				<?php if (!$is_enabled) : ?>
 					<span class="description" style="color:#999; font-style:italic;">
-						(Disabled - enable the <?php echo esc_html(ucfirst($cpt)); ?> feature first)
+						(Disabled – enable the <?php echo esc_html(ucfirst($cpt)); ?> feature first)
 					</span>
 				<?php endif; ?>
 				<br>
 			<?php endforeach; ?>
 		</fieldset>
-		<p class="description">Enable public single pages and archives for selected content types.</p>
+		<p class="description">When enabled, a public single page and archive view will be available for that content type (and the full admin UI, including the "View" link). When disabled, the content is reserved solely for use in custom loops and page builders.</p>
 		<?php
 	}
 	
