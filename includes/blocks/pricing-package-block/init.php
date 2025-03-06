@@ -4,8 +4,11 @@
  *
  * @package    HK_Funeral_Suite
  * @subpackage Blocks
- * @version    1.0.3
+ * @version    1.1.0
  * @since      1.0.1
+ * @changelog
+ *   1.1.0 - Added intro paragraph field
+ *   1.0.0 - Initial version
  */
 // Exit if accessed directly
 if (!defined('ABSPATH')) {
@@ -47,6 +50,10 @@ function hk_fs_register_pricing_package_block() {
 		'editor_style' => 'hk-fs-block-editor-styles', // Use shared styles from block-styles.php
 		'render_callback' => 'hk_fs_render_pricing_package_block',
 		'attributes' => array(
+			'intro' => array(
+				'type' => 'string',
+				'default' => '',
+			),
 			'price' => array(
 				'type' => 'string',
 				'default' => '',
@@ -74,10 +81,6 @@ function hk_fs_save_pricing_package_block_data($post_id, $post) {
 	if ($post->post_type !== 'hk_fs_package') {
 		return;
 	}
-	
-	// Check if pricing is managed by Google Sheets
-	$managed_by_sheets = get_option('hk_fs_package_price_google_sheets', false);
-	
 	// Check if the post content has our block
 	if (has_block('hk-funeral-suite/pricing-package', $post->post_content)) {
 		// Parse blocks to get our data
@@ -87,12 +90,15 @@ function hk_fs_save_pricing_package_block_data($post_id, $post) {
 			if ($block['blockName'] === 'hk-funeral-suite/pricing-package') {
 				$attrs = $block['attrs'];
 				
-				// Save price only if not managed by Google Sheets
-				if (!$managed_by_sheets && isset($attrs['price'])) {
+				// Save each attribute to its corresponding meta field
+				if (isset($attrs['intro'])) {
+					update_post_meta($post_id, '_hk_fs_package_intro', sanitize_textarea_field($attrs['intro']));
+				}
+				
+				if (isset($attrs['price'])) {
 					update_post_meta($post_id, '_hk_fs_package_price', sanitize_text_field($attrs['price']));
 				}
 				
-				// Order is always saved, regardless of Google Sheets status
 				if (isset($attrs['order'])) {
 					update_post_meta($post_id, '_hk_fs_package_order', absint($attrs['order']));
 				}
@@ -117,6 +123,7 @@ function hk_fs_load_pricing_package_block_data() {
 	
 	// Get meta values
 	$meta_values = array(
+		'intro' => get_post_meta($post->ID, '_hk_fs_package_intro', true),
 		'price' => get_post_meta($post->ID, '_hk_fs_package_price', true),
 		'order' => get_post_meta($post->ID, '_hk_fs_package_order', true) ?: '10',
 		'is_price_managed' => get_option('hk_fs_package_price_google_sheets', false)
