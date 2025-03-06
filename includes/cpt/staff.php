@@ -4,7 +4,7 @@
  *
  * @package    HK_Funeral_Suite
  * @subpackage CPT
- * @version    1.0.0  
+ * @version    1.0.1  
  * @since      1.0.0
  * @changelog  
  *   1.0.0 - Initial version
