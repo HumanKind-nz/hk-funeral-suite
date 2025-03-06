@@ -3,7 +3,7 @@
  * Plugin Name: HumanKind Funeral Suite
  * Plugin URI: https://github.com/HumanKind-nz/hk-funeral-suite/
  * Description: A powerful WordPress plugin to streamline funeral home websites adding custom post types, taxonomies and fields for Staff, Caskets, Urns, and Pricing Packages, along with specialised Gutenberg blocks for easy content management. 
- * Version: 1.1.0
+ * Version: 1.1.1
  * Author: HumanKind, Weave Digital Studio, Gareth Bissland
  * Author URI: https://weave.co.nz
  * License: GPL v2.0 or later
@@ -50,8 +50,15 @@ require_once HK_FS_PLUGIN_DIR . 'includes/blocks/block-styles.php';
 // Block Editor Customizations
 require_once HK_FS_PLUGIN_DIR . 'includes/admin/class-block-editor.php';
 
+// Admin Post Modifications (only for admin)
+require_once HK_FS_PLUGIN_DIR . 'includes/admin/class-post-mods.php';
+HK_Post_Mods::init();
+
+// Load shortcodes file (available on both front-end and admin)
+require_once HK_FS_PLUGIN_DIR . 'includes/class-shortcodes.php';
+
 // Load importer class for adding default blocks
-if (file_exists(HK_FS_PLUGIN_DIR . 'includes/import/class-default-blocks-importer.php')) {
+if ( file_exists( HK_FS_PLUGIN_DIR . 'includes/import/class-default-blocks-importer.php' ) ) {
     require_once HK_FS_PLUGIN_DIR . 'includes/import/class-default-blocks-importer.php';
     HK_Default_Blocks_Importer::init();
 }
