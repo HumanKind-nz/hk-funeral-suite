@@ -5,6 +5,28 @@ All notable changes to the HumanKind Funeral Suite plugin will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2025-03-06
+### Added
+- Google Sheets integration for pricing management
+  - Added settings UI for enabling Google Sheets integration for packages, caskets, and urns
+  - Implemented visual indicators for Google Sheets managed pricing in the admin
+  - Added cloud icon indicators in admin columns for externally managed prices
+  - Added admin notices to clearly show when prices are managed externally
+- Enhanced UI for settings page
+- Allowed additional core blocks in funeral content types
+  - Users can now add headings and lists to all custom post types
+  - Maintained structured content approach while adding flexibility
+
+### Changed
+- Modified block templates to allow specific additional block types
+- Updated CPT meta boxes to handle externally managed prices
+- Improved REST API support for external content updates
+- Enhanced caching system to ensure pricing updates appear immediately
+- Updated admin interfaces for better clarity and usability
+
+### Fixed
+- Fixed potential cache conflicts when updating content
+
 ## [1.0.2] - 2025-03-04
 ### Added
 - New visibility settings for each CPT to control whether they have public-facing pages

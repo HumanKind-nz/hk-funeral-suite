@@ -36,6 +36,12 @@
 				className: 'urn-block',
 			});
 			
+			// Check if price is managed by Google Sheets
+			var isPriceManaged = false;
+			if (window.hkFsUrnData !== undefined) {
+				isPriceManaged = window.hkFsUrnData.is_price_managed || false;
+			}
+			
 			// Get current post ID
 			var postId = useSelect(function(select) {
 				return select('core/editor').getCurrentPostId();
@@ -46,10 +52,12 @@
 
 			// Sync price changes with meta field
 			function updatePrice(value) {
-				setAttributes({ price: value });
-				// Update the post meta
-				if (postId) {
-					editPost({ meta: { '_hk_fs_urn_price': value } });
+				if (!isPriceManaged) {
+					setAttributes({ price: value });
+					// Update the post meta
+					if (postId) {
+						editPost({ meta: { '_hk_fs_urn_price': value } });
+					}
 				}
 			}
 			
@@ -60,6 +68,33 @@
 				if (postId) {
 					editPost({ meta: { '_hk_fs_urn_category': value } });
 				}
+			}
+
+			// Create Google Sheets notice for price field
+			var sheetNotice = null;
+			if (isPriceManaged) {
+				sheetNotice = createElement(
+					'div',
+					{ className: 'sheet-integration-notice' },
+					createElement(
+						'p',
+						{ style: { color: '#d63638', display: 'flex', alignItems: 'center' } },
+						createElement('span', { 
+							className: 'dashicons dashicons-cloud',
+							style: { marginRight: '5px' }
+						}),
+						createElement(
+							'strong',
+							null,
+							'Managed via Google Sheets'
+						)
+					),
+					createElement(
+						'p',
+						{ className: 'components-base-control__help' },
+						'Pricing is managed through a Google Sheets and cannot be modified here.'
+					)
+				);
 			}
 
 			// Sync with post's actual featured image
@@ -196,14 +231,17 @@
 							placeholder: 'Enter price...',
 							type: 'number',
 							step: '0.01',
-							min: '0'
+							min: '0',
+							disabled: isPriceManaged,
+							className: isPriceManaged ? 'is-disabled' : ''
 						}),
 						createElement(SelectControl, {
 							label: 'Category',
 							value: attributes.selectedCategory,
 							options: getCategoryOptions(),
 							onChange: updateCategory
-						})
+						}),
+						isPriceManaged ? sheetNotice : null
 					)
 				),
 				createElement(
@@ -220,9 +258,16 @@
 								onChange: updatePrice,
 								type: 'number',
 								step: '0.01',
-								min: '0'
+								min: '0',
+								disabled: isPriceManaged,
+								className: isPriceManaged ? 'is-disabled' : ''
 							}
 						),
+						isPriceManaged ? createElement(
+							'p',
+							{ style: { color: '#d63638', fontSize: '12px', marginTop: '-8px' } },
+							'Pricing is managed via Google Sheets'
+						) : null,
 						createElement(
 							SelectControl,
 							{

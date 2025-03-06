@@ -39,8 +39,42 @@ Each content type comes with tailor-made fields and taxonomies to fit the needs 
   - Import compatibility with All Import Pro
   - REST API integration for programmatic content creation
   - Block template locking for consistent data entry
+
+## 📈 Google Sheet Sync for Pricing
+
+The HumanKind Funeral Suite now includes a one way sync with Google Sheets for urn, casket and pricing package pricing management. 
+This was requested by a client who wanted their Manager/Finance team to be able to quickly adjust pricing without logging into the website.
+Also be able to see from a spreadsheet what all the price plans were.
+
+Once setup via a Google Apps Script this allows you to:
+
+- Manage pricing for packages, caskets, and urns from a central Google Sheet
+- Automatically sync updates to your WordPress site
+- Prevent accidental price edits in the WordPress admin that would be overwritten
+
+#### Features
+
+- **Admin Integration**: Clear visual indicators show when pricing is managed externally
+- **Content Protection**: Price fields are automatically disabled when Google Sheets integration is active
+- **Flexible Control**: Enable/disable integration independently for each product type
+- **Cache Management**: Automatic cache clearing ensures pricing updates appear immediately
+
+#### Configuration
+
+1. Navigate to Settings → HK Funeral Suite
+2. In the "Internal Use / Developer Options" section, find the Google Sheets Data Sync options
+3. Enable Google Sheets integration for your desired product types
+4. Contact Weave Digital Studio for help setting up the Google Sheet connection
+
+#### Developer Notes
+
+When Google Sheets integration is enabled, the plugin adds hooks to:
+- Prevent pricing fields from being edited in WordPress
+- Display visual indicators in the admin interface
+- Support the REST API for external updates
+- Clear caches automatically when prices are updatet. Tested for Internal use and used with the Weave Cache Purge Helper.
   
-## 📥 Installation  
+## 📥 Plugin Installation  
   
 ### 📌 From WordPress.org (Coming Soon)  
 1️⃣ Navigate to **Plugins > Add New** in your WordPress admin panel.  
@@ -66,8 +100,7 @@ Each content type comes with tailor-made fields and taxonomies to fit the needs 
 
 - WordPress 5.8 or higher
 - PHP 7.4 or higher
-- [Advanced Custom Fields](https://www.advancedcustomfields.com/) (recommended but not required)
-
+- A funeral website
 
 
 ## 🚀 Usage 
@@ -102,7 +135,7 @@ Each content type comes with tailor-made fields and taxonomies to fit the needs 
 1. Navigate to "Packages" in the admin menu
 2. Click "Add New"
 3. Enter the package name as the title
-4. Use the Pricing Package block to enter price and display order
+4. Use the Pricing Package block to enter an intro, price and display order
 5. Add description and details of what's included in the package
 6. Publish when ready
 
@@ -133,6 +166,7 @@ hk-funeral-suite/
 │   │   ├── class-settings-page.php     # Plugin settings management
 │   │   ├── class-capabilities.php      # Custom capabilities for CPTs
 │   │   └── class-github-updater.php    # GitHub automatic updates
+│   │   └── class-block-editor.php      # Custom block defaults for CPTs
 │   ├── blocks/
 │   │   ├── assets/                     # Shared block assets
 │   │   │   └── block-editor-styles.css # Block editor specific styles
@@ -168,6 +202,12 @@ hk-funeral-suite/
 ```
 
 ## 🔄 Changelog
+[ Full Changelog Here](CHANGELOG.md)
+
+### [1.1.0] - 2025-03-06
+- **Added:** Google Sheets integration for pricing management
+- **Added:** Enhanced UI for settings page
+- **Added:** Allowed additional core blocks in funeral content types
 
 ### [1.0.2] - 2025-03-04
 - **Added:** New visibility settings for each CPT to control whether they have public-facing pages

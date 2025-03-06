@@ -4,9 +4,10 @@
  *
  * @package    HK_Funeral_Suite
  * @subpackage CPT
- * @version    1.0.0  
+ * @version    1.0.3  
  * @since      1.0.0
  * @changelog  
+ *   1.0.3 - Google sheet / pricing sync
  *   1.0.0 - Initial version
  *   - Added casket post type
  *   - Added category taxonomy
@@ -195,6 +196,26 @@ function hk_fs_casket_admin_style() {
 			background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path fill="%23ffffff" d="M406.5 115.2l-107.8-105.9C292.6 3.375 284.3 0 275.6 0H172.4C163.7 0 155.4 3.375 149.2 9.375L41.46 115.2c-8.002 7.875-11.25 19.38-8.502 30.38l87.14 342.1C123.7 502 136.7 512 151.7 512h144.7c14.88 0 27.88-9.1 31.51-24.25l87.14-342.1C417.8 134.6 414.5 123.1 406.5 115.2zM284.5 464H163.5l-81.64-321.1L178.5 48h91.02l96.64 94.88L284.5 464z"/></svg>');
 			opacity: 1;
 		}
+		
+		/* Google Sheets integration styles */
+		#hk_fs_casket_price[disabled] {
+			background-color: #f0f0f1;
+			border-color: #dcdcde;
+			color: #8c8f94;
+			box-shadow: none;
+		}
+		
+		.price-field-container.sheet-managed {
+			position: relative;
+		}
+		
+		.sheet-integration-notice {
+			background-color: rgba(214, 54, 56, 0.05);
+			border-left: 4px solid #d63638;
+			padding: 8px;
+			margin-top: 10px;
+			border-radius: 2px;
+		}
 	</style>
 	<?php
 }
@@ -241,12 +262,29 @@ add_action('add_meta_boxes', 'hk_fs_add_casket_meta_boxes');
 function hk_fs_casket_pricing_callback($post) {
 	wp_nonce_field('hk_fs_casket_pricing_nonce', 'hk_fs_casket_pricing_nonce');
 	$price = get_post_meta($post->ID, '_hk_fs_casket_price', true);
+	$managed_by_sheets = get_option('hk_fs_casket_price_google_sheets', false);
+	
 	?>
-	<p>
-		<label for="hk_fs_casket_price"><?php _e('Price ($):', 'hk-funeral-cpt'); ?></label>
-		<input type="number" id="hk_fs_casket_price" name="hk_fs_casket_price" 
-			   value="<?php echo esc_attr($price); ?>" step="0.01" min="0" style="width: 100%;">
-	</p>
+	<div class="price-field-container <?php echo $managed_by_sheets ? 'sheet-managed' : ''; ?>">
+		<p>
+			<label for="hk_fs_casket_price"><?php _e('Price ($):', 'hk-funeral-cpt'); ?></label>
+			<input type="number" id="hk_fs_casket_price" name="hk_fs_casket_price" 
+				   value="<?php echo esc_attr($price); ?>" step="0.01" min="0" style="width: 100%;"
+				   <?php echo $managed_by_sheets ? 'disabled="disabled"' : ''; ?>>
+		</p>
+		
+		<?php if ($managed_by_sheets): ?>
+		<div class="sheet-integration-notice">
+			<p style="color: #d63638; margin-top: 8px; display: flex; align-items: center;">
+				<span class="dashicons dashicons-cloud" style="margin-right: 5px;"></span>
+				<strong><?php _e('Managed via Google Sheets', 'hk-funeral-cpt'); ?></strong>
+			</p>
+			<p class="description" style="margin-top: 5px;">
+				<?php _e('Price is managed through Google Sheets integration and cannot be modified here.', 'hk-funeral-cpt'); ?>
+			</p>
+		</div>
+		<?php endif; ?>
+	</div>
 	<?php
 }
 
@@ -267,12 +305,44 @@ function hk_fs_save_casket_meta($post_id) {
 		return;
 	}
 
-	if (isset($_POST['hk_fs_casket_price'])) {
+	// Only update price if not managed by Google Sheets
+	$managed_by_sheets = get_option('hk_fs_casket_price_google_sheets', false);
+	
+	if (!$managed_by_sheets && isset($_POST['hk_fs_casket_price'])) {
 		$price = sanitize_text_field($_POST['hk_fs_casket_price']);
 		update_post_meta($post_id, '_hk_fs_casket_price', $price);
 	}
 }
 add_action('save_post_hk_fs_casket', 'hk_fs_save_casket_meta');
+
+/**
+ * Add admin notice for Google Sheets integration
+ */
+function hk_fs_casket_admin_notices() {
+	$screen = get_current_screen();
+	
+	if (!$screen || $screen->post_type !== 'hk_fs_casket') {
+		return;
+	}
+	
+	$managed_by_sheets = get_option('hk_fs_casket_price_google_sheets', false);
+	
+	if ($managed_by_sheets) {
+		?>
+		<div class="notice notice-info">
+			<p>
+				<span class="dashicons dashicons-cloud" style="color:#0073aa; font-size:18px; vertical-align:middle;"></span>
+				<strong><?php _e('Google Sheets Integration Active:', 'hk-funeral-cpt'); ?></strong>
+				<?php _e('Casket pricing is currently managed via Google Sheets. Price fields are disabled in the admin interface.', 'hk-funeral-cpt'); ?>
+				<a href="<?php echo admin_url('options-general.php?page=hk-funeral-suite-settings'); ?>">
+					<?php _e('Change this setting', 'hk-funeral-cpt'); ?>
+				</a>
+			</p>
+		</div>
+		<?php
+	}
+}
+add_action('admin_notices', 'hk_fs_casket_admin_notices');
 
 /**
  * Add custom columns to casket admin list
@@ -297,8 +367,15 @@ add_filter('manage_hk_fs_casket_posts_columns', 'hk_fs_add_casket_columns');
 function hk_fs_display_casket_columns($column, $post_id) {
 	if ($column === 'price') {
 		$price = get_post_meta($post_id, '_hk_fs_casket_price', true);
+		$managed_by_sheets = get_option('hk_fs_casket_price_google_sheets', false);
+		
 		if (!empty($price)) {
 			echo '$' . number_format((float)$price, 2);
+			
+			// Add icon for Google Sheets managed prices
+			if ($managed_by_sheets) {
+				echo ' <span class="dashicons dashicons-cloud" style="color:#0073aa;" title="Managed via Google Sheets"></span>';
+			}
 		} else {
 			echo '—';
 		}
@@ -370,7 +447,7 @@ function hk_fs_register_casket_template() {
 		);
 		
 		// Lock the template so users can't move or delete the block
-		$post_type_object->template_lock = 'insert';
+		$post_type_object->template_lock = false;
 	}
 }
 add_action('init', 'hk_fs_register_casket_template', 11); // Run after CPT registration
