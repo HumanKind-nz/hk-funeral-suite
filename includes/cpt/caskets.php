@@ -4,9 +4,10 @@
  *
  * @package    HK_Funeral_Suite
  * @subpackage CPT
- * @version    1.0.3  
+ * @version    1.0.4  
  * @since      1.0.0
  * @changelog  
+ *   1.0.4 - Visibility public change
  *   1.0.3 - Google sheet / pricing sync
  *   1.0.0 - Initial version
  *   - Added casket post type
