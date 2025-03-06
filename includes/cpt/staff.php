@@ -49,7 +49,7 @@ if (!function_exists('hk_fs_cpt_register_staff')) {
 		
 		$args = array(
 			'labels'             => $labels,
-			'public'             => $make_public,                  // Set public based on option
+			'public'             => true,
 			'publicly_queryable' => $make_public,                  // Allow front-end queries only if public
 			'show_ui'            => true,                          // Always show admin UI
 			'show_in_menu'       => true,                          // Always show in menu
