@@ -45,7 +45,7 @@ class HK_Funeral_Block_Editor {
 			'core/heading',
 			'core/list',
 			'core/list-item',
-			'core/seperator'
+			'core/separator'
 		);
 		
 		// For packages
