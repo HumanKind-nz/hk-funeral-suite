@@ -4,8 +4,8 @@
  *
  * Registers and handles front-end shortcodes for HK Funeral Suite.
  *
- * Version: 1.1
- * Changelog: Updated container and price classes to 'hk-item-price-container' and 'hk-item-price', removed extra spans for prefix/suffix, and added the text_suffix option.
+ * Version: 1.2
+ * Changelog: Added optional 'post_id' attribute to fetch meta values from a specific post instead of the current post.
  *
  * @package HK_Funeral_Suite
  */
@@ -29,6 +29,7 @@ class HK_Shortcodes {
 	 *
 	 * Attributes:
 	 * - key: The meta key to retrieve the price.
+	 * - post_id: The post ID to fetch the meta value from (optional, defaults to the current post).
 	 * - symbol: Currency symbol (default: '$').
 	 * - prefix: Text to appear before the formatted price.
 	 * - suffix: Text to appear after the formatted price (for numeric fields).
@@ -44,19 +45,23 @@ class HK_Shortcodes {
 		// Set default attributes.
 		$atts = shortcode_atts( array(
 			'key'         => '',
-			'symbol'      => '$',   // Default currency symbol.
+			'post_id'     => '',   // Allow overriding post ID
+			'symbol'      => '$',  // Default currency symbol.
 			'prefix'      => '',
 			'suffix'      => '',
-			'text_suffix' => '',    // Suffix for non-numeric string fields.
-			'decimals'    => 2,     // Default number of decimals.
+			'text_suffix' => '',   // Suffix for non-numeric string fields.
+			'decimals'    => 2,    // Default number of decimals.
 		), $atts, 'hk_formatted_price' );
 
-		// If no key is provided or no post context, return empty.
-		if ( empty( $atts['key'] ) || ! isset( $post->ID ) ) {
+		// Determine which post ID to use (default to current post if not provided).
+		$post_id = ! empty( $atts['post_id'] ) ? intval( $atts['post_id'] ) : ( isset( $post->ID ) ? $post->ID : 0 );
+
+		// If no valid post ID or key is provided, return empty.
+		if ( empty( $atts['key'] ) || empty( $post_id ) ) {
 			return '';
 		}
 
-		$price = get_post_meta( $post->ID, $atts['key'], true );
+		$price = get_post_meta( $post_id, $atts['key'], true );
 
 		// Check if the price is numeric.
 		if ( is_numeric( $price ) ) {
