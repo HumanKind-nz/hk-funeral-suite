@@ -14,6 +14,7 @@ This document explains how to use the `[hk_formatted_price]` shortcode provided 
   Example: `_hk_fs_urn_price`, `_hk_fs_casket_price`, or `_hk_fs_package_price`
 - **symbol** (optional): The currency symbol. Default is `$`.
 - **prefix** (optional): A string that will be displayed before the formatted price.
+- **post_id** (optional): The post ID to query for the pricing field. If used on another page.
 - **suffix** (optional): A string that will be displayed after the formatted price for numeric fields.
 - **text_suffix** (optional): A suffix to append when the meta value is a non-numeric string.
 - **decimals** (optional): The number of decimal places to display. Default is `2`. Set to `0` if you don't want any decimals.
@@ -63,6 +64,15 @@ If the stored value is "P.O.A", the output will be:
 	<span class="hk-item-price">P.O.A</span> (price on application)
 </span>
 ```
+
+## Fetch Price from a Specific Post
+
+```html
+[hk_formatted_price key="_hk_fs_package_price" post_id="123"]
+```
+
+This retrieves _hk_fs_package_price from post ID 123, no matter where it’s used.
+
 
 ## Combined Example
 
