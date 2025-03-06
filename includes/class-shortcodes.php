@@ -4,6 +4,9 @@
  *
  * Registers and handles front-end shortcodes for HK Funeral Suite.
  *
+ * Version: 1.1
+ * Changelog: Updated container and price classes to 'hk-item-price-container' and 'hk-item-price', removed extra spans for prefix/suffix, and added the text_suffix option.
+ *
  * @package HK_Funeral_Suite
  */
 
@@ -15,7 +18,7 @@ if ( ! defined( 'WPINC' ) ) {
 class HK_Shortcodes {
 
 	/**
-	 * Initialize shortcodes.
+	 * Initialise shortcodes.
 	 */
 	public static function init() {
 		add_shortcode( 'hk_formatted_price', array( __CLASS__, 'formatted_price_shortcode' ) );
@@ -28,7 +31,8 @@ class HK_Shortcodes {
 	 * - key: The meta key to retrieve the price.
 	 * - symbol: Currency symbol (default: '$').
 	 * - prefix: Text to appear before the formatted price.
-	 * - suffix: Text to appear after the formatted price.
+	 * - suffix: Text to appear after the formatted price (for numeric fields).
+	 * - text_suffix: Suffix to append when the meta value is a non-numeric string.
 	 * - decimals: Number of decimals to display (default: 2).
 	 *
 	 * @param array $atts Shortcode attributes.
@@ -39,11 +43,12 @@ class HK_Shortcodes {
 
 		// Set default attributes.
 		$atts = shortcode_atts( array(
-			'key'      => '',
-			'symbol'   => '$',   // Default currency symbol.
-			'prefix'   => '',
-			'suffix'   => '',
-			'decimals' => 2,     // Default number of decimals.
+			'key'         => '',
+			'symbol'      => '$',   // Default currency symbol.
+			'prefix'      => '',
+			'suffix'      => '',
+			'text_suffix' => '',    // Suffix for non-numeric string fields.
+			'decimals'    => 2,     // Default number of decimals.
 		), $atts, 'hk_formatted_price' );
 
 		// If no key is provided or no post context, return empty.
@@ -53,29 +58,41 @@ class HK_Shortcodes {
 
 		$price = get_post_meta( $post->ID, $atts['key'], true );
 
-		// If the price is numeric, format it accordingly.
+		// Check if the price is numeric.
 		if ( is_numeric( $price ) ) {
 			$formatted_price = number_format( (float) $price, (int) $atts['decimals'] );
-			$output = '<span class="hk-price-container">';
-
+			
+			// Begin main container with new class name.
+			$output = '<span class="hk-item-price-container">';
+			
+			// Add prefix text directly (no span) if provided.
 			if ( ! empty( $atts['prefix'] ) ) {
-				$output .= '<span class="hk-price-prefix">' . esc_html( trim( $atts['prefix'] ) ) . '</span> ';
+				$output .= esc_html( trim( $atts['prefix'] ) ) . ' ';
 			}
 
-			$output .= '<span class="hk-price">' . esc_html( $atts['symbol'] . $formatted_price ) . '</span>';
+			// Output the formatted price inside a span with new class name.
+			$output .= '<span class="hk-item-price">' . esc_html( $atts['symbol'] . $formatted_price ) . '</span>';
 
+			// Append suffix text directly (no span) if provided.
 			if ( ! empty( $atts['suffix'] ) ) {
-				$output .= ' <span class="hk-price-suffix">' . esc_html( trim( $atts['suffix'] ) ) . '</span>';
+				$output .= ' ' . esc_html( trim( $atts['suffix'] ) );
 			}
 
-			$output .= '</span>';
+			$output .= '</span>'; // Close main container.
 			return $output;
 		}
 
-		// If not numeric, just output the original value.
-		return esc_html( $price );
+		// For non-numeric values, output using a container and price span,
+		// then append the text_suffix if provided.
+		$output = '<span class="hk-item-price-container">';
+		$output .= '<span class="hk-item-price">' . esc_html( $price ) . '</span>';
+		if ( ! empty( $atts['text_suffix'] ) ) {
+			$output .= ' ' . esc_html( trim( $atts['text_suffix'] ) );
+		}
+		$output .= '</span>';
+		return $output;
 	}
 }
 
-// Initialize the shortcodes.
+// Initialise the shortcodes.
 HK_Shortcodes::init();
