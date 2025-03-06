@@ -4,9 +4,10 @@
  *
  * @package    HK_Funeral_Suite
  * @subpackage CPT
- * @version    1.0.3  
+ * @version    1.0.4  
  * @since      1.0.0
  * @changelog
+ *   1.0.4 - Visibility public change
  *   1.0.3 - Google sheet / pricing sync
  *   1.0.0 - Initial version
  *   - Added urns post type
@@ -48,7 +49,7 @@ if (!function_exists('hk_fs_cpt_register_urns')) {
 
 		$args = array(
 			'labels'              => $labels,
-			'public'              => $make_public,             // Set public based on option
+			'public'              => true,
 			'publicly_queryable'  => $make_public,             // Allow front-end queries only if public
 			'show_ui'             => true,                     // Always show admin UI
 			'show_in_menu'        => true,                     // Always show in menu
