@@ -4,9 +4,10 @@
  *
  * @package    HK_Funeral_Suite
  * @subpackage CPT
- * @version    1.0.5  
+ * @version    1.0.6  
  * @since      1.0.0
  * @changelog  
+ *   1.0.6 - Visibility settings
  *   1.0.5 - Change price field to txt
  *   1.0.4 - Added Intro Paragraph field
  *   1.0.3 - Google sheet / pricing sync
@@ -68,7 +69,7 @@ if (!defined('WPINC')) {
 		 
 		 $args = array(
 			 'labels'              => $labels,
-			 'public'              => $make_public,                  // Set public based on option
+			 'public'              => true,
 			 'publicly_queryable'  => $make_public,                  // Allow front-end queries only if public
 			 'show_ui'             => true,                          // Always show admin UI
 			 'show_in_menu'        => true,                          // Always show in menu
