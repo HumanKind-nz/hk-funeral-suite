@@ -4,7 +4,7 @@
  *
  * @package    HK_Funeral_Suite
  * @subpackage Admin
- * @version    1.0.0
+ * @version    1.0.3
  * @Since    1.1.0
  */
 
@@ -43,7 +43,9 @@ class HK_Funeral_Block_Editor {
 		$common_blocks = array(
 			'core/paragraph',
 			'core/heading',
-			'core/list'
+			'core/list',
+			'core/list-item',
+			'core/seperator'
 		);
 		
 		// For packages
