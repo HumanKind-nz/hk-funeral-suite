@@ -166,6 +166,7 @@
 }
 
 .pricing-package-editor .sheet-integration-notice {
+    grid-column: 1 / span 2;
     background-color: rgba(214, 54, 56, 0.05);
     border-left: 4px solid #d63638;
     padding: 8px;
