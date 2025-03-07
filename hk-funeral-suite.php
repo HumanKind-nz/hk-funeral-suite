@@ -163,7 +163,8 @@ add_action('rest_api_init', 'hk_fs_register_price_meta');
 function hk_fs_init_github_updater() {
     if (is_admin() && file_exists(HK_FS_PLUGIN_DIR . 'includes/admin/class-github-updater.php')) {
         require_once HK_FS_PLUGIN_DIR . 'includes/admin/class-github-updater.php';
-        HK_Funeral_GitHub_Updater::init(__FILE__);
+        // Pass the main plugin file path, not __FILE__ which would refer to the current file
+        HK_Funeral_GitHub_Updater::init(HK_FS_PLUGIN_FILE);
     }
 }
 add_action('init', 'hk_fs_init_github_updater');
