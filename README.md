@@ -39,6 +39,7 @@ Each content type comes with tailor-made fields and taxonomies to fit the needs 
   - Import compatibility with All Import Pro
   - REST API integration for programmatic content creation
   - Block template locking for consistent data entry
+  - Shortcode for pricing meta field
 
 ## 📈 Google Sheet Sync for Pricing
 
@@ -74,6 +75,13 @@ When Google Sheets integration is enabled, the plugin adds hooks to:
 - Support the REST API for external updates
 - Clear caches automatically when prices are updatet. Tested for Internal use and used with the Weave Cache Purge Helper.
   
+## 🍰 Shortcodes
+
+### `[hk_formatted_price]`
+Outputs a formatted price from a custom field.
+More info see [Shortcode Usage Examples](shortcode-usage.md)
+
+---
 ## 📥 Plugin Installation  
   
 ### 📌 From WordPress.org (Coming Soon)  

@@ -4,6 +4,7 @@
  *
  * @package    HK_Funeral_Suite
  * @subpackage Admin
+ * v1.1.1 - Update button
  */
 
 // If this file is called directly, abort.
@@ -65,6 +66,7 @@ class HK_Funeral_Settings {
 	private function __construct() {
 		add_action('admin_menu', array($this, 'add_menu_page'));
 		add_action('admin_init', array($this, 'register_settings'));
+		add_action('admin_init', array($this, 'handle_manual_update_check'));
 		
 		// Get enabled CPTs from options with defaults
 		$saved_cpts = get_option('hk_fs_enabled_cpts', array());
@@ -96,12 +98,6 @@ class HK_Funeral_Settings {
 		// Register main sections
 		
 		// Hidden temporarily
-		// add_settings_section(
-		// 	'hk_fs_features_section',
-		// 	'Settings',
-		// 	array($this, 'render_features_section'),
-		// 	'hk-funeral-suite-settings'
-		// );
 		add_settings_section(
 			'hk_fs_features_section',
 			'', // Empty string instead of 'Settings' to temp hide the heading
@@ -109,10 +105,9 @@ class HK_Funeral_Settings {
 			'hk-funeral-suite-settings'
 		);
 		
-		
 		add_settings_section(
 			'hk_fs_visibility_section',
-			'Public Visibility Settings',
+			'Post Type Visibility & Display Settings',
 			array($this, 'render_visibility_section'),
 			'hk-funeral-suite-settings'
 		);
@@ -122,6 +117,14 @@ class HK_Funeral_Settings {
 			'hk_fs_integrations_section',
 			'Google Sheets Data Sync',
 			array($this, 'render_integrations_section'),
+			'hk-funeral-suite-settings'
+		);
+		
+		// New section for plugin updates
+		add_settings_section(
+			'hk_fs_updates_section',
+			'Plugin Updates',
+			array($this, 'render_updates_section'),
 			'hk-funeral-suite-settings'
 		);
 		
@@ -183,7 +186,7 @@ class HK_Funeral_Settings {
 		// Add fields for public visibility
 		add_settings_field(
 			'hk_fs_visibility_field',
-			'Public Pages',
+			'Show Public Single & Archive Pages',
 			array($this, 'render_visibility_field'),
 			'hk-funeral-suite-settings',
 			'hk_fs_visibility_section'
@@ -210,9 +213,8 @@ class HK_Funeral_Settings {
 	 * Render the visibility section description
 	 */
 	public function render_visibility_section() {
-		echo '<p>Enable a publicly accessible single pages and archives for each:</p>';
-		echo '<p class="description">Enabling public pages will make "View" buttons appear in the editor and allow visitors to access individual pages for these items. Not needed if creating your own loops.</p>';
-		echo '<p class="description"><strong>Note:</strong> After changing these settings, please visit the <a href="' . admin_url('options-permalink.php') . '">Permalinks page</a> to refresh URL structures.</p>';
+		echo '<p>Toggle the public accessibility of single pages and archive views for each content type. Although these content types are always registered as public (to ensure compatibility with builders like Beaver Builder), disabling this option (the default) will hide their individual pages and extended admin UI (such as the "View" button) from visitors. This is ideal if you plan to use these posts only in custom loops or page builder layouts.</p>';
+		echo '<p class="description">Enabling public pages will allow visitors to view full single pages and archive listings. <strong>Note:</strong> After making changes, please visit the <a href="' . admin_url('options-permalink.php') . '">Permalinks page</a> to refresh your URL structures.</p>';
 	}
 	
 	/**
@@ -221,6 +223,13 @@ class HK_Funeral_Settings {
 	public function render_integrations_section() {
 		echo '<p>Enable Google Sheets data integration with the funeral site:</p>';
 		echo '<p class="description">Currently used when updating your product pricing via Google Sheets</p>';
+	}
+	
+	/**
+	 * Render the updates section description
+	 */
+	public function render_updates_section() {
+		echo '<p>Check for and manage plugin updates:</p>';
 	}
 
 	/**
@@ -260,13 +269,13 @@ class HK_Funeral_Settings {
 				</label>
 				<?php if (!$is_enabled) : ?>
 					<span class="description" style="color:#999; font-style:italic;">
-						(Disabled - enable the <?php echo esc_html(ucfirst($cpt)); ?> feature first)
+						(Disabled – enable the <?php echo esc_html(ucfirst($cpt)); ?> feature first)
 					</span>
 				<?php endif; ?>
 				<br>
 			<?php endforeach; ?>
 		</fieldset>
-		<p class="description">Enable public single pages and archives for selected content types.</p>
+		<p class="description">When enabled, a public single page and archive view will be available for that content type (and the full admin UI, including the "View" link). When disabled, the content is reserved solely for use in custom loops and page builders.</p>
 		<?php
 	}
 	
@@ -307,6 +316,101 @@ class HK_Funeral_Settings {
 			<a href="https://weave.co.nz" target="_blank">Weave Digital Studio / HumanKind Funeral Website</a>.
 		</p>
 		<?php
+	}
+	
+	/**
+	 * Add "Manually Check for Plugin Update" button
+	 */
+	public function render_update_check_button() {
+		?>
+		<div class="hk-update-check">
+			<form method="post" action="<?php echo esc_url(admin_url('options-general.php?page=hk-funeral-suite-settings')); ?>">
+				<?php wp_nonce_field('hk_fs_manual_update_check', 'hk_fs_update_nonce'); ?>
+				<input type="hidden" name="hk_fs_manual_update_check" value="1">
+				<?php submit_button('Check for Plugin Updates', 'secondary', 'hk_fs_check_updates', false); ?>
+			</form>
+			<p class="description">Force WordPress to check for updates to the HumanKind Funeral Suite plugin right now.</p>
+		</div>
+		<?php
+	}
+	
+	/**
+	 * Handle manual update check request
+	 */
+	public function handle_manual_update_check() {
+		// Only process the form if it was submitted
+		if (!isset($_POST['hk_fs_manual_update_check']) || $_POST['hk_fs_manual_update_check'] !== '1') {
+			return;
+		}
+		
+		// Verify the nonce
+		if (!isset($_POST['hk_fs_update_nonce']) || !wp_verify_nonce($_POST['hk_fs_update_nonce'], 'hk_fs_manual_update_check')) {
+			add_action('admin_notices', function() {
+				echo '<div class="notice notice-error is-dismissible"><p>Security check failed. Please try again.</p></div>';
+			});
+			return;
+		}
+		
+		// Check user capabilities
+		if (!current_user_can('manage_options')) {
+			add_action('admin_notices', function() {
+				echo '<div class="notice notice-error is-dismissible"><p>You do not have sufficient permissions to perform this action.</p></div>';
+			});
+			return;
+		}
+		
+		// Clear the plugins update cache
+		delete_site_transient('update_plugins');
+		
+		// Force WordPress to check for updates
+		wp_clean_plugins_cache();
+		$update_result = wp_update_plugins();
+		
+		// Check for errors
+		if (is_wp_error($update_result)) {
+			add_action('admin_notices', function() use ($update_result) {
+				echo '<div class="notice notice-error is-dismissible"><p>Error checking for updates: ' . esc_html($update_result->get_error_message()) . '</p></div>';
+			});
+			return;
+		}
+		
+		// Check if an update is available
+		$update_plugins = get_site_transient('update_plugins');
+		// Use the HK_FS_BASENAME constant that's already defined
+		$plugin_basename = defined('HK_FS_BASENAME') ? HK_FS_BASENAME : '';
+		
+		if (!empty($update_plugins->response[$plugin_basename])) {
+			// Update is available
+			add_action('admin_notices', function() use ($update_plugins, $plugin_basename) {
+				// Make sure we have a valid plugin basename
+				if (!empty($plugin_basename)) {
+					$update_url = wp_nonce_url(
+						self_admin_url('update.php?action=upgrade-plugin&plugin=' . $plugin_basename),
+						'upgrade-plugin_' . $plugin_basename
+					);
+					
+					echo '<div class="notice notice-success is-dismissible">';
+					if (isset($update_plugins->response[$plugin_basename]->new_version)) {
+						$version = esc_html($update_plugins->response[$plugin_basename]->new_version);
+						echo '<p><strong>Update available!</strong> Version ' . $version . ' of HK Funeral Suite is available.</p>';
+						echo '<p><a href="' . esc_url($update_url) . '" class="button-primary">Update Now</a> or visit the <a href="' . esc_url(self_admin_url('plugins.php')) . '">Plugins page</a> to update.</p>';
+					} else {
+						echo '<p><strong>Update available!</strong> A new version of HK Funeral Suite is available.</p>';
+						echo '<p>Visit the <a href="' . esc_url(self_admin_url('plugins.php')) . '">Plugins page</a> to update.</p>';
+					}
+					echo '</div>';
+				} else {
+					echo '<div class="notice notice-success is-dismissible">';
+					echo '<p><strong>Update available!</strong> Please visit the <a href="' . esc_url(self_admin_url('plugins.php')) . '">Plugins page</a> to update HK Funeral Suite.</p>';
+					echo '</div>';
+				}
+			});
+		} else {
+			// No update available
+			add_action('admin_notices', function() {
+				echo '<div class="notice notice-info is-dismissible"><p>You are running the latest version of HK Funeral Suite. No updates are available at this time.</p></div>';
+			});
+		}
 	}
 
 	/**
@@ -378,13 +482,18 @@ class HK_Funeral_Settings {
 					// Output the visibility and integration sections inside the container
 					$this->do_custom_settings_section('hk_fs_visibility_section', 'hk-funeral-suite-settings');
 					$this->do_custom_settings_section('hk_fs_integrations_section', 'hk-funeral-suite-settings');
+					
+					// Add the updates section (separately from the main settings form)
+					$this->do_custom_settings_section('hk_fs_updates_section', 'hk-funeral-suite-settings');
+					$this->render_update_check_button();
 					?>
 				</div>
 				<?php
 				// Output submit button
-				submit_button();
+				submit_button('Save Settings');
 				?>
 			</form>
+			
 			<div class="hk-banner">
 				<img src="<?php echo esc_url(HK_FS_PLUGIN_URL . 'assets/images/icon-256x256.png'); ?>" alt="HumanKind Funeral Suite">
 			</div>
@@ -421,6 +530,12 @@ class HK_Funeral_Settings {
 				font-weight: 500;
 				text-transform: uppercase;
 			}
+			
+			.hk-update-check {
+				margin: 15px 0;
+				padding-bottom: 15px;
+			}
+			
 			.hk-support-link {
 				margin-top: 20px;
 				padding: 15px;
@@ -428,6 +543,7 @@ class HK_Funeral_Settings {
 				border: 1px solid #ccd0d4;
 				border-radius: 4px;
 			}
+			
 			.hk-banner {
 				margin-bottom: 20px;
 			}
@@ -460,8 +576,6 @@ class HK_Funeral_Settings {
 					margin-bottom: 15px;
 				}
 			}
-			
-
 		</style>
 		
 		<script type="text/javascript">
