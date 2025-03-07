@@ -5,6 +5,24 @@ All notable changes to the HumanKind Funeral Suite plugin will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2025-03-07
+### Added
+- **New shortcode** `[hk_formatted_price]` for outputting formatted prices with:
+  - Custom currency symbols
+  - Prefix and suffix support
+  - Adjustable decimal precision
+  - Graceful fallback for non-numeric values (e.g., "P.O.A.")
+  - Compatible with Page Builders / Beaver Builder
+  - More info see [Shortcode Usage Examples](shortcode-usage.md)
+- **Admin UI Enhancements**:
+  - Updated CPT visibility settings to clarify purpose and improve control
+- **Code Structure Improvements**:
+  - Moved shortcodes into a separate class (`class-shortcodes.php`) for better modularity
+  - Consolidated CPT admin modifications into `class-post-mods.php`
+
+### Fixed
+- Ensured settings changes properly flush rewrite rules
+
 ## [1.1.0] - 2025-03-06
 ### Added
 - Google Sheets integration for pricing management
