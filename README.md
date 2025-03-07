@@ -79,7 +79,7 @@ When Google Sheets integration is enabled, the plugin adds hooks to:
 
 ### `[hk_formatted_price]`
 Outputs a formatted price from a custom field.
-More info see[Shortcode Usage Examples](shortcode-usage.md)
+More info see [Shortcode Usage Examples](shortcode-usage.md)
 
 ---
 ## 📥 Plugin Installation  
