@@ -83,7 +83,7 @@ More info see [Shortcode Usage Examples](shortcode-usage.md)
 
 ---
 ## 📥 Plugin Installation  
-  
+
 ### 📌 From WordPress.org (Coming Soon)  
 1️⃣ Navigate to **Plugins > Add New** in your WordPress admin panel.  
 2️⃣ Search for **"HumanKind Funeral Suite"**.  
@@ -96,11 +96,17 @@ More info see [Shortcode Usage Examples](shortcode-usage.md)
 
 ### 📌 From GitHub (For Developers)  
 ```sh
- git clone https://github.com/HumanKind-nz/hk-funeral-suite.git
- cd hk-funeral-suite
- composer install  # (if Composer is used)
+git clone https://github.com/HumanKind-nz/hk-funeral-suite.git
+cd hk-funeral-suite
+composer install  # (if Composer is used)
 ```
 💡 Then zip the directory contents and upload it via WordPress admin or copy it to the `wp-content/plugins/` directory manually.  
+
+### 🔄 Auto-Updater via GitHub  
+This plugin supports automatic updates directly from GitHub using a custom updater. To ensure updates work:  
+1️⃣ Keep the plugin installed in `wp-content/plugins/hk-funeral-suite`.  
+2️⃣ When a new release is available, the WordPress updater will notify you.  
+3️⃣ Click **Update Now** in the Plugins page to install the latest version.
 
 ---
 
@@ -173,8 +179,9 @@ hk-funeral-suite/
 │   ├── admin/
 │   │   ├── class-settings-page.php     # Plugin settings management
 │   │   ├── class-capabilities.php      # Custom capabilities for CPTs
-│   │   └── class-github-updater.php    # GitHub automatic updates
-│   │   └── class-block-editor.php      # Custom block defaults for CPTs
+│   │   ├── class-github-updater.php    # GitHub automatic updates
+│   │   ├── class-block-editor.php      # Custom block defaults for CPTs
+│   │   └── class-post-mods.php         # Post modifications/customizations
 │   ├── blocks/
 │   │   ├── assets/                     # Shared block assets
 │   │   │   └── block-editor-styles.css # Block editor specific styles
@@ -196,8 +203,9 @@ hk-funeral-suite/
 │   │   ├── caskets.php                 # Caskets CPT registration
 │   │   ├── urns.php                    # Urns CPT registration
 │   │   └── packages.php                # Packages CPT registration
-│   └── import/
-│       └── class-default-blocks-importer.php  # Import integration
+│   ├── import/
+│   │   └── class-default-blocks-importer.php  # Import integration
+│   └── class-shortcodes.php            # Shortcode registration and handling
 ├── assets/
 │   └── images/                        # Main plugin images
 │       └── hk-funeral-suite-banner.png                     
@@ -211,6 +219,12 @@ hk-funeral-suite/
 
 ## 🔄 Changelog
 [ Full Changelog Here](CHANGELOG.md)
+
+### [1.1.2] - 2025-03-07
+- **Added** New shortcode [hk_formatted_price] for outputting formatted prices.
+- Consolidated CPT admin modifications into class-post-mods.php
+- Updated Github auto plugin updater.
+- Ensured settings changes properly flush rewrite rules
 
 ### [1.1.0] - 2025-03-06
 - **Added:** Google Sheets integration for pricing management
