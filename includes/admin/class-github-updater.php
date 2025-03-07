@@ -4,7 +4,7 @@
  *
  * @package    HK_Funeral_Suite
  * @subpackage Updates
- * @version    1.1.0
+ * @version    1.2.0
  */
 
 // Exit if accessed directly
@@ -24,6 +24,11 @@ class HK_Funeral_GitHub_Updater {
     // Plugin icons
     private const ICON_SMALL = "https://weave-hk-github.b-cdn.net/humankind/icon-128x128.png";
     private const ICON_LARGE = "https://weave-hk-github.b-cdn.net/humankind/icon-256x256.png";
+    
+    // Cache keys and durations
+    private const CACHE_KEY = 'hk_funeral_github_response';
+    private const CACHE_DURATION = 4; // Hours
+    private const ERROR_CACHE_DURATION = 1; // Hour for error responses
 
     /**
      * Constructor
@@ -32,11 +37,6 @@ class HK_Funeral_GitHub_Updater {
      */
     public function __construct($file) {
         $this->file = $file;
-        
-        if (is_admin() && function_exists("get_plugin_data")) {
-            $this->plugin = get_plugin_data($this->file);
-        }
-        
         $this->basename = plugin_basename($this->file);
         $this->active = is_plugin_active($this->basename);
 
@@ -53,58 +53,102 @@ class HK_Funeral_GitHub_Updater {
      * @return HK_Funeral_GitHub_Updater
      */
     public static function init($file) {
-        return new self($file);
+        static $instance = null;
+        
+        // Ensure we only create one instance
+        if ($instance === null) {
+            $instance = new self($file);
+        }
+        
+        return $instance;
+    }
+    
+    /**
+     * Get plugin data only when needed
+     *
+     * @return array Plugin data
+     */
+    private function get_plugin_data() {
+        if (empty($this->plugin) && is_admin() && function_exists("get_plugin_data")) {
+            $this->plugin = get_plugin_data($this->file);
+        }
+        
+        return $this->plugin;
     }
 
     /**
-     * Get repository information from GitHub
+     * Get repository information from GitHub with caching
      * 
      * @return object|false Repository info or false on failure
      */
     private function get_repository_info() {
-        if (is_null($this->github_response)) {
-            $request_uri = sprintf(
-                "https://api.github.com/repos/%s/%s/releases/latest",
-                $this->github_username,
-                $this->github_repo
-            );
-
-            $args = [
-                'headers' => [
-                    'User-Agent' => 'WordPress',
-                ]
-            ];
-
-            $response = wp_remote_get($request_uri, $args);
-
-            if (is_wp_error($response)) {
-                error_log("GitHub API request failed: " . $response->get_error_message());
-                return false;
+        if (!is_null($this->github_response)) {
+            return $this->github_response;
+        }
+        
+        // Check for a cached response
+        $cached = get_transient(self::CACHE_KEY);
+        if (false !== $cached) {
+            // Check if this is an error response (we store errors as an array with status key)
+            if (is_array($cached) && isset($cached['status']) && $cached['status'] === 'error') {
+                return false; // Return false but don't make a new request
             }
-
-            if (wp_remote_retrieve_response_code($response) !== 200) {
-                error_log("GitHub API request failed with response code: " . wp_remote_retrieve_response_code($response));
-                return false;
-            }
-
-            $body = json_decode(wp_remote_retrieve_body($response));
-
-            if (!isset($body->tag_name, $body->assets) || empty($body->assets)) {
-                error_log("GitHub API response missing required fields or assets.");
-                return false;
-            }
-
-            // Fetch the actual zip file URL (fix for incorrect URL issue)
-            $body->zipball_url = $body->assets[0]->browser_download_url ?? '';
-
-            if (empty($body->zipball_url)) {
-                error_log("No valid download URL found for the latest release.");
-                return false;
-            }
-
-            $this->github_response = $body;
+            
+            $this->github_response = $cached;
+            return $this->github_response;
         }
 
+        $request_uri = sprintf(
+            "https://api.github.com/repos/%s/%s/releases/latest",
+            $this->github_username,
+            $this->github_repo
+        );
+
+        $args = [
+            'headers' => [
+                'User-Agent' => 'WordPress/' . get_bloginfo('version'),
+            ]
+        ];
+
+        $response = wp_remote_get($request_uri, $args);
+
+        if (is_wp_error($response)) {
+            error_log("GitHub API request failed: " . $response->get_error_message());
+            // Cache error response to prevent constant retries
+            set_transient(self::CACHE_KEY, ['status' => 'error'], self::ERROR_CACHE_DURATION * HOUR_IN_SECONDS);
+            return false;
+        }
+
+        $response_code = wp_remote_retrieve_response_code($response);
+        if ($response_code !== 200) {
+            error_log("GitHub API request failed with response code: " . $response_code);
+            // Cache error response to prevent constant retries
+            set_transient(self::CACHE_KEY, ['status' => 'error'], self::ERROR_CACHE_DURATION * HOUR_IN_SECONDS);
+            return false;
+        }
+
+        $body = json_decode(wp_remote_retrieve_body($response));
+
+        if (!isset($body->tag_name, $body->assets) || empty($body->assets)) {
+            error_log("GitHub API response missing required fields or assets.");
+            // Cache error response to prevent constant retries
+            set_transient(self::CACHE_KEY, ['status' => 'error'], self::ERROR_CACHE_DURATION * HOUR_IN_SECONDS);
+            return false;
+        }
+
+        // Fetch the actual zip file URL
+        $body->zipball_url = $body->assets[0]->browser_download_url ?? '';
+
+        if (empty($body->zipball_url)) {
+            error_log("No valid download URL found for the latest release.");
+            // Cache error response to prevent constant retries
+            set_transient(self::CACHE_KEY, ['status' => 'error'], self::ERROR_CACHE_DURATION * HOUR_IN_SECONDS);
+            return false;
+        }
+
+        // Cache the successful response
+        set_transient(self::CACHE_KEY, $body, self::CACHE_DURATION * HOUR_IN_SECONDS);
+        $this->github_response = $body;
         return $this->github_response;
     }
 
@@ -119,6 +163,9 @@ class HK_Funeral_GitHub_Updater {
             return $transient;
         }
 
+        // Load plugin data only when needed
+        $this->get_plugin_data();
+        
         $repository_info = $this->get_repository_info();
         if (!$repository_info) {
             return $transient;
@@ -159,12 +206,14 @@ class HK_Funeral_GitHub_Updater {
             return $res;
         }
 
+        // Load plugin data only when needed
+        $plugin_data = $this->get_plugin_data();
+        
         $repository_info = $this->get_repository_info();
         if (!$repository_info) {
             return $res;
         }
 
-        $plugin_data = $this->plugin;
         $info = new \stdClass();
 
         $info->name = $plugin_data["Name"] ?? "";
