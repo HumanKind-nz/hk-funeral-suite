@@ -376,19 +376,28 @@ class HK_Funeral_Settings {
 		
 		// Check if an update is available
 		$update_plugins = get_site_transient('update_plugins');
-		$plugin_basename = plugin_basename(HK_FS_PLUGIN_FILE); // Get current plugin's basename
+		// Use the HK_FS_BASENAME constant that's already defined
+		$plugin_basename = defined('HK_FS_BASENAME') ? HK_FS_BASENAME : '';
 		
 		if (!empty($update_plugins->response[$plugin_basename])) {
 			// Update is available
 			add_action('admin_notices', function() use ($update_plugins, $plugin_basename) {
-				$update_url = wp_nonce_url(
-					self_admin_url('update.php?action=upgrade-plugin&plugin=' . $plugin_basename),
-					'upgrade-plugin_' . $plugin_basename
-				);
+				// Make sure we have a valid plugin basename
+				if (!empty($plugin_basename)) {
+					$update_url = wp_nonce_url(
+						self_admin_url('update.php?action=upgrade-plugin&plugin=' . $plugin_basename),
+						'upgrade-plugin_' . $plugin_basename
+					);
 				
 				echo '<div class="notice notice-success is-dismissible">';
-				echo '<p><strong>Update available!</strong> Version ' . esc_html($update_plugins->response[$plugin_basename]->new_version) . ' of HK Funeral Suite is available.</p>';
-				echo '<p><a href="' . esc_url($update_url) . '" class="button-primary">Update Now</a> or visit the <a href="' . esc_url(self_admin_url('plugins.php')) . '">Plugins page</a> to update.</p>';
+				if (!empty($plugin_basename) && isset($update_plugins->response[$plugin_basename]->new_version)) {
+					$version = esc_html($update_plugins->response[$plugin_basename]->new_version);
+					echo '<p><strong>Update available!</strong> Version ' . $version . ' of HK Funeral Suite is available.</p>';
+					echo '<p><a href="' . esc_url($update_url) . '" class="button-primary">Update Now</a> or visit the <a href="' . esc_url(self_admin_url('plugins.php')) . '">Plugins page</a> to update.</p>';
+				} else {
+					echo '<p><strong>Update available!</strong> A new version of HK Funeral Suite is available.</p>';
+					echo '<p>Visit the <a href="' . esc_url(self_admin_url('plugins.php')) . '">Plugins page</a> to update.</p>';
+				}
 				echo '</div>';
 			});
 		} else {
