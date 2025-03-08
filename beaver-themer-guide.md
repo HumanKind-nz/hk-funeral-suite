@@ -2,6 +2,18 @@
 
 This document provides information on how to integrate HK Funeral Suite custom post types and meta fields with Beaver Themer for your layouts.
 
+## Recommended Price Formatting
+
+For displaying prices in Beaver Builder, we recommend using the `[hk_formatted_price]` shortcode instead of directly accessing meta fields. This shortcode provides better formatting control and consistent output. See the [shortcode-usage.md](shortcode-usage.md) documentation for complete details on the `[hk_formatted_price]` shortcode.
+
+Example of using the price shortcode within Beaver Builder:
+
+```html
+<div class="package-pricing">
+    <strong>Package Price:</strong> [hk_formatted_price key="_hk_fs_package_price" prefix="From" suffix="inc GST"]
+</div>
+```
+
 ## Staff Custom Post Type
 
 ```
@@ -62,16 +74,14 @@ When using field connections in Beaver Builder Themer, you'll always use the ori
 | Price | `_hk_fs_urn_price` |
 
 ### Urn Beaver Themer Shortcodes
-For Beaver Themer layouts, you can use these shortcodes to display urn fields:
+For Beaver Themer layouts, you can display urn prices using the `[hk_formatted_price]` shortcode (recommended):
 ```
-[wpbb post:custom_field key='_hk_fs_urn_price']
+[hk_formatted_price key="_hk_fs_urn_price" prefix="Price:" suffix="inc GST"]
 ```
 
-You can also add formatting around these fields:
+Or using the basic Beaver Themer field connection:
 ```
-<div class="urn-price">
-    <strong>Price:</strong> $[wpbb post:custom_field key='_hk_fs_urn_price']
-</div>
+[wpbb post:custom_field key='_hk_fs_urn_price']
 ```
 
 ### Urn Taxonomies
@@ -99,7 +109,7 @@ When using field connections in Beaver Builder Themer, you'll always use the ori
 For Beaver Themer layouts, you can use these shortcodes to display package fields:
 ```
 [wpbb post:custom_field key='_hk_fs_package_intro']
-[wpbb post:custom_field key='_hk_fs_package_price']
+[hk_formatted_price key="_hk_fs_package_price"]
 [wpbb post:custom_field key='_hk_fs_package_order']
 ```
 
@@ -109,7 +119,7 @@ You can also add formatting around these fields:
     [wpbb post:custom_field key='_hk_fs_package_intro']
 </div>
 <div class="package-pricing">
-    <strong>Package Price:</strong> $[wpbb post:custom_field key='_hk_fs_package_price']
+    <strong>Package Price:</strong> [hk_formatted_price key="_hk_fs_package_price" suffix="inc GST"]
 </div>
 ```
 
@@ -117,11 +127,11 @@ You can also add formatting around these fields:
 Only show the intro section if the field has content:
 
 ```
-[wpbb if:post:custom_field key='_hk_fs_package_intro']
+[wpbb-if exists="post:custom_field" key='_hk_fs_package_intro']
     <div class="package-intro">
         [wpbb post:custom_field key='_hk_fs_package_intro']
     </div>
-[/wpbb]
+[/wpbb-if]
 ```
 
 ## Caskets Custom Post Type
@@ -138,16 +148,14 @@ When using field connections in Beaver Builder Themer, you'll always use the ori
 | Price | `_hk_fs_casket_price` |
 
 ### Casket Beaver Themer Shortcodes
-For Beaver Themer layouts, you can use these shortcodes to display casket fields:
+For Beaver Themer layouts, you can display casket prices using the `[hk_formatted_price]` shortcode (recommended):
 ```
-[wpbb post:custom_field key='_hk_fs_casket_price']
+[hk_formatted_price key="_hk_fs_casket_price" prefix="Price:" suffix="inc GST"]
 ```
 
-You can also add formatting around these fields:
+Or using the basic Beaver Themer field connection:
 ```
-<div class="casket-price">
-    <strong>Price:</strong> $[wpbb post:custom_field key='_hk_fs_casket_price']
-</div>
+[wpbb post:custom_field key='_hk_fs_casket_price']
 ```
 
 ### Casket Taxonomies
@@ -156,10 +164,18 @@ You can also use the casket category taxonomy in Beaver Themer:
 [wpbb term:hk_fs_casket_category]
 ```
 
-## Advanced Beaver Themer Casket Examples
+## Advanced Beaver Themer Examples
 
-### Casket Price Formatting Example
-Format prices with commas for thousands:
+### Price Formatting with HK Shortcode (Recommended)
+Format prices with proper currency and formatting options:
+```
+<div class="price-display">
+    [hk_formatted_price key="_hk_fs_casket_price" prefix="Price:" suffix="inc GST" decimals="2"]
+</div>
+```
+
+### Legacy Price Formatting Example
+If you need to use the Beaver Themer formatting options directly:
 ```
 <div class="price-display">
     $[wpbb post:custom_field key='_hk_fs_casket_price' format='number' thousands_sep=',' decimals='2']
@@ -169,23 +185,26 @@ Format prices with commas for thousands:
 ### Conditional Display Example
 Only show elements if a field has content:
 ```
-[wpbb if:post:custom_field key='_hk_fs_staff_qualification']
+[wpbb-if exists="post:custom_field" key='_hk_fs_staff_qualification']
     <div class="qualification">
         <strong>Qualifications:</strong> [wpbb post:custom_field key='_hk_fs_staff_qualification']
     </div>
-[/wpbb]
-```
-
-### Looping Through Staff by Location
-To display all staff members from a specific location:
-```
-[wpbb-if exists="archive-term:hk_fs_location"]
-    <h2>Staff at [wpbb post:terms_list taxonomy='hk_fs_location' separator=', ']</h2>
-    [wpbb post:loop]
-        <div class="staff-member">
-            <h3>[wpbb post:title]</h3>
-            <p>[wpbb post:custom_field key='_hk_fs_staff_position']</p>
-        </div>
-    [/wpbb post:loop]
 [/wpbb-if]
 ```
+
+
+
+## Combining HK Shortcodes with Beaver Themer
+
+You can combine the power of both shortcode systems. For example, to display a formatted price while referencing a specific post ID:
+
+```
+<div class="product-item">
+    <h3>[wpbb post:title]</h3>
+    <div class="price">
+        [hk_formatted_price key="_hk_fs_casket_price" post_id="[wpbb post:id]" prefix="Price:" suffix="inc GST"]
+    </div>
+</div>
+```
+
+For more details on the `[hk_formatted_price]` shortcode and its options, refer to the [shortcode-usage.md](shortcode-usage.md) documentation.
