@@ -220,11 +220,12 @@ hk-funeral-suite/
 ## 🔄 Changelog
 [ Full Changelog Here](CHANGELOG.md)
 
-### [1.1.2] - 2025-03-07
+### [1.1.4] - 2025-03-09
 - **Added** New shortcode [hk_formatted_price] for outputting formatted prices.
 - Consolidated CPT admin modifications into class-post-mods.php
 - Updated Github auto plugin updater.
 - Ensured settings changes properly flush rewrite rules
+- Updated documentation
 
 ### [1.1.0] - 2025-03-06
 - **Added:** Google Sheets integration for pricing management
