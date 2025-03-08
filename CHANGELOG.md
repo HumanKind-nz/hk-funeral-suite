@@ -5,7 +5,7 @@ All notable changes to the HumanKind Funeral Suite plugin will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.1.3] - 2025-03-08
+## [1.1.4] - 2025-03-09
 ### Added
 - **New shortcode** `[hk_formatted_price]` for outputting formatted prices with:
   - Custom currency symbols
@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Code Structure Improvements**:
   - Moved shortcodes into a separate class (`class-shortcodes.php`) for better modularity
   - Consolidated CPT admin modifications into `class-post-mods.php`
+  - Updated documentation and usage examples
 
 ### Fixed
 - Ensured settings changes properly flush rewrite rules
