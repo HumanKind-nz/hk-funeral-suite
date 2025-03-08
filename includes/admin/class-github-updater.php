@@ -4,7 +4,7 @@
  *
  * @package    HK_Funeral_Suite
  * @subpackage Updates
- * @version    1.2.0
+ * @version    1.2.1
  */
 
 // Exit if accessed directly
@@ -74,6 +74,16 @@ class HK_Funeral_GitHub_Updater {
         }
         
         return $this->plugin;
+    }
+
+    /**
+     * Normalize a version string by removing 'v' prefix
+     * 
+     * @param string $version Version string
+     * @return string Normalized version
+     */
+    private function normalize_version($version) {
+        return ltrim($version, "v");
     }
 
     /**
@@ -164,19 +174,29 @@ class HK_Funeral_GitHub_Updater {
         }
 
         // Load plugin data only when needed
-        $this->get_plugin_data();
+        $plugin_data = $this->get_plugin_data();
         
         $repository_info = $this->get_repository_info();
         if (!$repository_info) {
             return $transient;
         }
 
-        $current_version = $transient->checked[$this->basename] ?? "";
-        $latest_version = ltrim($repository_info->tag_name, "v");
+        // Get current version from plugin header data (not transient)
+        $current_version = $plugin_data['Version'];
+        
+        // Normalize versions by removing 'v' prefix
+        $current_version_normalized = $this->normalize_version($current_version);
+        $latest_version = $this->normalize_version($repository_info->tag_name);
 
-        if (version_compare($latest_version, $current_version, "gt")) {
+        // Debug log to help troubleshoot
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("HK Funeral GitHub Updater - Current version: {$current_version_normalized}, Latest version: {$latest_version}");
+        }
+
+        // Only add to update response if GitHub version is strictly greater than current version
+        if (version_compare($latest_version, $current_version_normalized, ">")) {
             $plugin = [
-                "url" => $this->plugin["PluginURI"] ?? "",
+                "url" => $plugin_data["PluginURI"] ?? "",
                 "slug" => dirname($this->basename),
                 "package" => $repository_info->zipball_url,
                 "new_version" => $latest_version,
@@ -188,6 +208,27 @@ class HK_Funeral_GitHub_Updater {
             ];
 
             $transient->response[$this->basename] = (object) $plugin;
+        } else {
+            // Make sure we're not in the response array if the version is the same or older
+            if (isset($transient->response[$this->basename])) {
+                unset($transient->response[$this->basename]);
+            }
+            
+            // Add to the no_update list to show as "up to date"
+            if (!isset($transient->no_update[$this->basename])) {
+                $plugin = [
+                    "slug" => dirname($this->basename),
+                    "plugin" => $this->basename,
+                    "new_version" => $latest_version,
+                    "url" => $plugin_data["PluginURI"] ?? "",
+                    "package" => "",
+                    "icons" => [
+                        "1x" => self::ICON_SMALL,
+                        "2x" => self::ICON_LARGE,
+                    ],
+                ];
+                $transient->no_update[$this->basename] = (object) $plugin;
+            }
         }
 
         return $transient;
@@ -218,7 +259,7 @@ class HK_Funeral_GitHub_Updater {
 
         $info->name = $plugin_data["Name"] ?? "";
         $info->slug = dirname($this->basename);
-        $info->version = ltrim($repository_info->tag_name, "v");
+        $info->version = $this->normalize_version($repository_info->tag_name);
         $info->author = $plugin_data["Author"] ?? "";
         $info->author_profile = $plugin_data["AuthorURI"] ?? "";
         $info->tested = get_bloginfo("version");
@@ -254,6 +295,9 @@ class HK_Funeral_GitHub_Updater {
         if ($this->active) {
             activate_plugin($this->basename);
         }
+        
+        // Clear the cache to force a fresh check
+        delete_transient(self::CACHE_KEY);
 
         return $result;
     }
