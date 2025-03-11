@@ -220,6 +220,9 @@ hk-funeral-suite/
 ## 🔄 Changelog
 [ Full Changelog Here](CHANGELOG.md)
 
+### [1.1.4] - 2025-03-12
+- minor bug fix
+
 ### [1.1.4] - 2025-03-09
 - **Added** New shortcode [hk_formatted_price] for outputting formatted prices.
 - Consolidated CPT admin modifications into class-post-mods.php
