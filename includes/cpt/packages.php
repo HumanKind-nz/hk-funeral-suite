@@ -4,9 +4,10 @@
  *
  * @package    HK_Funeral_Suite
  * @subpackage CPT
- * @version    1.0.6  
+ * @version    1.0.7  
  * @since      1.0.0
  * @changelog  
+ *   1.0.7 - Fix block editor template integration
  *   1.0.6 - Visibility settings
  *   1.0.5 - Change price field to txt
  *   1.0.4 - Added Intro Paragraph field
@@ -96,7 +97,7 @@ if (!defined('WPINC')) {
 				 array('hk-funeral-suite/pricing-package'),
 				 array('core/paragraph')
 			 ),
-			 'template_lock' => 'insert',
+			 'template_lock' => false,                               // Allow adding/removing other blocks
 		 );
 		 
 		 // Allow theme/plugin overrides
@@ -518,7 +519,11 @@ function hk_fs_auto_insert_pricing_package_block($post_id, $post = null, $update
 }
 add_action('wp_insert_post', 'hk_fs_auto_insert_pricing_package_block', 10, 3);
 
-
+/**
+ * Register template for pricing package
+ * 
+ * This sets up the default template for the pricing package post type.
+ */
 function hk_fs_register_pricing_package_template() {
 	$post_type_object = get_post_type_object('hk_fs_package');
 	
@@ -530,7 +535,7 @@ function hk_fs_register_pricing_package_template() {
 			))
 		);
 		
-		// Lock the template so users can't move or delete the block
+		// Allow adding/removing other blocks
 		$post_type_object->template_lock = false;
 	}
 }
