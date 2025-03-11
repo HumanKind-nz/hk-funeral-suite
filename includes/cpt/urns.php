@@ -4,9 +4,10 @@
  *
  * @package    HK_Funeral_Suite
  * @subpackage CPT
- * @version    1.0.4  
+ * @version    1.0.5  
  * @since      1.0.0
  * @changelog
+ *   1.0.5 - Fix block editor template integration
  *   1.0.4 - Visibility public change
  *   1.0.3 - Google sheet / pricing sync
  *   1.0.0 - Initial version
@@ -76,7 +77,7 @@ if (!function_exists('hk_fs_cpt_register_urns')) {
 				array('hk-funeral-suite/urn'),
 				array('core/paragraph')
 			),
-			'template_lock' => 'insert',
+			'template_lock' => false,                          // Allow adding/removing blocks
 		);
 
 		// Allow theme/plugin overrides
@@ -453,7 +454,7 @@ function hk_fs_register_urn_template() {
 			))
 		);
 		
-		// Lock the template so users can't move or delete the block
+		// Allow adding/removing other blocks
 		$post_type_object->template_lock = false;
 	}
 }
