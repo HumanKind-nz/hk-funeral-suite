@@ -4,9 +4,11 @@
  *
  * @package    HK_Funeral_Suite
  * @subpackage CPT
- * @version    1.0.1  
+ * @version    1.0.2  
  * @since      1.0.0
  * @changelog  
+ *   1.0.2 - Fix block editor template integration
+ *   1.0.1 - Minor adjustments
  *   1.0.0 - Initial version
  *   - Added staff post type
  *   - Added location taxonomy
@@ -77,7 +79,7 @@ if (!function_exists('hk_fs_cpt_register_staff')) {
 				array('hk-funeral-suite/team-member'),
 				array('core/paragraph')
 			),
-			'template_lock'      => 'insert',
+			'template_lock'      => false,                         // Allow adding/removing blocks
 		);
 		
 		// Allow theme/plugin overrides
@@ -516,8 +518,8 @@ function hk_fs_register_team_member_template() {
 			))
 		);
 		
-		// Lock the template so users can't move or delete the Team Member block
-		$post_type_object->template_lock = 'insert';
+		// Allow adding/removing other blocks
+		$post_type_object->template_lock = false;
 	}
 }
 add_action('init', 'hk_fs_register_team_member_template', 11); // Run after CPT registration
