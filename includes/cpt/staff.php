@@ -4,9 +4,10 @@
  *
  * @package    HK_Funeral_Suite
  * @subpackage CPT
- * @version    1.0.2  
+ * @version    1.0.3  
  * @since      1.0.0
  * @changelog  
+ *   1.0.3 - Added autosave checks for improved performance
  *   1.0.2 - Fix block editor template integration
  *   1.0.1 - Minor adjustments
  *   1.0.0 - Initial version
@@ -325,153 +326,150 @@ add_action('add_meta_boxes', 'hk_fs_add_staff_meta_boxes');
 /**
  * Meta box callback function
  */
-/**
-  * Meta box callback function
-  */
- function hk_fs_staff_contact_callback($post) {
-	 wp_nonce_field('hk_fs_staff_contact_nonce', 'hk_fs_staff_contact_nonce');
-	 
-	 $fields = array(
-		 'position' => array(
-			 'label' => __('Position:', 'hk-funeral-cpt'),
-			 'type' => 'text'
-		 ),
-		 'qualification' => array(
-			 'label' => __('Qualification:', 'hk-funeral-cpt'),
-			 'type' => 'text'
-		 ),
-		 'phone' => array(
-			 'label' => __('Phone:', 'hk-funeral-cpt'),
-			 'type' => 'text'
-		 ),
-		 'email' => array(
-			 'label' => __('Email:', 'hk-funeral-cpt'),
-			 'type' => 'email'
-		 )
-	 );
- 
-	 foreach ($fields as $field => $config) {
-		 $value = get_post_meta($post->ID, '_hk_fs_staff_' . $field, true);
-		 ?>
-		 <p>
-			 <label for="hk_fs_staff_<?php echo $field; ?>"><?php echo $config['label']; ?></label>
-			 <input type="<?php echo $config['type']; ?>" 
-					id="hk_fs_staff_<?php echo $field; ?>" 
-					name="hk_fs_staff_<?php echo $field; ?>" 
-					value="<?php echo esc_attr($value); ?>" 
-					style="width: 100%;">
-		 </p>
-		 <?php
-	 }
- } 
-		
-		/**
-		 * Save the meta box data
-		 */
-		function hk_fs_save_staff_meta($post_id) {
-			if (!current_user_can('manage_funeral_content')) {
-				return;
-			}
-		
-			if (!isset($_POST['hk_fs_staff_contact_nonce']) || 
-				!wp_verify_nonce($_POST['hk_fs_staff_contact_nonce'], 'hk_fs_staff_contact_nonce')) {
-				return;
-			}
-		
-			if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
-				return;
-			}
-		
-			$fields = array(
-				'position' => 'sanitize_text_field',
-				'qualification' => 'sanitize_text_field',
-				'phone' => 'sanitize_text_field',
-				'email' => 'sanitize_email'
-			);
-		
-			foreach ($fields as $field => $sanitize_callback) {
-				if (isset($_POST['hk_fs_staff_' . $field])) {
-					$value = call_user_func($sanitize_callback, $_POST['hk_fs_staff_' . $field]);
-					update_post_meta($post_id, '_hk_fs_staff_' . $field, $value);
-				}
-			}
-		}
-		add_action('save_post_hk_fs_staff', 'hk_fs_save_staff_meta');
-		
-		/**
-		 * Add custom columns to staff admin list
-		 */
-		function hk_fs_add_staff_columns($columns) {
-			$new_columns = array();
-			
-			foreach($columns as $key => $value) {
-				if ($key === 'title') {
-					$new_columns[$key] = $value;
-					$new_columns['position'] = __('Position', 'hk-funeral-cpt');
-					$new_columns['qualification'] = __('Qualification', 'hk-funeral-cpt');
-				} 
-				elseif ($key === 'taxonomy-hk_fs_location' || $key === 'taxonomy-hk_fs_role') {
-					// Skip for now, we'll add them later
-				}
-				else {
-					$new_columns[$key] = $value;
-				}
-			}
-			
-			// Add the taxonomy columns back at the end
-			$new_columns['taxonomy-hk_fs_location'] = __('Location', 'hk-funeral-cpt');
-			$new_columns['taxonomy-hk_fs_role'] = __('Job Role', 'hk-funeral-cpt');
-			
-			return $new_columns;
-		}
-		add_filter('manage_hk_fs_staff_posts_columns', 'hk_fs_add_staff_columns');
-		
-		/**
-		 * Display staff data in the custom columns
-		 */
-		function hk_fs_display_staff_columns($column, $post_id) {
-			$fields = array('position', 'qualification');
-			
-			if (in_array($column, $fields)) {
-				$value = get_post_meta($post_id, '_hk_fs_staff_' . $column, true);
-				echo !empty($value) ? esc_html($value) : '—';
-			}
-		}
-		add_action('manage_hk_fs_staff_posts_custom_column', 'hk_fs_display_staff_columns', 10, 2);
-		
-		/**
-		 * Make custom columns sortable
-		 */
-		function hk_fs_sortable_staff_columns($columns) {
-			$columns['position'] = 'position';
-			$columns['qualification'] = 'qualification';
-			return $columns;
-		}
-		add_filter('manage_edit-hk_fs_staff_sortable_columns', 'hk_fs_sortable_staff_columns');
-		
-		/**
-		 * Add sorting functionality to custom columns
-		 */
-		function hk_fs_staff_orderby($query) {
-			if (!is_admin() || !$query->is_main_query()) {
-				return;
-			}
-			
-			$orderby = $query->get('orderby');
-			
-			if ($query->get('post_type') === 'hk_fs_staff') {
-				if ($orderby === 'position') {
-					$query->set('meta_key', '_hk_fs_staff_position');
-					$query->set('orderby', 'meta_value');
-				}
-				elseif ($orderby === 'qualification') {
-					$query->set('meta_key', '_hk_fs_staff_qualification');
-					$query->set('orderby', 'meta_value');
-				}
-			}
-		}
-		add_action('pre_get_posts', 'hk_fs_staff_orderby');
+function hk_fs_staff_contact_callback($post) {
+    wp_nonce_field('hk_fs_staff_contact_nonce', 'hk_fs_staff_contact_nonce');
+    
+    $fields = array(
+        'position' => array(
+            'label' => __('Position:', 'hk-funeral-cpt'),
+            'type' => 'text'
+        ),
+        'qualification' => array(
+            'label' => __('Qualification:', 'hk-funeral-cpt'),
+            'type' => 'text'
+        ),
+        'phone' => array(
+            'label' => __('Phone:', 'hk-funeral-cpt'),
+            'type' => 'text'
+        ),
+        'email' => array(
+            'label' => __('Email:', 'hk-funeral-cpt'),
+            'type' => 'email'
+        )
+    );
 
+    foreach ($fields as $field => $config) {
+        $value = get_post_meta($post->ID, '_hk_fs_staff_' . $field, true);
+        ?>
+        <p>
+            <label for="hk_fs_staff_<?php echo $field; ?>"><?php echo $config['label']; ?></label>
+            <input type="<?php echo $config['type']; ?>" 
+                  id="hk_fs_staff_<?php echo $field; ?>" 
+                  name="hk_fs_staff_<?php echo $field; ?>" 
+                  value="<?php echo esc_attr($value); ?>" 
+                  style="width: 100%;">
+        </p>
+        <?php
+    }
+}
+
+/**
+ * Save the meta box data
+ */
+function hk_fs_save_staff_meta($post_id) {
+    if (!current_user_can('manage_funeral_content')) {
+        return;
+    }
+
+    if (!isset($_POST['hk_fs_staff_contact_nonce']) || 
+        !wp_verify_nonce($_POST['hk_fs_staff_contact_nonce'], 'hk_fs_staff_contact_nonce')) {
+        return;
+    }
+
+    // Skip autosaves and revisions
+    if (wp_is_post_autosave($post_id) || wp_is_post_revision($post_id)) {
+        return;
+    }
+
+    $fields = array(
+        'position' => 'sanitize_text_field',
+        'qualification' => 'sanitize_text_field',
+        'phone' => 'sanitize_text_field',
+        'email' => 'sanitize_email'
+    );
+
+    foreach ($fields as $field => $sanitize_callback) {
+        if (isset($_POST['hk_fs_staff_' . $field])) {
+            $value = call_user_func($sanitize_callback, $_POST['hk_fs_staff_' . $field]);
+            update_post_meta($post_id, '_hk_fs_staff_' . $field, $value);
+        }
+    }
+}
+add_action('save_post_hk_fs_staff', 'hk_fs_save_staff_meta');
+
+/**
+ * Add custom columns to staff admin list
+ */
+function hk_fs_add_staff_columns($columns) {
+    $new_columns = array();
+    
+    foreach($columns as $key => $value) {
+        if ($key === 'title') {
+            $new_columns[$key] = $value;
+            $new_columns['position'] = __('Position', 'hk-funeral-cpt');
+            $new_columns['qualification'] = __('Qualification', 'hk-funeral-cpt');
+        } 
+        elseif ($key === 'taxonomy-hk_fs_location' || $key === 'taxonomy-hk_fs_role') {
+            // Skip for now, we'll add them later
+        }
+        else {
+            $new_columns[$key] = $value;
+        }
+    }
+    
+    // Add the taxonomy columns back at the end
+    $new_columns['taxonomy-hk_fs_location'] = __('Location', 'hk-funeral-cpt');
+    $new_columns['taxonomy-hk_fs_role'] = __('Job Role', 'hk-funeral-cpt');
+    
+    return $new_columns;
+}
+add_filter('manage_hk_fs_staff_posts_columns', 'hk_fs_add_staff_columns');
+
+/**
+ * Display staff data in the custom columns
+ */
+function hk_fs_display_staff_columns($column, $post_id) {
+    $fields = array('position', 'qualification');
+    
+    if (in_array($column, $fields)) {
+        $value = get_post_meta($post_id, '_hk_fs_staff_' . $column, true);
+        echo !empty($value) ? esc_html($value) : '—';
+    }
+}
+add_action('manage_hk_fs_staff_posts_custom_column', 'hk_fs_display_staff_columns', 10, 2);
+
+/**
+ * Make custom columns sortable
+ */
+function hk_fs_sortable_staff_columns($columns) {
+    $columns['position'] = 'position';
+    $columns['qualification'] = 'qualification';
+    return $columns;
+}
+add_filter('manage_edit-hk_fs_staff_sortable_columns', 'hk_fs_sortable_staff_columns');
+
+/**
+ * Add sorting functionality to custom columns
+ */
+function hk_fs_staff_orderby($query) {
+    if (!is_admin() || !$query->is_main_query()) {
+        return;
+    }
+    
+    $orderby = $query->get('orderby');
+    
+    if ($query->get('post_type') === 'hk_fs_staff') {
+        if ($orderby === 'position') {
+            $query->set('meta_key', '_hk_fs_staff_position');
+            $query->set('orderby', 'meta_value');
+        }
+        elseif ($orderby === 'qualification') {
+            $query->set('meta_key', '_hk_fs_staff_qualification');
+            $query->set('orderby', 'meta_value');
+        }
+    }
+}
+add_action('pre_get_posts', 'hk_fs_staff_orderby');
 
 /**
  * Auto-insert Team Member Block
@@ -482,44 +480,44 @@ add_action('add_meta_boxes', 'hk_fs_add_staff_meta_boxes');
 /**
  * Auto-insert the Team Member block into new staff posts
  */
- function hk_fs_auto_insert_team_member_block($post_id, $post = null, $update = false) {
-	 // If we only got the ID, get the post object
-	 if (!is_object($post)) {
-		 $post = get_post($post_id);
-	 }
-	 
-	 // Only proceed for our custom post type and new posts
-	 if ($post->post_type !== 'hk_fs_staff' || $post->post_content !== '') {
-		 return;
-	 }
-	 
-	 // Create block content
-	 $block_content = '<!-- wp:hk-funeral-suite/team-member /-->';
-	 
-	 // Update the post with our block
-	 wp_update_post(array(
-		 'ID' => $post->ID,
-		 'post_content' => $block_content,
-	 ));
- }
+function hk_fs_auto_insert_team_member_block($post_id, $post = null, $update = false) {
+    // If we only got the ID, get the post object
+    if (!is_object($post)) {
+        $post = get_post($post_id);
+    }
+    
+    // Only proceed for our custom post type and new posts
+    if ($post->post_type !== 'hk_fs_staff' || $post->post_content !== '') {
+        return;
+    }
+    
+    // Create block content
+    $block_content = '<!-- wp:hk-funeral-suite/team-member /-->';
+    
+    // Update the post with our block
+    wp_update_post(array(
+        'ID' => $post->ID,
+        'post_content' => $block_content,
+    ));
+}
 add_action('wp_insert_post', 'hk_fs_auto_insert_team_member_block', 10, 3);
 
 /**
  * Add a template for the Team Member post type
  */
 function hk_fs_register_team_member_template() {
-	$post_type_object = get_post_type_object('hk_fs_staff');
-	
-	if ($post_type_object) {
-		$post_type_object->template = array(
-			array('hk-funeral-suite/team-member'),
-			array('core/paragraph', array(
-				'placeholder' => __('Add team member biography...', 'hk-funeral-cpt')
-			))
-		);
-		
-		// Allow adding/removing other blocks
-		$post_type_object->template_lock = false;
-	}
+    $post_type_object = get_post_type_object('hk_fs_staff');
+    
+    if ($post_type_object) {
+        $post_type_object->template = array(
+            array('hk-funeral-suite/team-member'),
+            array('core/paragraph', array(
+                'placeholder' => __('Add team member biography...', 'hk-funeral-cpt')
+            ))
+        );
+        
+        // Allow adding/removing other blocks
+        $post_type_object->template_lock = false;
+    }
 }
 add_action('init', 'hk_fs_register_team_member_template', 11); // Run after CPT registration
