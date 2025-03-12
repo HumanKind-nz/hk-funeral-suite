@@ -66,17 +66,13 @@
 				isPriceManaged = window.hkFsPackageData.is_price_managed || false;
 			}
 			
-			// Try to load initial data if available
-			if (window.hkFsPackageData !== undefined && 
-				attributes.price === '' && 
-				attributes.order === '10' &&
-				attributes.intro === '') {
-				// Only set attributes if they're empty (first load)
-				setAttributes({
-					intro: window.hkFsPackageData.intro || '',
-					price: window.hkFsPackageData.price || '',
-					order: window.hkFsPackageData.order || '10'
-				});
+			// Load data if available
+			if (window.hkFsPackageData !== undefined) {
+			    setAttributes({
+			        intro: window.hkFsPackageData.intro || attributes.intro || '',
+			        price: window.hkFsPackageData.price || attributes.price || '',
+			        order: window.hkFsPackageData.order || attributes.order || '10'
+			    });
 			}
 			
 			// Create price field notice for Google Sheets integration
