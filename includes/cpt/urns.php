@@ -4,9 +4,10 @@
  *
  * @package    HK_Funeral_Suite
  * @subpackage CPT
- * @version    1.0.5  
+ * @version    1.0.6  
  * @since      1.0.0
  * @changelog
+ *   1.0.6 - Added autosave checks for improved performance
  *   1.0.5 - Fix block editor template integration
  *   1.0.4 - Visibility public change
  *   1.0.3 - Google sheet / pricing sync
@@ -309,8 +310,9 @@ function hk_fs_save_urn_meta($post_id) {
 		return;
 	}
 
-	if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
-		return;
+	// Skip autosaves and revisions
+	if (wp_is_post_autosave($post_id) || wp_is_post_revision($post_id)) {
+	    return;
 	}
 
 	// Only update price if not managed by Google Sheets
