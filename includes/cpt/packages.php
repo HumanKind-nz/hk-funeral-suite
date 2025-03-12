@@ -4,9 +4,10 @@
  *
  * @package    HK_Funeral_Suite
  * @subpackage CPT
- * @version    1.0.8  
+ * @version    1.0.9  
  * @since      1.0.0
- * @changelog  
+ * @changelog 
+ *   1.0.9 - Remove extra intro meta box when block used 
  *   1.0.8 - Added autosave checks for improved performance
  *   1.0.7 - Fix block editor template integration
  *   1.0.6 - Visibility settings
@@ -172,33 +173,26 @@ add_filter('enter_title_here', 'hk_fs_package_change_title_text');
  * Add custom meta boxes
  */
 function hk_fs_add_package_meta_boxes() {
-	add_meta_box(
-		'hk_fs_package_intro',
-		__('Intro Paragraph', 'hk-funeral-cpt'),
-		'hk_fs_package_intro_callback',
-		'hk_fs_package',
-		'normal',
-		'high'
-	);
-	
-	add_meta_box(
-		'hk_fs_package_pricing',
-		__('Price Information', 'hk-funeral-cpt'),
-		'hk_fs_package_pricing_callback',
-		'hk_fs_package',
-		'side',
-		'high'
-	);
-	
-	add_meta_box(
-		'hk_fs_package_ordering',
-		__('Display Order', 'hk-funeral-cpt'),
-		'hk_fs_package_ordering_callback',
-		'hk_fs_package',
-		'side',
-		'high'
-	);
-}
+	 
+	 // Keep the other meta boxes
+	 add_meta_box(
+		 'hk_fs_package_pricing',
+		 __('Price Information', 'hk-funeral-cpt'),
+		 'hk_fs_package_pricing_callback',
+		 'hk_fs_package',
+		 'side',
+		 'high'
+	 );
+	 
+	 add_meta_box(
+		 'hk_fs_package_ordering',
+		 __('Display Order', 'hk-funeral-cpt'),
+		 'hk_fs_package_ordering_callback',
+		 'hk_fs_package',
+		 'side',
+		 'high'
+	 );
+ }
 add_action('add_meta_boxes', 'hk_fs_add_package_meta_boxes');
 
 /**
