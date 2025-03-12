@@ -220,6 +220,11 @@ hk-funeral-suite/
 ## 🔄 Changelog
 [ Full Changelog Here](CHANGELOG.md)
 
+## [1.1.8] - 2025-03-13
+- **Added** block protection to prevent accidental deletion of required data fields in all custom post types
+- **Fixed** synchronization between block editor and meta fields for intro paragraphs
+- **Removed** redundant intro meta box from editor screen
+
 ### [1.1.7] - 2025-03-12
 - **Performance:** Added autosave and revision checks to prevent unnecessary processing for cpt updates
 
