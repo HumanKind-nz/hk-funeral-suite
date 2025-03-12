@@ -4,9 +4,10 @@
  *
  * @package    HK_Funeral_Suite
  * @subpackage CPT
- * @version    1.0.7  
+ * @version    1.0.8  
  * @since      1.0.0
  * @changelog  
+ *   1.0.8 - Added autosave checks for improved performance
  *   1.0.7 - Fix block editor template integration
  *   1.0.6 - Visibility settings
  *   1.0.5 - Change price field to txt
@@ -279,6 +280,11 @@ function hk_fs_package_ordering_callback($post) {
  * Save the meta box data
  */
 function hk_fs_save_package_meta($post_id) {
+	// Skip autosaves and revisions
+	if (wp_is_post_autosave($post_id) || wp_is_post_revision($post_id)) {
+	    return;
+	}
+	
 	// Check intro nonce
 	if (isset($_POST['hk_fs_package_intro_nonce']) && 
 		wp_verify_nonce($_POST['hk_fs_package_intro_nonce'], 'hk_fs_package_intro_nonce')) {
