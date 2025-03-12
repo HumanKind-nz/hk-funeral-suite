@@ -7,8 +7,6 @@
  * Author: HumanKind, Weave Digital Studio, Gareth Bissland
  * Author URI: https://weave.co.nz
  * License: GPL v2.0 or later
- * Primary Branch: main
- * GitHub Plugin URI: HumanKind-nz/hk-funeral-suite/
  * Text Domain: hk-funeral-cpt
  * Domain Path: /languages
  */
