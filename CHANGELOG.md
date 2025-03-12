@@ -5,6 +5,10 @@ All notable changes to the HumanKind Funeral Suite plugin will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.8] - 2025-03-13
+- **Added** block protection to prevent accidental deletion of required data fields in all custom post types
+- **Fixed** synchronization between block editor and meta fields for intro paragraphs
+- **Removed** redundant intro meta box from editor screen
 
 ## [1.1.7] - 2025-03-12
 - **Performance:** Added autosave and revision checks to prevent unnecessary processing for cpt updates
