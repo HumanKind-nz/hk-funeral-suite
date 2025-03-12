@@ -160,12 +160,38 @@ class HK_Funeral_Block_Editor {
 		
 		$required_block = $post_type_mapping[$post_type];
 		
-		// Register and localize the script
+		// Calculate file paths
+		$script_url = HK_FS_PLUGIN_URL . 'assets/js/block-locking.js';
+		$script_path = HK_FS_PLUGIN_DIR . 'assets/js/block-locking.js';
+		
+		// Add debug notice
+		add_action('admin_notices', function() use ($script_url, $script_path, $required_block) {
+			echo '<div class="notice notice-info is-dismissible">';
+			echo '<p><strong>Debug Info:</strong></p>';
+			echo '<p>Script URL: ' . esc_html($script_url) . '</p>';
+			echo '<p>Script physical path: ' . esc_html($script_path) . '</p>';
+			echo '<p>File exists: ' . (file_exists($script_path) ? 'Yes' : 'No') . '</p>';
+			echo '<p>Required block: ' . esc_html($required_block) . '</p>';
+			echo '<p>Plugin version: ' . esc_html(HK_FS_VERSION) . '</p>';
+			echo '</div>';
+		});
+		
+		// Only proceed if the file exists
+		if (!file_exists($script_path)) {
+			add_action('admin_notices', function() {
+				echo '<div class="notice notice-error is-dismissible">';
+				echo '<p><strong>Error:</strong> Block locking script file not found. Please check the file path.</p>';
+				echo '</div>';
+			});
+			return;
+		}
+		
+		// Register and enqueue the script
 		wp_register_script(
 			'hk-fs-block-locking',
-			HK_FS_PLUGIN_URL . 'assets/js/block-locking.js',
+			$script_url,
 			array('wp-blocks', 'wp-dom-ready', 'wp-edit-post', 'wp-data', 'wp-compose', 'wp-hooks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-notices'),
-			HK_FS_VERSION,
+			HK_FS_VERSION . '.' . filemtime($script_path), // Add file modification time to bust cache
 			true
 		);
 		
@@ -174,6 +200,11 @@ class HK_Funeral_Block_Editor {
 		));
 		
 		wp_enqueue_script('hk-fs-block-locking');
+		
+		// Add one more notice to confirm the script was enqueued
+		add_action('admin_footer', function() {
+			echo '<script>console.log("HK Funeral Suite: Block locking script loaded");</script>';
+		});
 	}
 	
 	/**
