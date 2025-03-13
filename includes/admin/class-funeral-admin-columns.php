@@ -5,7 +5,7 @@
  * @package    HK_Funeral_Suite
  * @subpackage Admin
  * @version    1.0.0
- * @since      1.0.7
+ * @since      1.1.9
  */
 
 // If this file is called directly, abort.
@@ -26,19 +26,23 @@ class HK_Funeral_Admin_Columns {
     private static $cpt_config = array(
         'hk_fs_staff' => array(
             'needs_featured_image' => true,
-            'option_suffix' => 'staff'
+            'option_suffix' => 'staff',
+            'title_label' => 'Name' // Custom title label
         ),
         'hk_fs_casket' => array(
             'needs_featured_image' => true,
-            'option_suffix' => 'caskets'
+            'option_suffix' => 'caskets',
+            'title_label' => 'Name' // Custom title label
         ),
         'hk_fs_urn' => array(
             'needs_featured_image' => true,
-            'option_suffix' => 'urns'
+            'option_suffix' => 'urns',
+            'title_label' => 'Name' // Custom title label
         ),
         'hk_fs_package' => array(
-            'needs_featured_image' => false,
-            'option_suffix' => 'packages'
+            'needs_featured_image' => true,
+            'option_suffix' => 'packages',
+            'title_label' => 'Name' // Custom title label
         )
     );
     
@@ -48,14 +52,27 @@ class HK_Funeral_Admin_Columns {
     public static function init() {
         // Add featured image column to CPTs that need it
         foreach (self::$cpt_config as $cpt_slug => $config) {
+            // Add featured image if needed
             if ($config['needs_featured_image']) {
                 add_filter("manage_{$cpt_slug}_posts_columns", array(__CLASS__, 'add_featured_image_column'), 5); // Priority 5 to run early
                 add_action("manage_{$cpt_slug}_posts_custom_column", array(__CLASS__, 'display_featured_image'), 10, 2);
             }
+            
+            // For the package CPT, we'll handle title renaming separately
+            if (isset($config['title_label']) && $cpt_slug !== 'hk_fs_package') {
+                add_filter("manage_{$cpt_slug}_posts_columns", array(__CLASS__, 'rename_title_column'));
+            }
+            
+            // Add direct SEO Press column removal for each CPT
+            $option_name = 'hk_fs_enable_public_' . $config['option_suffix'];
+            $make_public = get_option($option_name, false);
+            
+            if (!$make_public) {
+                // Use direct filters for each post type - this is key
+                add_filter("manage_{$cpt_slug}_posts_columns", array(__CLASS__, 'remove_seo_columns'), 100);
+                add_filter("manage_edit-{$cpt_slug}_columns", array(__CLASS__, 'remove_seo_columns'), 100);
+            }
         }
-        
-        // Remove SEO columns when CPTs are not public
-        add_filter('manage_posts_columns', array(__CLASS__, 'conditionally_remove_seo_columns'), 100);
         
         // Add admin styles for columns
         add_action('admin_head', array(__CLASS__, 'add_admin_column_styles'));
@@ -82,6 +99,31 @@ class HK_Funeral_Admin_Columns {
     }
     
     /**
+     * Rename the title column to a custom label
+     * 
+     * @param array $columns Current admin columns
+     * @return array Modified columns with renamed title
+     */
+    public static function rename_title_column($columns) {
+        $screen = get_current_screen();
+        if (!$screen) return $columns;
+        
+        $post_type = $screen->post_type;
+        
+        // Check if this is one of our CPTs
+        if (isset(self::$cpt_config[$post_type]) && isset(self::$cpt_config[$post_type]['title_label'])) {
+            $custom_label = self::$cpt_config[$post_type]['title_label'];
+            
+            // Rename the title column
+            if (isset($columns['title'])) {
+                $columns['title'] = __($custom_label, 'hk-funeral-suite');
+            }
+        }
+        
+        return $columns;
+    }
+    
+    /**
      * Display featured image in admin column
      * 
      * @param string $column Column ID
@@ -99,80 +141,44 @@ class HK_Funeral_Admin_Columns {
     }
     
     /**
-     * Conditionally remove SEO columns when CPTs are not public
+     * Remove SEO columns using a direct approach
      * 
      * @param array $columns Current admin columns
-     * @return array Modified columns with SEO columns removed if needed
+     * @return array Modified columns
      */
-    public static function conditionally_remove_seo_columns($columns) {
-        // Get the current screen to determine post type
-        $screen = get_current_screen();
-        if (!$screen) return $columns;
+    public static function remove_seo_columns($columns) {
+        // SEO Press columns
+        unset($columns['seopress_title']);
+        unset($columns['seopress_desc']);
+        unset($columns['seopress_score']);
+        unset($columns['seopress_noindex']);
+        unset($columns['seopress_nofollow']);
+        unset($columns['seopress_insights_score']);
         
-        $post_type = $screen->post_type;
-        
-        // Check if this is one of our CPTs
-        if (isset(self::$cpt_config[$post_type])) {
-            $config = self::$cpt_config[$post_type];
-            
-            // Get the corresponding public setting
-            $option_name = 'hk_fs_enable_public_' . $config['option_suffix'];
-            $make_public = get_option($option_name, false);
-            
-            // If not public, remove SEO columns
-            if (!$make_public) {
-                // Remove SEO columns from various plugins
-                $columns = self::remove_seo_plugin_columns($columns);
+        // More aggressive removal for any SEO Press columns
+        foreach ($columns as $key => $value) {
+            if (strpos($key, 'seopress') === 0) {
+                unset($columns[$key]);
             }
         }
         
-        return $columns;
-    }
-    
-    /**
-     * Remove columns from various SEO plugins
-     * 
-     * @param array $columns Current admin columns
-     * @return array Modified columns with SEO columns removed
-     */
-    private static function remove_seo_plugin_columns($columns) {
-        // Check if SEO Press is active
-        if (function_exists('seopress_init') || defined('SEOPRESS_VERSION')) {
-            // Remove SEO Press columns
-            unset($columns['seopress_title']);
-            unset($columns['seopress_desc']);
-            unset($columns['seopress_score']);
-            unset($columns['seopress_noindex']);
-            unset($columns['seopress_nofollow']);
-            unset($columns['seopress_insights_score']);
-        }
+        // Yoast SEO columns
+        unset($columns['wpseo-title']);
+        unset($columns['wpseo-metadesc']);
+        unset($columns['wpseo-focuskw']);
+        unset($columns['wpseo-score']);
+        unset($columns['wpseo-score-readability']);
         
-        // Check for Yoast SEO
-        if (defined('WPSEO_VERSION')) {
-            unset($columns['wpseo-title']);
-            unset($columns['wpseo-metadesc']);
-            unset($columns['wpseo-focuskw']);
-            unset($columns['wpseo-score']);
-            unset($columns['wpseo-score-readability']);
-            unset($columns['wpseo-links']);
-            unset($columns['wpseo-linked']);
-        }
+        // Rank Math columns
+        unset($columns['rank_math_title']);
+        unset($columns['rank_math_description']);
+        unset($columns['rank_math_seo_details']);
         
-        // Check for Rank Math
-        if (defined('RANK_MATH_VERSION')) {
-            unset($columns['rank_math_title']);
-            unset($columns['rank_math_description']);
-            unset($columns['rank_math_seo_details']);
-            unset($columns['rank_math_schema']);
-        }
-        
-        // Check for All in One SEO
-        if (defined('AIOSEO_VERSION')) {
-            unset($columns['aioseo-title']);
-            unset($columns['aioseo-description']);
-            unset($columns['aioseo-keywords']);
-            unset($columns['aioseo-score']);
-        }
+        // All in One SEO columns
+        unset($columns['aioseo-title']);
+        unset($columns['aioseo-description']);
+        unset($columns['aioseo-keywords']);
+        unset($columns['aioseo-score']);
         
         return $columns;
     }
@@ -195,7 +201,24 @@ class HK_Funeral_Admin_Columns {
                 border: 1px solid #ddd;
             }
         </style>
+        
         <?php
+        // JavaScript approach for package title - this is the only method we'll use
+        $screen = get_current_screen();
+        if ($screen && $screen->post_type === 'hk_fs_package') {
+            ?>
+            <script type="text/javascript">
+            jQuery(document).ready(function($) {
+                // Change the package title column text to 'Name'
+                // Only do this once to avoid multiple replacements
+                var $titleColumn = $('.wp-list-table th.column-title');
+                if ($titleColumn.length > 0 && $titleColumn.text().indexOf('Name Name') === -1) {
+                    $titleColumn.html('<a href="#">Name</a>');
+                }
+            });
+            </script>
+            <?php
+        }
     }
 }
 
