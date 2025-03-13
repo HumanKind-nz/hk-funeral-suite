@@ -4,17 +4,15 @@
  *
  * @package    HK_Funeral_Suite
  * @subpackage CPT
- * @version    1.0.6  
+ * @version    1.0.7  
  * @since      1.0.0
  * @changelog
+ *   1.0.7 - Added featured image column to admin
  *   1.0.6 - Added autosave checks for improved performance
  *   1.0.5 - Fix block editor template integration
  *   1.0.4 - Visibility public change
  *   1.0.3 - Google sheet / pricing sync
  *   1.0.0 - Initial version
- *   - Added urns post type
- *   - Added category taxonomy 
- *   - Added price meta field
  */
 
 // If this file is called directly, abort.
@@ -179,6 +177,18 @@ function hk_fs_urn_admin_style() {
 			padding: 8px;
 			margin-top: 10px;
 			border-radius: 2px;
+		}
+		
+		/* Image column width */
+		.column-featured_image {
+			width: 150px !important;
+			overflow: hidden;
+		}
+		
+		/* Add spacing to admin columns */
+		.column-featured_image img {
+			border-radius: 3px;
+			border: 1px solid #ddd;
 		}
 	</style>
 	<?php
@@ -358,16 +368,19 @@ add_action('admin_notices', 'hk_fs_urn_admin_notices');
  * Add custom columns to urn admin list
  */
 function hk_fs_add_urn_columns($columns) {
-	$new_columns = array();
-	
-	foreach($columns as $key => $value) {
-		$new_columns[$key] = $value;
-		if ($key === 'title') {
-			$new_columns['price'] = __('Price', 'hk-funeral-cpt');
-		}
-	}
-	
-	return $new_columns;
+    $new_columns = array();
+    
+    // Add featured image column at the beginning
+    $new_columns['featured_image'] = __('Image', 'hk-funeral-cpt');
+    
+    foreach($columns as $key => $value) {
+        $new_columns[$key] = $value;
+        if ($key === 'title') {
+            $new_columns['price'] = __('Price', 'hk-funeral-cpt');
+        }
+    }
+    
+    return $new_columns;
 }
 add_filter('manage_hk_fs_urn_posts_columns', 'hk_fs_add_urn_columns');
 
@@ -375,21 +388,28 @@ add_filter('manage_hk_fs_urn_posts_columns', 'hk_fs_add_urn_columns');
  * Display urn data in the custom column
  */
 function hk_fs_display_urn_columns($column, $post_id) {
-	if ($column === 'price') {
-		$price = get_post_meta($post_id, '_hk_fs_urn_price', true);
-		$managed_by_sheets = get_option('hk_fs_urn_price_google_sheets', false);
-		
-		if (!empty($price)) {
-			echo '$' . number_format((float)$price, 2);
-			
-			// Add icon for Google Sheets managed prices
-			if ($managed_by_sheets) {
-				echo ' <span class="dashicons dashicons-cloud" style="color:#0073aa;" title="Managed via Google Sheets"></span>';
-			}
-		} else {
-			echo '—';
-		}
-	}
+    if ($column === 'price') {
+        $price = get_post_meta($post_id, '_hk_fs_urn_price', true);
+        $managed_by_sheets = get_option('hk_fs_urn_price_google_sheets', false);
+        
+        if (!empty($price)) {
+            echo '$' . number_format((float)$price, 2);
+            
+            // Add icon for Google Sheets managed prices
+            if ($managed_by_sheets) {
+                echo ' <span class="dashicons dashicons-cloud" style="color:#0073aa;" title="Managed via Google Sheets"></span>';
+            }
+        } else {
+            echo '—';
+        }
+    } elseif ($column === 'featured_image') {
+        // Display featured image with minimum size of 150px
+        if (has_post_thumbnail($post_id)) {
+            echo '<img src="' . get_the_post_thumbnail_url($post_id, 'thumbnail') . '" style="width:150px; height:auto; max-height:150px; object-fit:cover;">';
+        } else {
+            echo '<div style="width:150px; height:100px; background:#f0f0f0; display:flex; align-items:center; justify-content:center; border:1px solid #ddd; border-radius:3px;"><span class="dashicons dashicons-format-image" style="font-size:30px; color:#bbb;"></span></div>';
+        }
+    }
 }
 add_action('manage_hk_fs_urn_posts_custom_column', 'hk_fs_display_urn_columns', 10, 2);
 
