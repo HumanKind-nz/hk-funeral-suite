@@ -116,6 +116,10 @@ This plugin supports automatic updates directly from GitHub using a custom updat
 - PHP 7.4 or higher
 - A funeral website
 
+> [!IMPORTANT]
+> **Block Editor Requirement:**
+> This plugin relies on the WordPress block editor (Gutenberg) to manage block meta entries for the custom post types (CPTs). If the block editor is disabled (for example, if the Disable Gutenberg plugin is active), the CPTs may not function as intended. Please ensure that Gutenberg is enabled for full plugin functionality.
+
 
 ## 🚀 Usage 
 
