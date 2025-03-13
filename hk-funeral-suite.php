@@ -9,6 +9,9 @@
  * License: GPL v2.0 or later
  * Text Domain: hk-funeral-cpt
  * Domain Path: /languages
+ * Requires at least: 5.6
+ * Requires PHP: 7.4
+ * Tested up to: 6.7
  */
 
 // Prevent direct access
