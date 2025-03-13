@@ -182,6 +182,7 @@ hk-funeral-suite/
 │   │   ├── class-github-updater.php    # GitHub automatic updates
 │   │   ├── class-block-editor.php      # Custom block defaults for CPTs
 │   │   └── class-post-mods.php         # Post modifications/customizations
+│   │   └── class-funeral-admin-columns.php  # Adjust admin columns, remove SEO columns.
 │   ├── blocks/
 │   │   ├── assets/                     # Shared block assets
 │   │   │   └── block-editor-styles.css # Block editor specific styles
@@ -220,10 +221,13 @@ hk-funeral-suite/
 ## 🔄 Changelog
 [ Full Changelog Here](CHANGELOG.md)
 
-## [1.1.8] - 2025-03-13
+## [1.2.0] - 2025-03-13
 - **Added** block protection to prevent accidental deletion of required data fields in all custom post types
 - **Fixed** synchronization between block editor and meta fields for intro paragraphs
 - **Removed** redundant intro meta box from editor screen
+- **Added** SEO column management to hide SEO columns when CPTs are set to non-public
+- Centralised featured image column handling across all custom post types
+- Renamed "Title" column to "Name" in admin lists for better clarity
 
 ### [1.1.7] - 2025-03-12
 - **Performance:** Added autosave and revision checks to prevent unnecessary processing for cpt updates
