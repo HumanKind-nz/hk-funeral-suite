@@ -12,9 +12,6 @@
  *   1.0.4 - Visibility public change
  *   1.0.3 - Google sheet / pricing sync
  *   1.0.0 - Initial version
- *   - Added urns post type
- *   - Added category taxonomy 
- *   - Added price meta field
  */
 
 // If this file is called directly, abort.
