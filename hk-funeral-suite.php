@@ -62,6 +62,17 @@ if ( file_exists( HK_FS_PLUGIN_DIR . 'includes/import/class-default-blocks-impor
     HK_Default_Blocks_Importer::init();
 }
 
+
+// Load admin-specific column functionality
+function hk_fs_load_admin_classes() {
+    // Only load admin classes when in admin area
+    if (is_admin()) {
+        // Load admin columns management
+        require_once HK_FS_PLUGIN_DIR . 'includes/admin/class-funeral-admin-columns.php';
+    }
+}
+add_action('plugins_loaded', 'hk_fs_load_admin_classes');
+
 // Initialize capabilities
 HK_Funeral_Capabilities::init();
 // Create block directories if they don't exist
