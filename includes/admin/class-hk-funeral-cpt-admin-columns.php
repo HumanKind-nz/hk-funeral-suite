@@ -32,17 +32,17 @@ class HK_Funeral_Admin_Columns {
         'hk_fs_casket' => array(
             'needs_featured_image' => true,
             'option_suffix' => 'caskets',
-            'title_label' => 'Name' // Custom title label
+            'title_label' => 'Name' 
         ),
         'hk_fs_urn' => array(
             'needs_featured_image' => true,
             'option_suffix' => 'urns',
-            'title_label' => 'Name' // Custom title label
+            'title_label' => 'Name' 
         ),
         'hk_fs_package' => array(
-            'needs_featured_image' => true,
+            'needs_featured_image' => false,
             'option_suffix' => 'packages',
-            'title_label' => 'Name' // Custom title label
+            'title_label' => 'Name' 
         )
     );
     
