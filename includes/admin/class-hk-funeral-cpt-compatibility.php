@@ -4,7 +4,7 @@
  *
  * @package    HK_Funeral_Suite
  * @subpackage Admin
- * @version    1.0.0
+ * @version    1.0.1
  * @since      1.2.1
  */
 
@@ -108,17 +108,17 @@ class HK_Funeral_Compatibility {
                 <input type="checkbox" name="hk_fs_generatepress_compatibility" value="1" 
                     <?php checked(get_option('hk_fs_generatepress_compatibility', false)); ?>>
                 <a href="https://generatepress.com/" target="_blank">GeneratePress</a>
-                <span class="description"> - Remove layout options and sections meta boxes</span>
+                <span class="description"> - Remove layout and sections meta boxes on each custom post type</span>
             </label><br>
             
             <label>
                 <input type="checkbox" name="hk_fs_wpbf_compatibility" value="1" 
                     <?php checked(get_option('hk_fs_wpbf_compatibility', false)); ?>>
                 <a href="https://wp-pagebuilderframework.com/" target="_blank">Page Builder Framework</a>
-                <span class="description"> - Remove theme settings meta boxes</span>
+                <span class="description"> - Remove the theme settings meta boxes on each custom post type</span>
             </label>
         </fieldset>
-        <p class="description">Enable compatibility for the themes you're using to hide unnecessary meta boxes from your funeral content types.</p>
+        <p class="description">Remove unnecessary meta boxes from these themes to clean up the editor interface for your funeral content types.</p>
         <?php
     }
     
@@ -132,10 +132,10 @@ class HK_Funeral_Compatibility {
                 <input type="checkbox" name="hk_fs_perfmatters_compatibility" value="1" 
                     <?php checked(get_option('hk_fs_perfmatters_compatibility', false)); ?>>
                 <a href="https://perfmatters.io/" target="_blank">Perfmatters</a>
-                <span class="description"> - Hide optimization meta boxes</span>
+                <span class="description"> - Hide optimization meta boxes on each custom post type</span>
             </label>
         </fieldset>
-        <p class="description">Enable compatibility for plugins you're using to hide unnecessary meta boxes from your funeral content types.</p>
+        <p class="description">Remove unnecessary meta boxes from these plugins to clean up the editor interface for your funeral content types.</p>
         <?php
     }
     
