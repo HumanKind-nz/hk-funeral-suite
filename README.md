@@ -171,13 +171,13 @@ When importing:
 2. The plugin should automatically add the required blocks to imported posts
 3. After import, review and update any missing metadata as needed
 
-## Developers - Theme & Plugin Compatibility
+## Developers - UI Optimisation for Popular Themes/Plugins
 
-Automatically hide unnecessary meta boxes from popular themes and plugins when editing funeral content types.
- - Enable/disable each compatibility option individually in the "Developer Options" section of settings page
- - GeneratePress compatibility - removes layout options and sections meta boxes
- - Page Builder Framework compatibility - removes theme settings meta boxes
- - Perfmatters compatibility - hides optimization meta boxes
+Streamline the editing interface by removing unnecessary meta boxes
+ - Support for cleaning up UI elements individually in the "Developer Options" section of settings page
+ - GeneratePress - removes layout options and sections meta boxes
+ - Page Builder Framework - removes theme settings meta boxes
+ - Perfmatters - hides optimization meta boxes
  **Note:** This is an opinionated list of themes and plugins we use at Weave Digital Studio and HumanKind Funeral websites, but can be extended for other tools
 
 ---
