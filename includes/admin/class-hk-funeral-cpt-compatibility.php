@@ -4,8 +4,11 @@
  *
  * @package    HK_Funeral_Suite
  * @subpackage Admin
- * @version    1.0.3
+ * @version    1.0.4
  * @since      1.2.1
+ * @changelog 
+ *   1.0.4 - Added SEOPress metabox removal
+ *   1.0.3 - Added HappyFiles compatibility
  */
 
 // If this file is called directly, abort.
@@ -47,6 +50,9 @@ class HK_Funeral_Compatibility {
         // Enable HappyFiles compatibility by default if installed
         self::maybe_enable_happyfiles_compatibility();
         
+        // Enable SEO Press metabox removal by default if installed
+        self::maybe_enable_seopress_compatibility();
+        
         // Load compatibility filters based on settings
         add_action('admin_init', array(__CLASS__, 'load_compatibility_filters'));
     }
@@ -60,6 +66,19 @@ class HK_Funeral_Compatibility {
             // Only set default if the option doesn't exist yet
             if (get_option('hk_fs_happyfiles_compatibility', null) === null) {
                 update_option('hk_fs_happyfiles_compatibility', true);
+            }
+        }
+    }
+    
+    /**
+     * Enable SEO Press metabox removal by default if installed
+     */
+    private static function maybe_enable_seopress_compatibility() {
+        // Check if SEO Press is active
+        if (function_exists('seopress_init') || class_exists('\\SEOPRESS\\Core\\Kernel')) {
+            // Only set default if the option doesn't exist yet
+            if (get_option('hk_fs_seopress_metabox_compatibility', null) === null) {
+                update_option('hk_fs_seopress_metabox_compatibility', true);
             }
         }
     }
@@ -122,8 +141,14 @@ class HK_Funeral_Compatibility {
             'sanitize_callback' => 'rest_sanitize_boolean',
         ));
         
-        // Register HappyFiles compatibility setting
+        // Register plugin compatibility settings
         register_setting('hk_fs_settings', 'hk_fs_happyfiles_compatibility', array(
+            'type' => 'boolean',
+            'default' => false,
+            'sanitize_callback' => 'rest_sanitize_boolean',
+        ));
+        
+        register_setting('hk_fs_settings', 'hk_fs_seopress_metabox_compatibility', array(
             'type' => 'boolean',
             'default' => false,
             'sanitize_callback' => 'rest_sanitize_boolean',
@@ -189,8 +214,9 @@ class HK_Funeral_Compatibility {
      * Render the plugin compatibility field
      */
     public static function render_plugin_compatibility_field() {
-        // Check if HappyFiles Pro is active
+        // Check if plugins are active
         $happyfiles_active = class_exists('HappyFiles\\Pro');
+        $seopress_active = function_exists('seopress_init') || class_exists('\\SEOPRESS\\Core\\Kernel');
         ?>
         <fieldset>
             <label<?php echo !$happyfiles_active ? ' class="disabled-option"' : ''; ?>>
@@ -203,6 +229,17 @@ class HK_Funeral_Compatibility {
                     <em class="inactive-notice">(Plugin not active)</em>
                 <?php endif; ?>
             </label><br>
+            
+            <label<?php echo !$seopress_active ? ' class="disabled-option"' : ''; ?>>
+                <input type="checkbox" name="hk_fs_seopress_metabox_compatibility" value="1" 
+                    <?php checked(get_option('hk_fs_seopress_metabox_compatibility', false)); ?>
+                    <?php disabled(!$seopress_active); ?>>
+                <a href="https://www.seopress.org/" target="_blank">SEO Press</a>
+                <span class="description"> - Remove SEO and content analysis metaboxes from funeral post types</span>
+                <?php if (!$seopress_active) : ?>
+                    <em class="inactive-notice">(Plugin not active)</em>
+                <?php endif; ?>
+            </label><br><br>
             
             <p class="description">Additional plugin compatibility options will be added in future updates. If you have specific plugins you'd like to see supported, please contact <a href="mailto:support@weave.co.nz">support@weave.co.nz</a>.</p>
         </fieldset>
@@ -226,6 +263,14 @@ class HK_Funeral_Compatibility {
         // HappyFiles Pro compatibility
         if (get_option('hk_fs_happyfiles_compatibility', false) && class_exists('HappyFiles\\Pro')) {
             self::setup_happyfiles_compatibility();
+        }
+        
+        // SEO Press metabox compatibility
+        if (get_option('hk_fs_seopress_metabox_compatibility', false) && 
+            (function_exists('seopress_init') || class_exists('\\SEOPRESS\\Core\\Kernel'))) {
+            // Remove both the SEO metabox and content analysis metabox
+            add_filter('seopress_metaboxe_seo', array(__CLASS__, 'remove_seopress_metabox_for_funeral_cpts'));
+            add_filter('seopress_metaboxe_content_analysis', array(__CLASS__, 'remove_seopress_metabox_for_funeral_cpts'));
         }
     }
     
@@ -254,6 +299,44 @@ class HK_Funeral_Compatibility {
             }
         }
         return $columns;
+    }
+    
+    /**
+     * Remove SEO Press metabox from funeral custom post types
+     * 
+     * @param array $enabled_post_types Post types where SEO Press metabox is enabled
+     * @return array Modified post types list
+     */
+    public static function remove_seopress_metabox_for_funeral_cpts($enabled_post_types) {
+        // If enabled_post_types is not an array, make it one (defensive coding)
+        if (!is_array($enabled_post_types)) {
+            $enabled_post_types = array();
+        }
+        
+        // Get all registered post types
+        $all_post_types = get_post_types(array('public' => true), 'names');
+        
+        // Start with all post types enabled except our funeral ones
+        $filtered_post_types = array();
+        
+        // If SEO Press already set specific post types, use those as a base
+        if (!empty($enabled_post_types)) {
+            $filtered_post_types = $enabled_post_types;
+        } else {
+            // Otherwise, enable for all public post types
+            foreach ($all_post_types as $post_type) {
+                $filtered_post_types[$post_type] = $post_type;
+            }
+        }
+        
+        // Remove our funeral post types
+        foreach (self::$cpt_slugs as $cpt) {
+            if (isset($filtered_post_types[$cpt])) {
+                unset($filtered_post_types[$cpt]);
+            }
+        }
+        
+        return $filtered_post_types;
     }
     
     /**
