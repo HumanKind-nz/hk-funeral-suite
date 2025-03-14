@@ -5,9 +5,9 @@ All notable changes to the HumanKind Funeral Suite plugin will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.2.2] - 2025-03-14
+## [1.2.3] - 2025-03-14
 - **Added** Theme & Plugin UI optimisation settings to remove unnecessary meta boxes from funeral content types
-- **Added** Support for cleaning up UI elements from GeneratePress and Page Builder Framework
+- **Added** Support for cleaning up UI elements from GeneratePress, Page Builder Framework and Happy Files
 - **Renamed** Admin classes for better consistency in the codebase
 
 ## [1.2.0] - 2025-03-13
