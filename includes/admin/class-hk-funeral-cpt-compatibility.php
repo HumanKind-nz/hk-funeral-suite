@@ -4,7 +4,7 @@
  *
  * @package    HK_Funeral_Suite
  * @subpackage Admin
- * @version    1.0.2
+ * @version    1.0.3
  * @since      1.2.1
  */
 
@@ -31,16 +31,39 @@ class HK_Funeral_Compatibility {
     );
     
     /**
+     * HappyFiles column names
+     * 
+     * @var array
+     */
+    private static $happyfiles_column_names = array('hf_featured_image', 'hf_featured_image hide');
+    
+    /**
      * Initialize the class
      */
     public static function init() {
         // Register settings
         add_action('admin_init', array(__CLASS__, 'register_settings'));
         
+        // Enable HappyFiles compatibility by default if installed
+        self::maybe_enable_happyfiles_compatibility();
+        
         // Load compatibility filters based on settings
         add_action('admin_init', array(__CLASS__, 'load_compatibility_filters'));
     }
 
+    /**
+     * Enable HappyFiles compatibility by default if installed
+     */
+    private static function maybe_enable_happyfiles_compatibility() {
+        // Check if HappyFiles Pro is active
+        if (class_exists('HappyFiles\\Pro')) {
+            // Only set default if the option doesn't exist yet
+            if (get_option('hk_fs_happyfiles_compatibility', null) === null) {
+                update_option('hk_fs_happyfiles_compatibility', true);
+            }
+        }
+    }
+    
     /**
      * Check if a specific theme is active (either as main theme or parent)
      *
@@ -99,7 +122,12 @@ class HK_Funeral_Compatibility {
             'sanitize_callback' => 'rest_sanitize_boolean',
         ));
         
-        // Plugin compatibility settings will be added here in future updates
+        // Register HappyFiles compatibility setting
+        register_setting('hk_fs_settings', 'hk_fs_happyfiles_compatibility', array(
+            'type' => 'boolean',
+            'default' => false,
+            'sanitize_callback' => 'rest_sanitize_boolean',
+        ));
     }
     
     /**
@@ -161,9 +189,22 @@ class HK_Funeral_Compatibility {
      * Render the plugin compatibility field
      */
     public static function render_plugin_compatibility_field() {
+        // Check if HappyFiles Pro is active
+        $happyfiles_active = class_exists('HappyFiles\\Pro');
         ?>
         <fieldset>
-            <p class="description">Plugin compatibility options will be added in future updates. If you have specific plugins you'd like to see supported, please contact <a href="mailto:support@weave.co.nz">support@weave.co.nz</a>.</p>
+            <label<?php echo !$happyfiles_active ? ' class="disabled-option"' : ''; ?>>
+                <input type="checkbox" name="hk_fs_happyfiles_compatibility" value="1" 
+                    <?php checked(get_option('hk_fs_happyfiles_compatibility', false)); ?>
+                    <?php disabled(!$happyfiles_active); ?>>
+                <a href="https://happyfiles.io/" target="_blank">HappyFiles Pro</a>
+                <span class="description"> - Remove duplicate featured image column from funeral post types</span>
+                <?php if (!$happyfiles_active) : ?>
+                    <em class="inactive-notice">(Plugin not active)</em>
+                <?php endif; ?>
+            </label><br>
+            
+            <p class="description">Additional plugin compatibility options will be added in future updates. If you have specific plugins you'd like to see supported, please contact <a href="mailto:support@weave.co.nz">support@weave.co.nz</a>.</p>
         </fieldset>
         <?php
     }
@@ -182,7 +223,37 @@ class HK_Funeral_Compatibility {
             add_action('admin_head', array(__CLASS__, 'remove_wpbf_meta_boxes'));
         }
         
-        // Additional plugin compatibilities will be added here in the future
+        // HappyFiles Pro compatibility
+        if (get_option('hk_fs_happyfiles_compatibility', false) && class_exists('HappyFiles\\Pro')) {
+            self::setup_happyfiles_compatibility();
+        }
+    }
+    
+    /**
+     * Setup HappyFiles compatibility
+     */
+    public static function setup_happyfiles_compatibility() {
+        // Apply to all CPTs in the funeral suite
+        foreach (self::$cpt_slugs as $cpt) {
+            // Add with a high priority (1000) to ensure it runs after HappyFiles adds its columns
+            add_filter("manage_{$cpt}_posts_columns", array(__CLASS__, 'remove_happyfiles_featured_image_column'), 1000);
+        }
+    }
+    
+    /**
+     * Remove HappyFiles featured image column from specified post types
+     * 
+     * @param array $columns The admin columns
+     * @return array Modified columns
+     */
+    public static function remove_happyfiles_featured_image_column($columns) {
+        // Remove both possible HappyFiles column names
+        foreach (self::$happyfiles_column_names as $column_name) {
+            if (isset($columns[$column_name])) {
+                unset($columns[$column_name]);
+            }
+        }
+        return $columns;
     }
     
     /**
