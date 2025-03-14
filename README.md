@@ -177,6 +177,7 @@ Streamline the editing interface by removing unnecessary meta boxes
  - Support for cleaning up UI elements individually in the "Developer Options" section of settings page
  - GeneratePress - removes layout options and sections meta boxes
  - Page Builder Framework - removes theme settings meta boxes
+ - Happy Files - Removed Featured image column as not required
  **Note:** This is an opinionated list of themes and plugins we use at Weave Digital Studio and HumanKind Funeral websites, but can be extended for other tools
 
 ---
@@ -234,9 +235,9 @@ hk-funeral-suite/
 ## 🔄 Changelog
 [ Full Changelog Here](CHANGELOG.md)
 
-### [1.2.2] - 2025-03-14
+### [1.2.3] - 2025-03-14
 - **Added** Theme & Plugin UI optimisation settings to remove unnecessary meta boxes from funeral content types
-- **Added** Support for cleaning up UI elements from GeneratePress and Page Builder Framework
+- **Added** Support for cleaning up UI elements from GeneratePress, Page Builder Framework and Happy Files
 - **Renamed** Admin classes for better consistency in the codebase
 
 ### [1.2.0] - 2025-03-13
