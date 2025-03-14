@@ -469,30 +469,36 @@ function hk_fs_package_admin_styles() {
 	
 	$managed_by_sheets = get_option('hk_fs_package_price_google_sheets', false);
 	
-	if ($managed_by_sheets) {
-		?>
-		<style type="text/css">
-			#hk_fs_package_price[disabled] {
-				background-color: #f0f0f1;
-				border-color: #dcdcde;
-				color: #8c8f94;
-				box-shadow: none;
-			}
-			
-			.price-field-container.sheet-managed {
-				position: relative;
-			}
-			
-			.sheet-integration-notice {
-				background-color: rgba(214, 54, 56, 0.05);
-				border-left: 4px solid #d63638;
-				padding: 8px;
-				margin-top: 10px;
-				border-radius: 2px;
-			}
-		</style>
-		<?php
-	}
+	?>
+	<style type="text/css">
+		/* Make intro column wider now that content column is removed */
+		.column-intro {
+			width: 40% !important;
+			min-width: 300px;
+		}
+		
+		<?php if ($managed_by_sheets): ?>
+		#hk_fs_package_price[disabled] {
+			background-color: #f0f0f1;
+			border-color: #dcdcde;
+			color: #8c8f94;
+			box-shadow: none;
+		}
+		
+		.price-field-container.sheet-managed {
+			position: relative;
+		}
+		
+		.sheet-integration-notice {
+			background-color: rgba(214, 54, 56, 0.05);
+			border-left: 4px solid #d63638;
+			padding: 8px;
+			margin-top: 10px;
+			border-radius: 2px;
+		}
+		<?php endif; ?>
+	</style>
+	<?php
 }
 add_action('admin_head', 'hk_fs_package_admin_styles');
 
