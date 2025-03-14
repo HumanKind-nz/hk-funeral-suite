@@ -111,9 +111,9 @@ class HK_Funeral_Compatibility {
      * Render the compatibility section description
      */
     public static function render_compatibility_section() {
-    echo '<p>Simplify your post editing experience by removing unnecessary meta boxes from popular themes and plugins when editing funeral content types:</p>';
-    echo '<p class="description">This is currently an 'opinionated' list of themes and plugins we use ourselves at Weave Digital Studio and HumanKind Funeral Websites. These settings help clean up the editing interface by removing UI elements not needed for funeral content management. Reach out to <a href="mailto:support@weave.co.nz">support@weave.co.nz</a> if you think there are others we should consider adding here.</p>';
-}
+        echo '<p>Simplify your post editing experience by removing unnecessary meta boxes from popular themes and plugins when editing funeral content types:</p>';
+        echo '<p class="description">This is currently an \'opinionated\' list of themes and plugins we use ourselves at Weave Digital Studio and HumanKind Funeral Websites. These settings help clean up the editing interface by removing UI elements not needed for funeral content management. Reach out to <a href="mailto:support@weave.co.nz">support@weave.co.nz</a> if you think there are others we should consider adding here.</p>';
+    }
     
     /**
      * Render the theme compatibility field
