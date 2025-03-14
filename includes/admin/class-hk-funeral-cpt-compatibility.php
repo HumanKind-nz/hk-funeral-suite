@@ -4,7 +4,7 @@
  *
  * @package    HK_Funeral_Suite
  * @subpackage Admin
- * @version    1.0.1
+ * @version    1.0.2
  * @since      1.2.1
  */
 
@@ -80,7 +80,7 @@ class HK_Funeral_Compatibility {
         
         add_settings_field(
             'hk_fs_plugin_compatibility_field',
-            'Plugin Meta Box CLeanup',
+            'Plugin Meta Box Cleanup',
             array(__CLASS__, 'render_plugin_compatibility_field'),
             'hk-funeral-suite-settings',
             'hk_fs_compatibility_section'
@@ -99,12 +99,7 @@ class HK_Funeral_Compatibility {
             'sanitize_callback' => 'rest_sanitize_boolean',
         ));
         
-        // Register plugin compatibility settings
-        register_setting('hk_fs_settings', 'hk_fs_perfmatters_compatibility', array(
-            'type' => 'boolean',
-            'default' => false,
-            'sanitize_callback' => 'rest_sanitize_boolean',
-        ));
+        // Plugin compatibility settings will be added here in future updates
     }
     
     /**
@@ -168,14 +163,8 @@ class HK_Funeral_Compatibility {
     public static function render_plugin_compatibility_field() {
         ?>
         <fieldset>
-            <label>
-                <input type="checkbox" name="hk_fs_perfmatters_compatibility" value="1" 
-                    <?php checked(get_option('hk_fs_perfmatters_compatibility', false)); ?>>
-                <a href="https://perfmatters.io/" target="_blank">Perfmatters</a>
-                <span class="description"> - Hide optimization meta boxes on each custom post type</span>
-            </label>
+            <p class="description">Plugin compatibility options will be added in future updates. If you have specific plugins you'd like to see supported, please contact <a href="mailto:support@weave.co.nz">support@weave.co.nz</a>.</p>
         </fieldset>
-        <p class="description">Remove unnecessary meta boxes from these plugins to clean up the editor interface for your funeral content types.</p>
         <?php
     }
     
@@ -193,10 +182,7 @@ class HK_Funeral_Compatibility {
             add_action('admin_head', array(__CLASS__, 'remove_wpbf_meta_boxes'));
         }
         
-        // Perfmatters compatibility
-        if (get_option('hk_fs_perfmatters_compatibility', false)) {
-            add_filter('perfmatters/metabox', array(__CLASS__, 'disable_perfmatters_metabox'));
-        }
+        // Additional plugin compatibilities will be added here in the future
     }
     
     /**
@@ -231,18 +217,6 @@ class HK_Funeral_Compatibility {
             remove_meta_box('wpbf_header', $cpt, 'side');
             remove_meta_box('wpbf_sidebar', $cpt, 'side');
         }
-    }
-    
-    /**
-     * Disable Perfmatters meta box for funeral CPTs
-     */
-    public static function disable_perfmatters_metabox($display) {
-        // Check if current post type is one of our funeral suite CPTs
-        if (in_array(get_post_type(), self::$cpt_slugs)) {
-            return false;
-        }
-        
-        return $display;
     }
 }
 
