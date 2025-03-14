@@ -379,6 +379,7 @@ class HK_Funeral_Settings {
 					// Output the visibility and integration sections inside the container
 					$this->do_custom_settings_section('hk_fs_visibility_section', 'hk-funeral-suite-settings');
 					$this->do_custom_settings_section('hk_fs_integrations_section', 'hk-funeral-suite-settings');
+					$this->do_custom_settings_section('hk_fs_compatibility_section', 'hk-funeral-suite-settings');
 					?>
 				</div>
 				<?php

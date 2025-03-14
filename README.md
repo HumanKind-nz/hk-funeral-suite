@@ -171,6 +171,15 @@ When importing:
 2. The plugin should automatically add the required blocks to imported posts
 3. After import, review and update any missing metadata as needed
 
+## Developers - UI Optimisation for Popular Themes/Plugins
+
+Streamline the editing interface by removing unnecessary meta boxes
+ - Support for cleaning up UI elements individually in the "Developer Options" section of settings page
+ - GeneratePress - removes layout options and sections meta boxes
+ - Page Builder Framework - removes theme settings meta boxes
+ - Perfmatters - hides optimization meta boxes
+ **Note:** This is an opinionated list of themes and plugins we use at Weave Digital Studio and HumanKind Funeral websites, but can be extended for other tools
+
 ---
 
 ## 📂 Plugin Structure  
@@ -186,7 +195,8 @@ hk-funeral-suite/
 │   │   ├── class-github-updater.php    # GitHub automatic updates
 │   │   ├── class-block-editor.php      # Custom block defaults for CPTs
 │   │   └── class-post-mods.php         # Post modifications/customizations
-│   │   └── class-funeral-admin-columns.php  # Adjust admin columns, remove SEO columns.
+│   │   └── class-hk-funeral-cpt-admin-columns.php  # Adjust admin columns, remove SEO columns.
+│   │   └── class-hk-funeral-cpt-compatibility.php  # Add theme/plugin compatibility optimsations.
 │   ├── blocks/
 │   │   ├── assets/                     # Shared block assets
 │   │   │   └── block-editor-styles.css # Block editor specific styles
@@ -224,6 +234,11 @@ hk-funeral-suite/
 
 ## 🔄 Changelog
 [ Full Changelog Here](CHANGELOG.md)
+
+### [1.2.1] - 2025-03-14
+- **Added** Theme & Plugin compatibility settings to remove unnecessary meta boxes from funeral content type entry pages
+- **Added** Support for GeneratePress, Page Builder Framework, and Perfmatters (themes/plugins used by Weave Digital Studio)
+- **Renamed** Admin classes for better consistency in the codebase
 
 ### [1.2.0] - 2025-03-13
 - **Added** block protection to prevent accidental deletion of required data fields in all custom post types
