@@ -61,10 +61,10 @@ class HK_Funeral_Compatibility {
      * Register compatibility settings
      */
     public static function register_settings() {
-        // Register compatibility section
+        // Register UI optimization section
         add_settings_section(
             'hk_fs_compatibility_section',
-            'Theme & Plugin Compatibility',
+            'Theme & Plugin UI Cleanup',
             array(__CLASS__, 'render_compatibility_section'),
             'hk-funeral-suite-settings'
         );
@@ -72,7 +72,7 @@ class HK_Funeral_Compatibility {
         // Add compatibility fields
         add_settings_field(
             'hk_fs_theme_compatibility_field',
-            'Theme Compatibility',
+            'Theme UI Cleanup',
             array(__CLASS__, 'render_theme_compatibility_field'),
             'hk-funeral-suite-settings',
             'hk_fs_compatibility_section'
@@ -80,7 +80,7 @@ class HK_Funeral_Compatibility {
         
         add_settings_field(
             'hk_fs_plugin_compatibility_field',
-            'Plugin Compatibility',
+            'Plugin UI CLeanup',
             array(__CLASS__, 'render_plugin_compatibility_field'),
             'hk-funeral-suite-settings',
             'hk_fs_compatibility_section'
