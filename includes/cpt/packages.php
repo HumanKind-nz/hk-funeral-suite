@@ -471,7 +471,6 @@ function hk_fs_package_admin_styles() {
 	
 	?>
 	<style type="text/css">
-		/* Make intro column wider now that content column is removed */
 		.column-intro {
 			width: 40% !important;
 			min-width: 300px;
