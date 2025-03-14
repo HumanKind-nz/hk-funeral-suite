@@ -236,8 +236,8 @@ hk-funeral-suite/
 [ Full Changelog Here](CHANGELOG.md)
 
 ### [1.2.1] - 2025-03-14
-- **Added** Theme & Plugin compatibility settings to remove unnecessary meta boxes from funeral content type entry pages
-- **Added** Support for GeneratePress, Page Builder Framework, and Perfmatters (themes/plugins used by Weave Digital Studio)
+- **Added** Theme & Plugin UI optimisation settings to remove unnecessary meta boxes from funeral content types
+- **Added** Support for cleaning up UI elements from GeneratePress, Page Builder Framework, and Perfmatters
 - **Renamed** Admin classes for better consistency in the codebase
 
 ### [1.2.0] - 2025-03-13
