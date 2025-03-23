@@ -4,8 +4,11 @@
  *
  * @package    HK_Funeral_Suite
  * @subpackage CPT
- * @version    1.0.2
+ * @version    1.1.0
  * @since      1.3.0
+ * @changelog
+ *   1.1.0 - Updated to use hook system for dynamic CPT registration
+ *   1.0.2 - Initial factory implementation
  */
 
 // If this file is called directly, abort.
@@ -15,8 +18,15 @@ if (!defined('WPINC')) {
 
 /**
  * Register all product CPTs using the factory
+ * 
+ * This function demonstrates how to use the CPT factory to register product-type
+ * custom post types. The factory system will automatically:
+ * 
+ * 1. Register the CPT with WordPress
+ * 2. Set up all required taxonomies, meta fields, and UI elements
+ * 3. Notify other components in the system about the new CPT
+ * 4. Add the CPT to settings pages, admin columns, etc.
  */
-// In cpt-registration.php
 function hk_fs_register_product_cpts() {
     $settings = HK_Funeral_Settings::get_instance();
     
@@ -41,27 +51,33 @@ function hk_fs_register_product_cpts() {
         ]);
     }
     
-    // Example for a new CPT
-    // if ($settings->is_cpt_enabled('monuments')) {
-    //     HK_Funeral_Product_CPT_Factory::register_product_cpt([
-    //         'post_type' => 'monument', 
-    //         'singular' => __('Monument', 'hk-funeral-cpt'),
-    //         'plural' => __('Monuments', 'hk-funeral-cpt'),
-    //         'slug' => 'monuments'
-    //     ]);
-    // }
+    // Example of a new CPT - uncomment to use
+    /*
+    if ($settings->is_cpt_enabled('monuments')) {
+        HK_Funeral_Product_CPT_Factory::register_product_cpt([
+            'post_type' => 'monument', 
+            'singular' => __('Monument', 'hk-funeral-cpt'),
+            'plural' => __('Monuments', 'hk-funeral-cpt'),
+            'slug' => 'monuments',
+            'svg_icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="%23a7aaad" d="M240 0C266.5 0 288 21.49 288 48V96H224V48C224 21.49 245.5 0 272 0zM192 352V480C192 497.7 177.7 512 160 512C142.3 512 128 497.7 128 480V352H192zM320 480C320 497.7 305.7 512 288 512C270.3 512 256 497.7 256 480V352H320V480zM80 32C106.5 32 128 53.49 128 80V96H32V80C32 53.49 53.49 32 80 32zM32 128H128V224H32V128zM32 256H128V320H32V256zM320 128H416V224H320V128zM320 256H416V320H320V256zM384 32C410.5 32 432 53.49 432 80V96H336V80C336 53.49 357.5 32 384 32zM464 32C490.5 32 512 53.49 512 80V160C512 213 469 256 416 256H448C465.7 256 480 270.3 480 288C480 305.7 465.7 320 448 320H64C46.33 320 32 305.7 32 288C32 270.3 46.33 256 64 256H96C42.98 256 0 213 0 160V80C0 53.49 21.49 32 48 32H464zM224 128V224H160V128H224zM256 128H288V224H256V128z"/></svg>'
+        ]);
+    }
+    
+    if ($settings->is_cpt_enabled('keepsakes')) {
+        HK_Funeral_Product_CPT_Factory::register_product_cpt([
+            'post_type' => 'keepsake', 
+            'singular' => __('Keepsake', 'hk-funeral-cpt'),
+            'plural' => __('Keepsakes', 'hk-funeral-cpt'),
+            'slug' => 'keepsakes'
+        ]);
+    }
+    */
 }
-
-
 
 /**
- * Helper function to register rewrite rule change handlers
+ * Initialize the CPT registrations
  * 
- * @param string $option_name The option name to monitor for changes
+ * This runs after the settings system is initialized, so we can check
+ * which CPTs are enabled.
  */
-function hk_fs_register_rewrite_handlers($option_name) {
-    add_action("update_option_{$option_name}", 'hk_fs_handle_public_option_changes', 10, 2);
-}
-
-// Initialize the CPT registrations
 add_action('init', 'hk_fs_register_product_cpts', 5); // Run early, before blocks
