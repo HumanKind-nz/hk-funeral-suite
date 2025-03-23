@@ -4,7 +4,7 @@
  *
  * @package    HK_Funeral_Suite
  * @subpackage CPT
- * @version    1.0.0
+ * @version    1.0.1
  * @since      1.3.0
  */
 
@@ -41,6 +41,35 @@ function hk_fs_register_product_cpts() {
     }
     
     // Add new CPTs here when needed
+    // For example:
+    /*
+    if ($settings->is_cpt_enabled('monuments')) {
+        HK_Funeral_Product_CPT_Factory::register_product_cpt([
+            'post_type' => 'monument', 
+            'singular' => 'Monument',
+            'plural' => 'Monuments',
+            'slug' => 'monuments'
+        ]);
+    }
+    
+    if ($settings->is_cpt_enabled('keepsakes')) {
+        HK_Funeral_Product_CPT_Factory::register_product_cpt([
+            'post_type' => 'keepsake', 
+            'singular' => 'Keepsake',
+            'plural' => 'Keepsakes',
+            'slug' => 'keepsakes'
+        ]);
+    }
+    */
+}
+
+/**
+ * Helper function to register rewrite rule change handlers
+ * 
+ * @param string $option_name The option name to monitor for changes
+ */
+function hk_fs_register_rewrite_handlers($option_name) {
+    add_action("update_option_{$option_name}", 'hk_fs_handle_public_option_changes', 10, 2);
 }
 
 // Initialize the CPT registrations
