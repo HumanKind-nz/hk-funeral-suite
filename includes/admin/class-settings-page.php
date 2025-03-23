@@ -4,9 +4,10 @@
  *
  * @package    HK_Funeral_Suite
  * @subpackage Admin
- * @version    1.2.0
+ * @version    1.2.1
  * @since      1.0.0
  * @changelog
+ *   1.2.1 - Added monuments cpt
  *   1.2.0 - Added dynamic CPT registration support
  *   1.1.2 - Removed update button
  *   1.1.0 - Added Google Sheets integration settings
@@ -47,7 +48,8 @@ class HK_Funeral_Settings {
 		'staff' => 'hk_fs_staff',
 		'caskets' => 'hk_fs_casket',
 		'urns' => 'hk_fs_urn',
-		'packages' => 'hk_fs_package'
+		'packages' => 'hk_fs_package',
+		'monuments' => 'hk_fs_monument'
 	);
 	
 	/**
@@ -59,7 +61,8 @@ class HK_Funeral_Settings {
 	private $product_types = array(
 		'packages' => 'package',
 		'caskets' => 'casket',
-		'urns' => 'urn'
+		'urns' => 'urn',
+		'monuments' => 'monument'
 	);
 	
 	/**
@@ -334,7 +337,7 @@ class HK_Funeral_Settings {
 	public function render_visibility_field() {
 		// Get all CPTs to display - combine core and registered
 		$all_cpts = array_merge(
-		    array('staff', 'caskets', 'urns', 'packages'), // Core CPTs
+		    array('staff', 'caskets', 'urns', 'packages','monuments'), // Core CPTs
 		    array_keys(self::$registered_cpt_map) // Dynamically registered CPTs
 		);
 		$all_cpts = array_unique($all_cpts); // Remove duplicates in case a core CPT was re-registered
@@ -428,7 +431,7 @@ class HK_Funeral_Settings {
 	public function sanitize_cpt_settings($input) {
 		// Get list of valid CPTs (core + dynamically registered)
 		$valid_cpts = array_merge(
-		    array('staff', 'caskets', 'urns', 'packages'), // Core CPTs
+		    array('staff', 'caskets', 'urns', 'packages','monuments'), // Core CPTs
 		    array_keys(self::$registered_cpt_map) // Dynamically registered CPTs
 		);
 		$valid_cpts = array_unique($valid_cpts);
@@ -458,7 +461,8 @@ class HK_Funeral_Settings {
 			'staff' => 'hk_fs_staff',
 			'caskets' => 'hk_fs_casket',
 			'urns' => 'hk_fs_urn',
-			'packages' => 'hk_fs_package'
+			'packages' => 'hk_fs_package',
+			'monuments' => 'hk_fs_monument'
 		);
 		
 		// Add dynamically registered CPTs
