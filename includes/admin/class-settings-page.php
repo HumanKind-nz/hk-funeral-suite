@@ -4,7 +4,13 @@
  *
  * @package    HK_Funeral_Suite
  * @subpackage Admin
- * v1.1.2 - removed update button
+ * @version    1.2.0
+ * @since      1.0.0
+ * @changelog
+ *   1.2.0 - Added dynamic CPT registration support
+ *   1.1.2 - Removed update button
+ *   1.1.0 - Added Google Sheets integration settings
+ *   1.0.0 - Initial version
  */
 
 // If this file is called directly, abort.
@@ -15,13 +21,19 @@ if (!defined('WPINC')) {
 /**
  * Class HK_Funeral_Settings
  *
- * Handles the admin settings page and CPT configuration options.
+ * Handles the admin settings page and CPT configuration options. Provides a central
+ * registry for all enabled custom post types and their settings. Dynamically responds
+ * to CPT registrations through the factory system.
+ *
+ * @since 1.0.0
  */
 class HK_Funeral_Settings {
 	/**
-	 * Instance of this class.
+	 * Instance of this class (singleton pattern).
 	 *
 	 * @var      object
+	 * @access   private
+	 * @static
 	 */
 	private static $instance = null;
 
@@ -29,6 +41,7 @@ class HK_Funeral_Settings {
 	 * Enabled custom post types.
 	 *
 	 * @var      array
+	 * @access   private
 	 */
 	private $enabled_cpts = array(
 		'staff' => 'hk_fs_staff',
@@ -41,12 +54,22 @@ class HK_Funeral_Settings {
 	 * Product type mappings for Google Sheets integration.
 	 *
 	 * @var array
+	 * @access private
 	 */
 	private $product_types = array(
 		'packages' => 'package',
 		'caskets' => 'casket',
 		'urns' => 'urn'
 	);
+	
+	/**
+	 * Registry of dynamically registered CPT mappings.
+	 * 
+	 * @var array
+	 * @access private
+	 * @static
+	 */
+	private static $registered_cpt_map = array();
 
 	/**
 	 * Return an instance of this class.
@@ -67,6 +90,9 @@ class HK_Funeral_Settings {
 		add_action('admin_menu', array($this, 'add_menu_page'));
 		add_action('admin_init', array($this, 'register_settings'));
 		
+		// Setup hook listener for CPT registration
+		add_action('hk_fs_register_cpt', array($this, 'register_cpt'), 10, 3);
+		
 		// Get enabled CPTs from options with defaults
 		$saved_cpts = get_option('hk_fs_enabled_cpts', array());
 		foreach ($this->enabled_cpts as $key => $slug) {
@@ -74,7 +100,65 @@ class HK_Funeral_Settings {
 				$saved_cpts[$key] = true; // Ensure default enabled
 			}
 		}
+		// Add dynamically registered CPTs that might not be in the default list
+		foreach (self::$registered_cpt_map as $key => $data) {
+		    if (!isset($saved_cpts[$key])) {
+		        $saved_cpts[$key] = true; // Default new CPTs to enabled
+		    }
+		}
 		$this->enabled_cpts = $saved_cpts;
+	}
+	
+	/**
+	 * Register a custom post type with the settings system
+	 *
+	 * This method is called via the 'hk_fs_register_cpt' action hook when a new
+	 * CPT is registered through the factory. It adds the CPT to the settings
+	 * system and sets up necessary option registrations.
+	 *
+	 * @param string $post_type       The post type (without hk_fs_ prefix)
+	 * @param string $option_suffix   The suffix to use for option names
+	 * @param array  $args            Additional arguments about the CPT
+	 */
+	public function register_cpt($post_type, $option_suffix, $args) {
+	    // Store in static registry for future instances
+	    self::$registered_cpt_map[$option_suffix] = array(
+	        'post_type' => $post_type,
+	        'slug' => "hk_fs_{$post_type}",
+	        'singular' => $args['singular'],
+	        'plural' => $args['plural'],
+	        'option_suffix' => $option_suffix
+	    );
+	    
+	    // Add to product types for Google Sheets if it's a product CPT
+	    $this->product_types[$option_suffix] = $post_type;
+	    
+	    // Register settings specific to this CPT
+	    add_action('admin_init', function() use ($option_suffix) {
+	        // Register public/visibility setting
+	        register_setting('hk_fs_settings', "hk_fs_enable_public_{$option_suffix}", array(
+                'type' => 'boolean',
+                'default' => false,
+                'sanitize_callback' => 'rest_sanitize_boolean',
+            ));
+            
+            // Register Google Sheets integration setting
+            register_setting('hk_fs_settings', "hk_fs_{$option_suffix}_price_google_sheets", array(
+                'type' => 'boolean',
+                'default' => false,
+                'sanitize_callback' => 'rest_sanitize_boolean',
+            ));
+            
+            // Set up rewrite rule handler
+            add_action("update_option_hk_fs_enable_public_{$option_suffix}", 'hk_fs_handle_public_option_changes', 10, 2);
+	    });
+	    
+	    // Make sure this CPT is in the enabled_cpts option
+	    $enabled_cpts = get_option('hk_fs_enabled_cpts', array());
+	    if (!isset($enabled_cpts[$option_suffix])) {
+	        $enabled_cpts[$option_suffix] = true; // Default to enabled
+	        update_option('hk_fs_enabled_cpts', $enabled_cpts);
+	    }
 	}
 
 	/**
@@ -95,8 +179,6 @@ class HK_Funeral_Settings {
 	 */
 	public function register_settings() {
 		// Register main sections
-		
-		// Hidden temporarily
 		add_settings_section(
 			'hk_fs_features_section',
 			'', // Empty string instead of 'Settings' to temp hide the heading
@@ -111,7 +193,7 @@ class HK_Funeral_Settings {
 			'hk-funeral-suite-settings'
 		);
 		
-		// New section for integrations
+		// Section for integrations
 		add_settings_section(
 			'hk_fs_integrations_section',
 			'Google Sheets Data Sync',
@@ -131,32 +213,17 @@ class HK_Funeral_Settings {
 			)
 		));
 		
-		// Register CPT visibility settings
-		register_setting('hk_fs_settings', 'hk_fs_enable_public_staff', array(
-			'type' => 'boolean',
-			'default' => false,
-			'sanitize_callback' => 'rest_sanitize_boolean',
-		));
+		// Register CPT visibility settings for core types
+		$core_cpts = array('staff', 'caskets', 'urns', 'packages');
+		foreach ($core_cpts as $cpt) {
+		    register_setting('hk_fs_settings', "hk_fs_enable_public_{$cpt}", array(
+                'type' => 'boolean',
+                'default' => false,
+                'sanitize_callback' => 'rest_sanitize_boolean',
+            ));
+		}
 		
-		register_setting('hk_fs_settings', 'hk_fs_enable_public_caskets', array(
-			'type' => 'boolean',
-			'default' => false,
-			'sanitize_callback' => 'rest_sanitize_boolean',
-		));
-		
-		register_setting('hk_fs_settings', 'hk_fs_enable_public_urns', array(
-			'type' => 'boolean',
-			'default' => false,
-			'sanitize_callback' => 'rest_sanitize_boolean',
-		));
-		
-		register_setting('hk_fs_settings', 'hk_fs_enable_public_packages', array(
-			'type' => 'boolean',
-			'default' => false,
-			'sanitize_callback' => 'rest_sanitize_boolean',
-		));
-		
-		// Register Google Sheets integration settings
+		// Register Google Sheets integration settings for core product types
 		foreach ($this->product_types as $settings_key => $api_key) {
 			register_setting('hk_fs_settings', "hk_fs_{$api_key}_price_google_sheets", array(
 				'type' => 'boolean',
@@ -226,15 +293,31 @@ class HK_Funeral_Settings {
 
 	/**
 	 * Render the features field
+	 * 
+	 * Renders checkboxes for enabling/disabling different CPTs, including any that
+	 * were dynamically registered through the factory.
 	 */
 	public function render_features_field() {
+		// Get all CPTs to display - combine core and registered
+		$all_cpts = array_merge(
+		    array('staff', 'caskets', 'urns', 'packages'), // Core CPTs
+		    array_keys(self::$registered_cpt_map) // Dynamically registered CPTs
+		);
+		$all_cpts = array_unique($all_cpts); // Remove duplicates in case a core CPT was re-registered
+		
 		?>
 		<fieldset>
-			<?php foreach (array('staff', 'caskets', 'urns', 'packages') as $cpt) : ?>
+			<?php foreach ($all_cpts as $cpt) : 
+			    // Get proper display name
+			    $display_name = ucfirst($cpt);
+			    if (isset(self::$registered_cpt_map[$cpt]) && isset(self::$registered_cpt_map[$cpt]['plural'])) {
+			        $display_name = self::$registered_cpt_map[$cpt]['plural'];
+			    }
+			?>
 				<label>
 					<input type="checkbox" name="hk_fs_enabled_cpts[<?php echo esc_attr($cpt); ?>]" value="1" 
 						<?php checked($this->is_cpt_enabled($cpt)); ?>>
-					<?php echo esc_html(ucfirst($cpt)); ?>
+					<?php echo esc_html($display_name); ?>
 				</label><br>
 			<?php endforeach; ?>
 		</fieldset>
@@ -244,24 +327,40 @@ class HK_Funeral_Settings {
 	
 	/**
 	 * Render the visibility field
+	 * 
+	 * Renders controls for the public visibility of each CPT, including
+	 * dynamically registered ones.
 	 */
 	public function render_visibility_field() {
+		// Get all CPTs to display - combine core and registered
+		$all_cpts = array_merge(
+		    array('staff', 'caskets', 'urns', 'packages'), // Core CPTs
+		    array_keys(self::$registered_cpt_map) // Dynamically registered CPTs
+		);
+		$all_cpts = array_unique($all_cpts); // Remove duplicates in case a core CPT was re-registered
+		
 		?>
 		<fieldset>
-			<?php foreach (array('staff', 'caskets', 'urns', 'packages') as $cpt) : 
+			<?php foreach ($all_cpts as $cpt) : 
 				$option_name = 'hk_fs_enable_public_' . $cpt;
 				$is_public = get_option($option_name, false);
 				$is_enabled = $this->is_cpt_enabled($cpt);
 				$disabled = !$is_enabled ? 'disabled="disabled"' : '';
+				
+				// Get proper display name
+			    $display_name = ucfirst($cpt);
+			    if (isset(self::$registered_cpt_map[$cpt]) && isset(self::$registered_cpt_map[$cpt]['plural'])) {
+			        $display_name = self::$registered_cpt_map[$cpt]['plural'];
+			    }
 				?>
 				<label>
 					<input type="checkbox" name="<?php echo esc_attr($option_name); ?>" value="1" 
 						<?php checked($is_public, true); ?> <?php echo $disabled; ?>>
-					<?php echo esc_html(ucfirst($cpt)); ?>
+					<?php echo esc_html($display_name); ?>
 				</label>
 				<?php if (!$is_enabled) : ?>
 					<span class="description" style="color:#999; font-style:italic;">
-						(Disabled - enable the <?php echo esc_html(ucfirst($cpt)); ?> feature first)
+						(Disabled - enable the <?php echo esc_html($display_name); ?> feature first)
 					</span>
 				<?php endif; ?>
 				<br>
@@ -273,26 +372,36 @@ class HK_Funeral_Settings {
 	
 	/**
 	 * Render the Google Sheets integration field
+	 * 
+	 * Renders controls for Google Sheets price integration, including
+	 * options for dynamically registered product CPTs.
 	 */
 	public function render_google_sheets_field() {
+		// Get all product types to display from the product_types property
+		$all_product_types = $this->product_types;
 		?>
 		<fieldset>
-			<?php foreach ($this->product_types as $settings_key => $api_key) :
+			<?php foreach ($all_product_types as $settings_key => $api_key) :
 				$option_name = "hk_fs_{$api_key}_price_google_sheets";
 				$is_managed = get_option($option_name, false);
 				$is_enabled = $this->is_cpt_enabled($settings_key);
 				$disabled = !$is_enabled ? 'disabled="disabled"' : '';
-				$label = ucfirst($settings_key);
+				
+				// Get proper display name
+				$display_name = ucfirst($settings_key);
+				if (isset(self::$registered_cpt_map[$settings_key]) && isset(self::$registered_cpt_map[$settings_key]['plural'])) {
+			        $display_name = self::$registered_cpt_map[$settings_key]['plural'];
+			    }
 				?>
 				<div style="margin-bottom: 10px;">
 					<label>
 						<input type="checkbox" name="<?php echo esc_attr($option_name); ?>" value="1" 
 							<?php checked($is_managed, true); ?> <?php echo $disabled; ?>>
-						<?php echo esc_html($label); ?> pricing is currently managed via Google Sheets
+						<?php echo esc_html($display_name); ?> pricing is currently managed via Google Sheets
 					</label>
 					<?php if (!$is_enabled) : ?>
 						<span class="description" style="color:#999; font-style:italic; margin-left:10px;">
-							(Disabled - enable the <?php echo esc_html($label); ?> feature first)
+							(Disabled - enable the <?php echo esc_html($display_name); ?> feature first)
 						</span>
 					<?php endif; ?>
 				</div>
@@ -312,10 +421,22 @@ class HK_Funeral_Settings {
 
 	/**
 	 * Sanitize CPT settings
+	 *
+	 * @param array $input Raw input from the form
+	 * @return array Sanitized settings
 	 */
 	public function sanitize_cpt_settings($input) {
-		$valid_cpts = array('staff', 'caskets', 'urns', 'packages');
+		// Get list of valid CPTs (core + dynamically registered)
+		$valid_cpts = array_merge(
+		    array('staff', 'caskets', 'urns', 'packages'), // Core CPTs
+		    array_keys(self::$registered_cpt_map) // Dynamically registered CPTs
+		);
+		$valid_cpts = array_unique($valid_cpts);
+		
+		// Start with all CPTs disabled
 		$sanitized = array_fill_keys($valid_cpts, false);
+		
+		// Enable the ones that were checked
 		if (is_array($input)) {
 			foreach ($input as $key => $value) {
 				if (in_array($key, $valid_cpts)) {
@@ -328,6 +449,9 @@ class HK_Funeral_Settings {
 
 	/**
 	 * Get the correct CPT slug
+	 *
+	 * @param string $key The CPT key
+	 * @return string The full CPT slug
 	 */
 	private function get_cpt_slug($key) {
 		$cpt_slugs = array(
@@ -336,6 +460,12 @@ class HK_Funeral_Settings {
 			'urns' => 'hk_fs_urn',
 			'packages' => 'hk_fs_package'
 		);
+		
+		// Add dynamically registered CPTs
+		foreach (self::$registered_cpt_map as $option_suffix => $data) {
+			$cpt_slugs[$option_suffix] = $data['slug'];
+		}
+		
 		return isset($cpt_slugs[$key]) ? $cpt_slugs[$key] : '';
 	}
 
@@ -484,23 +614,18 @@ class HK_Funeral_Settings {
 				}
 				
 				// Also handle Google Sheets integration checkboxes
-				var productMapping = {
-					'packages': 'package',
-					'caskets': 'casket',
-					'urns': 'urn'
-				};
+				var sheetsCheckbox = $('input[name^="hk_fs_"][name$="_price_google_sheets"]').filter(function() {
+				    // Find the checkbox that has this CPT in its name
+				    return this.name.indexOf(cptName) !== -1 || this.name.indexOf(cptName.slice(0, -1)) !== -1;
+				});
 				
-				if (productMapping[cptName]) {
-					var sheetsCheckbox = $('input[name="hk_fs_' + productMapping[cptName] + '_price_google_sheets"]');
-					
-					if ($(this).is(':checked')) {
-						sheetsCheckbox.prop('disabled', false);
-						sheetsCheckbox.closest('label').next('.description').hide();
-					} else {
-						sheetsCheckbox.prop('disabled', true);
-						sheetsCheckbox.prop('checked', false);
-						sheetsCheckbox.closest('div').find('.description').show();
-					}
+				if (sheetsCheckbox.length && $(this).is(':checked')) {
+					sheetsCheckbox.prop('disabled', false);
+					sheetsCheckbox.closest('label').next('.description').hide();
+				} else if (sheetsCheckbox.length) {
+					sheetsCheckbox.prop('disabled', true);
+					sheetsCheckbox.prop('checked', false);
+					sheetsCheckbox.closest('div').find('.description').show();
 				}
 			});
 		});
@@ -511,6 +636,9 @@ class HK_Funeral_Settings {
 	/**
 	 * Custom implementation of do_settings_sections to maintain the same output format
 	 * but give us more control over the HTML structure
+	 * 
+	 * @param string $section_id The ID of the section to render
+	 * @param string $page The page slug
 	 */
 	private function do_custom_settings_section($section_id, $page) {
 		global $wp_settings_sections, $wp_settings_fields;
@@ -540,6 +668,9 @@ class HK_Funeral_Settings {
 	
 	/**
 	 * Check if rewrite rules need flushing after settings change
+	 * 
+	 * @param mixed $old_value The old option value
+	 * @param mixed $value The new option value
 	 */
 	public function maybe_flush_rules($old_value, $value) {
 		if ($old_value !== $value) {
