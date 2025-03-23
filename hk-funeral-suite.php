@@ -217,8 +217,8 @@ function hk_fs_activate_plugin() {
         'staff' => true,
         'caskets' => true,
         'urns' => true,
-        'packages' => false
-        //'monuments' => false, // New CPT, default to disabled
+        'packages' => false,
+        'monuments' => false 
         //'keepsakes' => false  // New CPT, default to disabled
     );
     
