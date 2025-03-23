@@ -218,8 +218,6 @@ hk-funeral-suite/
 │   │   ├── cpt-registration.php            # Dynamic CPT registration system
 │   │   ├── cpt-shared-functions.php        # Shared functions across all CPTs
 │   │   ├── staff.php                       # Staff CPT registration
-│   │   ├── caskets.php                     # Legacy casket implementation
-│   │   ├── urns.php                        # Legacy urn implementation
 │   │   └── packages.php                    # Packages CPT registration
 │   ├── import/
 │   │   └── class-default-blocks-importer.php  # Import integration
