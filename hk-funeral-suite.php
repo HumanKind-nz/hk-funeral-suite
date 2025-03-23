@@ -3,7 +3,7 @@
  * Plugin Name: HumanKind Funeral Suite
  * Plugin URI: https://github.com/HumanKind-nz/hk-funeral-suite/
  * Description: A powerful WordPress plugin to streamline funeral home websites adding custom post types, taxonomies and fields for Staff, Caskets, Urns, and Pricing Packages, along with specialised Gutenberg blocks for easy content management. 
- * Version: 1.3.0-beta.4
+ * Version: 1.3.0-beta.5
  * Author: HumanKind, Weave Digital Studio, Gareth Bissland
  * Author URI: https://weave.co.nz
  * License: GPL v2.0 or later
@@ -20,7 +20,7 @@ if (!defined('WPINC')) {
 }
 
 // Define plugin constants
-define('HK_FS_VERSION', '1.3.0-beta.4'); 
+define('HK_FS_VERSION', '1.3.0-beta.5'); 
 define('HK_FS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('HK_FS_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('HK_FS_BASENAME', plugin_basename(__FILE__));
@@ -135,12 +135,12 @@ function hk_fs_register_blocks() {
         require_once HK_FS_PLUGIN_DIR . 'includes/blocks/urn-block/init.php';
     }
     
-    // For future CPT additions, add similar code here
-    /*
     if ($settings->is_cpt_enabled('monuments')) {
         require_once HK_FS_PLUGIN_DIR . 'includes/blocks/monument-block/init.php';
     }
-    
+        
+    /*
+     // For future CPT additions, add similar code here 
     if ($settings->is_cpt_enabled('keepsakes')) {
         require_once HK_FS_PLUGIN_DIR . 'includes/blocks/keepsake-block/init.php';
     }
@@ -158,9 +158,9 @@ function hk_fs_create_block_directories() {
         HK_FS_PLUGIN_DIR . 'includes/blocks/team-member-block/',
         HK_FS_PLUGIN_DIR . 'includes/blocks/pricing-package-block/',
         HK_FS_PLUGIN_DIR . 'includes/blocks/casket-block/',
-        HK_FS_PLUGIN_DIR . 'includes/blocks/urn-block/'
+        HK_FS_PLUGIN_DIR . 'includes/blocks/urn-block/',
+        HK_FS_PLUGIN_DIR . 'includes/blocks/monument-block/' 
         // Add new block directories here
-        // HK_FS_PLUGIN_DIR . 'includes/blocks/monument-block/',
         // HK_FS_PLUGIN_DIR . 'includes/blocks/keepsake-block/'
     );
     
