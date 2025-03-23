@@ -4,10 +4,10 @@
  *
  * @package    HK_Funeral_Suite
  * @subpackage Admin
- * @version    1.2.2
+ * @version    1.2.3
  * @since      1.0.0
  * @changelog
- *   1.2.2 - Added monuments cpt
+ *   1.2.3 - Added monuments cpt
  *   1.2.0 - Added dynamic CPT registration support
  *   1.1.2 - Removed update button
  *   1.1.0 - Added Google Sheets integration settings
@@ -303,7 +303,7 @@ class HK_Funeral_Settings {
 	public function render_features_field() {
 		// Get all CPTs to display - combine core and registered
 		$all_cpts = array_merge(
-		    array('staff', 'caskets', 'urns', 'packages'), // Core CPTs
+		    array('staff', 'caskets', 'urns', 'packages', 'monuments'), // Core CPTs
 		    array_keys(self::$registered_cpt_map) // Dynamically registered CPTs
 		);
 		$all_cpts = array_unique($all_cpts); // Remove duplicates in case a core CPT was re-registered
