@@ -4,7 +4,7 @@
  *
  * @package    HK_Funeral_Suite
  * @subpackage CPT
- * @version    1.0.3
+ * @version    1.0.4
  * @since      1.3.0
  */
 
@@ -133,55 +133,59 @@ function hk_fs_register_title_placeholder($post_type, $singular) {
   * @param string $singular Singular label for the CPT
   */
  function hk_fs_register_price_metabox($post_type, $singular) {
-     // Hook into the add_meta_boxes action instead of direct call
+     // Hook into the add_meta_boxes action
      add_action('add_meta_boxes', function() use ($post_type, $singular) {
          // Only proceed if user has necessary permissions
          if (!current_user_can('manage_funeral_content')) {
              return;
          }
          
-         // Now add the meta box at the appropriate time
+         // Define the callback function name
+         $callback_name = "hk_fs_{$post_type}_pricing_callback";
+         
+         // Create the callback function if it doesn't exist
+         if (!function_exists($callback_name)) {
+             // Define the callback function
+             $GLOBALS[$callback_name] = function($post) use ($post_type) {
+                 wp_nonce_field("hk_fs_{$post_type}_pricing_nonce", "hk_fs_{$post_type}_pricing_nonce");
+                 $price = get_post_meta($post->ID, "_hk_fs_{$post_type}_price", true);
+                 $managed_by_sheets = get_option("hk_fs_{$post_type}_price_google_sheets", false);
+                 
+                 ?>
+                 <div class="price-field-container <?php echo $managed_by_sheets ? 'sheet-managed' : ''; ?>">
+                     <p>
+                         <label for="hk_fs_<?php echo $post_type; ?>_price"><?php _e('Price ($):', 'hk-funeral-cpt'); ?></label>
+                         <input type="number" id="hk_fs_<?php echo $post_type; ?>_price" name="hk_fs_<?php echo $post_type; ?>_price" 
+                                value="<?php echo esc_attr($price); ?>" step="0.01" min="0" style="width: 100%;"
+                                <?php echo $managed_by_sheets ? 'disabled="disabled"' : ''; ?>>
+                     </p>
+                     
+                     <?php if ($managed_by_sheets): ?>
+                     <div class="sheet-integration-notice">
+                         <p style="color: #d63638; margin-top: 8px; display: flex; align-items: center;">
+                             <span class="dashicons dashicons-cloud" style="margin-right: 5px;"></span>
+                             <strong><?php _e('Managed via Google Sheets', 'hk-funeral-cpt'); ?></strong>
+                         </p>
+                         <p class="description" style="margin-top: 5px;">
+                             <?php _e('Price is managed through Google Sheets integration and cannot be modified here.', 'hk-funeral-cpt'); ?>
+                         </p>
+                     </div>
+                     <?php endif; ?>
+                 </div>
+                 <?php
+             };
+         }
+         
+         // Now add the meta box using the proper callback
          add_meta_box(
              "hk_fs_{$post_type}_pricing",
              __('Pricing Information', 'hk-funeral-cpt'),
-             "hk_fs_{$post_type}_pricing_callback",
+             $GLOBALS[$callback_name],
              "hk_fs_{$post_type}",
              'side',
              'high'
          );
      });
-     
-     // Define callback function if it doesn't exist
-     if (!function_exists("hk_fs_{$post_type}_pricing_callback")) {
-         $GLOBALS["hk_fs_{$post_type}_pricing_callback"] = function($post) use ($post_type) {
-             wp_nonce_field("hk_fs_{$post_type}_pricing_nonce", "hk_fs_{$post_type}_pricing_nonce");
-             $price = get_post_meta($post->ID, "_hk_fs_{$post_type}_price", true);
-             $managed_by_sheets = get_option("hk_fs_{$post_type}_price_google_sheets", false);
-             
-             ?>
-             <div class="price-field-container <?php echo $managed_by_sheets ? 'sheet-managed' : ''; ?>">
-                 <p>
-                     <label for="hk_fs_<?php echo $post_type; ?>_price"><?php _e('Price ($):', 'hk-funeral-cpt'); ?></label>
-                     <input type="number" id="hk_fs_<?php echo $post_type; ?>_price" name="hk_fs_<?php echo $post_type; ?>_price" 
-                            value="<?php echo esc_attr($price); ?>" step="0.01" min="0" style="width: 100%;"
-                            <?php echo $managed_by_sheets ? 'disabled="disabled"' : ''; ?>>
-                 </p>
-                 
-                 <?php if ($managed_by_sheets): ?>
-                 <div class="sheet-integration-notice">
-                     <p style="color: #d63638; margin-top: 8px; display: flex; align-items: center;">
-                         <span class="dashicons dashicons-cloud" style="margin-right: 5px;"></span>
-                         <strong><?php _e('Managed via Google Sheets', 'hk-funeral-cpt'); ?></strong>
-                     </p>
-                     <p class="description" style="margin-top: 5px;">
-                         <?php _e('Price is managed through Google Sheets integration and cannot be modified here.', 'hk-funeral-cpt'); ?>
-                     </p>
-                 </div>
-                 <?php endif; ?>
-             </div>
-             <?php
-         };
-     }
      
      // Register save handler
      add_action("save_post_hk_fs_{$post_type}", function($post_id) use ($post_type) {
@@ -589,33 +593,34 @@ function hk_fs_restrict_admin_menu_access($post_type) {
  * @return array Complete args array for register_post_type()
  */
 function hk_fs_generate_cpt_args($args, $post_type, $make_public) {
-    // Default args if not specified
-    $default_args = array(
-        'public'              => true,
-        'publicly_queryable'  => $make_public,
-        'show_ui'             => true,
-        'show_in_menu'        => true,
-        'menu_position'       => 5,
-        'query_var'           => $make_public,
-        'capability_type'     => 'post',
-        'capabilities'        => hk_fs_get_cpt_capabilities('post'),
-        'has_archive'         => $make_public,
-        'hierarchical'        => false,
-        'supports'            => array('title', 'editor', 'thumbnail', 'revisions'),
-        'show_in_rest'        => true,
-        'exclude_from_search' => !$make_public,
-    );
-    
-    // Merge with provided args, with provided args taking precedence
-    $merged_args = array_merge($default_args, $args);
-    
-    // Always ensure capabilities are set correctly
-    $merged_args['capabilities'] = hk_fs_get_cpt_capabilities(
-        isset($args['capability_type']) ? $args['capability_type'] : 'post'
-    );
-    
-    return $merged_args;
-}
+     // Default args if not specified
+     $default_args = array(
+         'public'              => true,
+         'publicly_queryable'  => $make_public,
+         'show_ui'             => true,
+         'show_in_menu'        => true,
+         'menu_position'       => 5,
+         'query_var'           => $make_public,
+         'capability_type'     => 'post',
+         'capabilities'        => hk_fs_get_cpt_capabilities('post'),
+         'has_archive'         => $make_public,
+         'hierarchical'        => false,
+         'supports'            => array('title', 'editor', 'thumbnail', 'revisions'),
+         'show_in_rest'        => true,
+         'exclude_from_search' => !$make_public,
+         'template_lock'       => false,  // Add this line
+     );
+     
+     // Merge with provided args, with provided args taking precedence
+     $merged_args = array_merge($default_args, $args);
+     
+     // Always ensure capabilities are set correctly
+     $merged_args['capabilities'] = hk_fs_get_cpt_capabilities(
+         isset($args['capability_type']) ? $args['capability_type'] : 'post'
+     );
+     
+     return $merged_args;
+ }
 
 /**
  * Restrict direct admin screen access for a CPT
@@ -649,42 +654,49 @@ function hk_fs_restrict_admin_screen_access($post_type) {
  * @param string $object_name The JavaScript object name to create
  */
 function hk_fs_load_block_data($post_type, $script_id, $object_name) {
-    global $post;
-    
-    // Only check if we're in admin
-    if (!is_admin()) {
-        return;
-    }
-    
-    // Get the current screen to check if we're on the right post type
-    $screen = get_current_screen();
-    $is_new_post = $screen && $screen->action === 'add' && $screen->post_type === "hk_fs_{$post_type}";
-    
-    // Default meta values that will be available for both new and existing posts
-    $meta_values = array(
-        'price' => '',
-        'is_price_managed' => get_option("hk_fs_{$post_type}_price_google_sheets", false),
-        'selectedCategory' => ''
-    );
-    
-    // Only load post meta if we have a valid existing post
-    if (!empty($post) && isset($post->post_type) && $post->post_type === "hk_fs_{$post_type}" && isset($post->ID)) {
-        // Get meta values for existing post
-        $meta_values['price'] = get_post_meta($post->ID, "_hk_fs_{$post_type}_price", true);
-        
-        // Get taxonomy terms
-        $category_terms = wp_get_object_terms($post->ID, "hk_fs_{$post_type}_category");
-        $meta_values['selectedCategory'] = !empty($category_terms) ? $category_terms[0]->term_id : '';
-    }
-    
-    // Always localize the script with at least the default values
-    // This ensures JavaScript will have data even on the "Add New" page
-    if (wp_script_is($script_id, 'registered')) {
-        wp_localize_script($script_id, $object_name, $meta_values);
-    } else {
-        error_log("HK Funeral Suite: {$script_id} script not registered when trying to localize data");
-    }
-}
+     global $post;
+     
+     // Add debug output
+     if (defined('WP_DEBUG') && WP_DEBUG) {
+         error_log("Attempting to load block data for {$post_type} - Script ID: {$script_id}");
+     }
+     
+     // Only check if we're in admin
+     if (!is_admin()) {
+         return;
+     }
+     
+     // Get the current screen to check if we're on the right post type
+     $screen = get_current_screen();
+     $is_new_post = $screen && $screen->action === 'add' && $screen->post_type === "hk_fs_{$post_type}";
+     
+     // Default meta values that will be available for both new and existing posts
+     $meta_values = array(
+         'price' => '',
+         'is_price_managed' => get_option("hk_fs_{$post_type}_price_google_sheets", false),
+         'selectedCategory' => ''
+     );
+     
+     // Only load post meta if we have a valid existing post
+     if (!empty($post) && isset($post->post_type) && $post->post_type === "hk_fs_{$post_type}" && isset($post->ID)) {
+         // Get meta values for existing post
+         $meta_values['price'] = get_post_meta($post->ID, "_hk_fs_{$post_type}_price", true);
+         
+         // Get taxonomy terms
+         $category_terms = wp_get_object_terms($post->ID, "hk_fs_{$post_type}_category");
+         $meta_values['selectedCategory'] = !empty($category_terms) ? $category_terms[0]->term_id : '';
+     }
+     
+     // Check if script is registered
+     if (wp_script_is($script_id, 'registered')) {
+         wp_localize_script($script_id, $object_name, $meta_values);
+         if (defined('WP_DEBUG') && WP_DEBUG) {
+             error_log("Successfully localized script {$script_id} with {$object_name}");
+         }
+     } else {
+         error_log("HK Funeral Suite: {$script_id} script not registered when trying to localize data");
+     }
+ }
 
 /**
  * Register the block data loading function for a CPT
