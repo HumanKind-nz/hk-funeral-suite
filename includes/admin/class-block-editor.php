@@ -4,9 +4,10 @@
  *
  * @package    HK_Funeral_Suite
  * @subpackage Admin
- * @version    1.0.5
+ * @version    1.0.7
  * @Since      1.1.0
  * @changelog
+ *   1.0.7 - Added monument block support
  *   1.0.5 - Added template locking for required blocks
  *   1.0.4 - Previous version
  */
@@ -84,7 +85,8 @@ class HK_Funeral_Block_Editor {
 			'hk_fs_package' => 'hk-funeral-suite/pricing-package',
 			'hk_fs_casket'  => 'hk-funeral-suite/casket',
 			'hk_fs_urn'     => 'hk-funeral-suite/urn',
-			'hk_fs_staff'   => 'hk-funeral-suite/team-member'
+			'hk_fs_staff'   => 'hk-funeral-suite/team-member',
+			'hk_fs_monument' => 'hk-funeral-suite/monument' // Add monuments mapping
 		);
 		
 		// Check if this is one of our custom post types
@@ -121,7 +123,8 @@ class HK_Funeral_Block_Editor {
 			'hk_fs_package' => 'hk-funeral-suite/pricing-package',
 			'hk_fs_casket'  => 'hk-funeral-suite/casket',
 			'hk_fs_urn'     => 'hk-funeral-suite/urn',
-			'hk_fs_staff'   => 'hk-funeral-suite/team-member'
+			'hk_fs_staff'   => 'hk-funeral-suite/team-member',
+			'hk_fs_monument' => 'hk-funeral-suite/monument' // Add monuments mapping
 		);
 		
 		// Only apply settings to our post types
@@ -150,7 +153,8 @@ class HK_Funeral_Block_Editor {
 			'hk_fs_package' => 'hk-funeral-suite/pricing-package',
 			'hk_fs_casket'  => 'hk-funeral-suite/casket',
 			'hk_fs_urn'     => 'hk-funeral-suite/urn',
-			'hk_fs_staff'   => 'hk-funeral-suite/team-member'
+			'hk_fs_staff'   => 'hk-funeral-suite/team-member',
+			'hk_fs_monument' => 'hk-funeral-suite/monument' // Add monuments mapping
 		);
 		
 		// Only apply to our post types

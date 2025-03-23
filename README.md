@@ -2,37 +2,38 @@
 
 #  ⚰️ HumanKind Funeral Suite 🎩💐
 
-A powerful WordPress plugin to streamline funeral home websites adding custom post types, taxonomies and fields for Staff, Caskets, Urns, and Pricing Packages, along with specialised Gutenberg blocks for easy content management. Basic meta fields are included, no need for ACF.
+A powerful WordPress plugin to streamline funeral home websites adding custom post types, taxonomies and fields for Staff, Caskets, Urns, Monuments and Pricing Packages, along with specialised Gutenberg blocks for easy content management. Basic meta fields are included, no need for ACF.
 
 
 ## 📝 Description  
 
 HumanKind Funeral Suite transforms WordPress sites for funeral homes, allowing them to manage essential services with ease. This plugin introduces specialised custom post types for:  
 
-- 👥 **Team Members & Staff** – Manage funeral home staff for the website, their roles, contact and multiple locations  
-- ⚰️ **Caskets** – Showcase available caskets and pricing in an organised catalog  
-- 🏺 **Urns** – Display urn options and pricing for families to choose from  
-- 💰 **Pricing Packages** – Present funeral service packages with clear pricing  
+- **Team Members & Staff** – Manage funeral home staff for the website, their roles, contact and multiple locations  
+- **Caskets** – Showcase available caskets and pricing in an organised catalog  
+- **Urns** – Display urn options and pricing for families to choose from  
+- **Monuments** – Display monument & Headstone options and pricing for families to choose from 
+- **Pricing Packages** – Present funeral service packages with clear pricing  
 
 Each content type comes with tailor-made fields and taxonomies to fit the needs of the funeral industry.  
 
 ## ✨ Features  
 
-**Team Management** – Add and manage staff profiles with location & roles  
-**Product Catalogs** – Create searchable listings for caskets and urns  
-**Pricing Packages** – Display service packages with clear pricing  
-**Feature Flexibility** – Enable or disable specific features as needed  
+- **Team Management** – Add and manage staff profiles with location & roles  
+- **Product Catalogs** – Create searchable listings for caskets, urns and monuments & headstones
+- **Pricing Packages** – Display service packages with clear pricing  
+- **Feature Flexibility** – Enable or disable specific features as needed  
 
 ---
   
 - **Gutenberg Blocks for Post Entry**:
   - Team Member block with metadata fields for qualifications, position, contact info, and taxonomies
-  - Casket & Urn blocks with price and category fields
+  - Casket, Urn & Monument blocks with price and category fields
   - Pricing Package block with price and order fields
   
 - **Admin Features**:
   - Customisable settings page to enable/disable individual CPTs
-  - Custom capabilities for role-based access control
+  - User roles and custom capabilities for role-based access control
   - Automatic updates from GitHub repository
   
 - **Developer Features**:
@@ -84,15 +85,10 @@ More info see [Shortcode Usage Examples](shortcode-usage.md)
 ---
 ## 📥 Plugin Installation  
 
-### 📌 From WordPress.org (Coming Soon)  
-1️⃣ Navigate to **Plugins > Add New** in your WordPress admin panel.  
-2️⃣ Search for **"HumanKind Funeral Suite"**.  
-3️⃣ Click **Install Now**, then **Activate**.  
-
 ### 📌 Manual Installation  
-1️⃣ Download the latest `.zip` file from the [Releases Page](https://github.com/HumanKind-nz/hk-funeral-suite/releases).  
-2️⃣ Go to **Plugins > Add New > Upload Plugin**.  
-3️⃣ Upload the zip file, install, and activate!  
+1. Download the latest `.zip` file from the [Releases Page](https://github.com/HumanKind-nz/hk-funeral-suite/releases).  
+2. Go to **Plugins > Add New > Upload Plugin**.  
+3.  Upload the zip file, install, and activate!  
 
 ### 📌 From GitHub (For Developers)  
 ```sh
@@ -104,9 +100,9 @@ composer install  # (if Composer is used)
 
 ### 🔄 Auto-Updater via GitHub  
 This plugin supports automatic updates directly from GitHub using a custom updater. To ensure updates work:  
-1️⃣ Keep the plugin installed in `wp-content/plugins/hk-funeral-suite`.  
-2️⃣ When a new release is available, the WordPress updater will notify you.  
-3️⃣ Click **Update Now** in the Plugins page to install the latest version.
+1. Keep the plugin installed in `wp-content/plugins/hk-funeral-suite`.  
+2. When a new release is available, the WordPress updater will notify you.  
+3. Click **Update Now** in the Plugins page to install the latest version.
 
 ---
 
@@ -124,9 +120,9 @@ This plugin supports automatic updates directly from GitHub using a custom updat
 ## 🚀 Usage 
 
 ### 🎯 Getting Started  
-1️⃣ After activation, visit the **"HK Funeral Suite Settings"** menu in WordPress Admin.  
-2️⃣ Use the **Settings** page to enable or disable specific features.  
-3️⃣ Start adding your content under the newly created post types.  
+1. After activation, visit the **"HK Funeral Suite Settings"** menu in WordPress Admin.  
+2. Use the **Settings** page to enable or disable specific features.  
+3. Start adding your content under the newly created post types.  
 
 ### Adding Staff Members
 
@@ -138,9 +134,9 @@ This plugin supports automatic updates directly from GitHub using a custom updat
 6. Assign staff to locations and roles using the provided taxonomies
 7. Publish when ready
 
-### Managing Caskets or Urns
+### Managing Caskets, Urns or Monuments
 
-1. Navigate to "Caskets" or "Urns" in the admin menu
+1. Navigate to "Caskets" or "Urns" or "Monuments" in the admin menu
 2. Click "Add New"
 3. Enter the product name as the title
 4. Add a featured image
@@ -213,12 +209,18 @@ hk-funeral-suite/
 │   │   ├── pricing-package-block/
 │   │   │   ├── init.php                # Pricing package block registration
 │   │   │   └── index.js                # Pricing package block script
+|   |   ├── monument-block/
+│   │   │   ├── init.php                # Monument block registration
+│   │   │   └── index.js                # Monument block script
 │   │   └── block-styles.php            # Shared block styling
 │   ├── cpt/
-│   │   ├── staff.php                   # Staff CPT registration
-│   │   ├── caskets.php                 # Caskets CPT registration
-│   │   ├── urns.php                    # Urns CPT registration
-│   │   └── packages.php                # Packages CPT registration
+│   │   ├── class-product-cpt-factory.php   # Factory for product-type CPTs
+│   │   ├── cpt-registration.php            # Dynamic CPT registration system
+│   │   ├── cpt-shared-functions.php        # Shared functions across all CPTs
+│   │   ├── staff.php                       # Staff CPT registration
+│   │   ├── caskets.php                     # Legacy casket implementation
+│   │   ├── urns.php                        # Legacy urn implementation
+│   │   └── packages.php                    # Packages CPT registration
 │   ├── import/
 │   │   └── class-default-blocks-importer.php  # Import integration
 │   └── class-shortcodes.php            # Shortcode registration and handling
@@ -235,6 +237,12 @@ hk-funeral-suite/
 
 ## 🔄 Changelog
 [ Full Changelog Here](CHANGELOG.md)
+
+### [1.3.0] - 2025-03-23
+- **Added** Monuments custom post type for showcasing monuments and headstones
+- **Added** Moved to shared CPT registration code for simplicity and easier extra CPTs
+- **Added** Custom user roles for Funeral Staff and Funeral Manager for permissions and management
+- **Improved** Centralised product registration with hooks for plugin extensibility
 
 ### [1.2.4] - 2025-03-15
 - **Added** Support for hiding SEOPress metaboxes on CPTs and UI cleanup

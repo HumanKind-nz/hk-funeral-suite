@@ -4,9 +4,10 @@
  *
  * @package    HK_Funeral_Suite
  * @subpackage CPT
- * @version    1.0.10  
+ * @version    1.0.11  
  * @since      1.0.0
  * @changelog 
+ *   1.0.11 - updated capability_type from page to post
  *   1.0.10 - Remove content admin column. Not needed.
  *   1.0.9 - Remove extra intro meta box when block used 
  *   1.0.8 - Added autosave checks for improved performance
@@ -80,7 +81,7 @@ if (!defined('WPINC')) {
 			 'menu_position'       => 6,
 			 'query_var'           => $make_public,                  // Allow query vars only if public
 			 'rewrite'             => $make_public ? array('slug' => 'funeral-packages') : false, // Rewrite only if public
-			 'capability_type'     => 'page',
+			 'capability_type'     => 'post',
 			 'capabilities'        => array(
 				 'edit_post'          => 'manage_funeral_content',
 				 'edit_posts'         => 'manage_funeral_content',
