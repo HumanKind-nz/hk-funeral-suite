@@ -595,7 +595,7 @@ function hk_fs_generate_cpt_args($args, $post_type, $make_public) {
         'publicly_queryable'  => $make_public,
         'show_ui'             => true,
         'show_in_menu'        => true,
-        'menu_position'       => 6,
+        'menu_position'       => 5,
         'query_var'           => $make_public,
         'capability_type'     => 'post',
         'capabilities'        => hk_fs_get_cpt_capabilities('post'),
