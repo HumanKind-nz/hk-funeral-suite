@@ -4,7 +4,7 @@
  *
  * @package    HK_Funeral_Suite
  * @subpackage CPT
- * @version    1.0.1
+ * @version    1.0.3
  * @since      1.3.0
  */
 
@@ -635,5 +635,67 @@ function hk_fs_restrict_admin_screen_access($post_type) {
             wp_redirect(admin_url());
             exit;
         }
+    });
+}
+
+/**
+ * Utility function for block data loading
+ * 
+ * This function centralizes the block data loading logic for all product-type CPTs.
+ * It ensures that JavaScript has the necessary data available on both edit and add new pages.
+ *
+ * @param string $post_type  The CPT slug without the 'hk_fs_' prefix
+ * @param string $script_id  The registered script ID to localize
+ * @param string $object_name The JavaScript object name to create
+ */
+function hk_fs_load_block_data($post_type, $script_id, $object_name) {
+    global $post;
+    
+    // Only check if we're in admin
+    if (!is_admin()) {
+        return;
+    }
+    
+    // Get the current screen to check if we're on the right post type
+    $screen = get_current_screen();
+    $is_new_post = $screen && $screen->action === 'add' && $screen->post_type === "hk_fs_{$post_type}";
+    
+    // Default meta values that will be available for both new and existing posts
+    $meta_values = array(
+        'price' => '',
+        'is_price_managed' => get_option("hk_fs_{$post_type}_price_google_sheets", false),
+        'selectedCategory' => ''
+    );
+    
+    // Only load post meta if we have a valid existing post
+    if (!empty($post) && isset($post->post_type) && $post->post_type === "hk_fs_{$post_type}" && isset($post->ID)) {
+        // Get meta values for existing post
+        $meta_values['price'] = get_post_meta($post->ID, "_hk_fs_{$post_type}_price", true);
+        
+        // Get taxonomy terms
+        $category_terms = wp_get_object_terms($post->ID, "hk_fs_{$post_type}_category");
+        $meta_values['selectedCategory'] = !empty($category_terms) ? $category_terms[0]->term_id : '';
+    }
+    
+    // Always localize the script with at least the default values
+    // This ensures JavaScript will have data even on the "Add New" page
+    if (wp_script_is($script_id, 'registered')) {
+        wp_localize_script($script_id, $object_name, $meta_values);
+    } else {
+        error_log("HK Funeral Suite: {$script_id} script not registered when trying to localize data");
+    }
+}
+
+/**
+ * Register the block data loading function for a CPT
+ *
+ * @param string $post_type The CPT slug without the 'hk_fs_' prefix
+ */
+function hk_fs_register_block_data_loader($post_type) {
+    $script_id = "hk-fs-{$post_type}-block";
+    $object_name = "hkFs" . ucfirst($post_type) . "Data";
+    
+    add_action('admin_enqueue_scripts', function() use ($post_type, $script_id, $object_name) {
+        hk_fs_load_block_data($post_type, $script_id, $object_name);
     });
 }
