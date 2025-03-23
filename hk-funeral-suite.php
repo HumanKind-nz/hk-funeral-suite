@@ -3,7 +3,7 @@
  * Plugin Name: HumanKind Funeral Suite
  * Plugin URI: https://github.com/HumanKind-nz/hk-funeral-suite/
  * Description: A powerful WordPress plugin to streamline funeral home websites adding custom post types, taxonomies and fields for Staff, Caskets, Urns, and Pricing Packages, along with specialised Gutenberg blocks for easy content management. 
- * Version: 1.3.0-beta.5
+ * Version: 1.3.0-beta.9
  * Author: HumanKind, Weave Digital Studio, Gareth Bissland
  * Author URI: https://weave.co.nz
  * License: GPL v2.0 or later
@@ -20,7 +20,7 @@ if (!defined('WPINC')) {
 }
 
 // Define plugin constants
-define('HK_FS_VERSION', '1.3.0-beta.5'); 
+define('HK_FS_VERSION', '1.3.0-beta.9'); 
 define('HK_FS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('HK_FS_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('HK_FS_BASENAME', plugin_basename(__FILE__));
@@ -65,9 +65,6 @@ if ( file_exists( HK_FS_PLUGIN_DIR . 'includes/import/class-default-blocks-impor
     HK_Default_Blocks_Importer::init();
 }
 
-// Load shared CPT functions
-require_once HK_FS_PLUGIN_DIR . 'includes/cpt/cpt-shared-functions.php';
-require_once HK_FS_PLUGIN_DIR . 'includes/cpt/class-product-cpt-factory.php';
 
 // Load admin-specific column functionality
 function hk_fs_load_admin_classes() {
@@ -90,8 +87,13 @@ hk_fs_create_block_directories();
 // Initialize settings
 $settings = HK_Funeral_Settings::get_instance();
 
-// Load the CPT registration file
+// Then load shared CPT functions and factory
+require_once HK_FS_PLUGIN_DIR . 'includes/cpt/cpt-shared-functions.php';
+require_once HK_FS_PLUGIN_DIR . 'includes/cpt/class-product-cpt-factory.php';
+
+// Load CPT registration immediately after
 require_once HK_FS_PLUGIN_DIR . 'includes/cpt/cpt-registration.php';
+
 
 // Load non-product CPTs
 function hk_fs_load_enabled_cpts() {
