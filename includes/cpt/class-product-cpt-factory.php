@@ -4,7 +4,7 @@
  *
  * @package    HK_Funeral_Suite
  * @subpackage CPT
- * @version    1.0.1
+ * @version    1.1.0
  * @since      1.3.0
  */
 
@@ -13,13 +13,54 @@ if (!defined('WPINC')) {
     die;
 }
 
+/**
+ * Class HK_Funeral_Product_CPT_Factory
+ * 
+ * A factory class for registering product-type custom post types with consistent
+ * features, fields, and behavior. Uses a centralized registration system that
+ * notifies other components in the plugin about new CPT registrations.
+ *
+ * @since 1.3.0
+ */
 class HK_Funeral_Product_CPT_Factory {
+    
+    /**
+     * Registry of all registered product CPTs
+     * 
+     * @var array
+     * @access private
+     * @static
+     */
+    private static $registered_cpts = array();
+    
     /**
      * Register a new product-type CPT
      *
-     * @param array $args Configuration array for the CPT
+     * Creates a new custom post type with all standard funeral product features.
+     * Broadcasts registration via action hooks so other components can respond.
+     *
+     * @param array $args {
+     *     Configuration array for the CPT.
+     *     
+     *     @type string $post_type Required. The post type name without the 'hk_fs_' prefix.
+     *     @type string $singular  Required. Singular label for the post type.
+     *     @type string $plural    Required. Plural label for the post type.
+     *     @type string $menu_name Optional. Custom menu name. Defaults to "HK {Plural}".
+     *     @type string $slug      Optional. URL slug for the post type. Defaults to lowercase plural.
+     *     @type string $icon      Optional. Dashicon name or full URL to icon.
+     *     @type string $svg_icon  Optional. SVG markup for custom menu icon.
+     * }
+     * 
+     * @return bool True on successful registration, false on failure.
      */
     public static function register_product_cpt($args) {
+        // Check for required fields
+        if (!isset($args['post_type']) || !isset($args['singular']) || !isset($args['plural'])) {
+            // Log error - missing required fields
+            error_log('HK Funeral Suite: Failed to register CPT - missing required fields');
+            return false;
+        }
+        
         // Extract required arguments
         $post_type = $args['post_type'];
         $singular = $args['singular'];
@@ -31,6 +72,17 @@ class HK_Funeral_Product_CPT_Factory {
         
         // Set up option names
         $public_option = 'hk_fs_enable_public_' . strtolower($plural);
+        
+        // Store in registry for later reference
+        self::$registered_cpts[$post_type] = array(
+            'post_type' => $post_type,
+            'singular' => $singular,
+            'plural' => $plural,
+            'option_suffix' => strtolower($plural)
+        );
+        
+        // Fire pre-registration hook - allows early modification of args
+        do_action('hk_fs_before_register_cpt', $post_type, $args);
         
         // Register post type
         add_action('init', function() use ($post_type, $singular, $plural, $menu_name, $slug, $icon, $public_option) {
@@ -75,6 +127,9 @@ class HK_Funeral_Product_CPT_Factory {
             $cpt_args = apply_filters("hk_fs_{$post_type}_post_type_args", $cpt_args);
             
             register_post_type("hk_fs_{$post_type}", $cpt_args);
+            
+            // Fire post-registration hook for this specific CPT
+            do_action("hk_fs_registered_{$post_type}_cpt", $post_type);
         }, 0);
         
         // Register category taxonomy
@@ -89,10 +144,32 @@ class HK_Funeral_Product_CPT_Factory {
         
         // Register all standard features for this product CPT
         self::register_standard_features($post_type, $singular, $plural, $public_option);
+        
+        // Fire action to notify other system components about this CPT registration
+        // This is the main integration point for other classes to hook into
+        do_action('hk_fs_register_cpt', $post_type, strtolower($plural), array(
+            'singular' => $singular,
+            'plural' => $plural,
+            'option_suffix' => strtolower($plural)
+        ));
+        
+        return true;
+    }
+    
+    /**
+     * Get all registered product CPTs
+     *
+     * @return array Associative array of registered CPTs
+     */
+    public static function get_registered_cpts() {
+        return self::$registered_cpts;
     }
     
     /**
      * Register all standard features for a product CPT
+     *
+     * Sets up all the standard features, meta fields, and admin UI elements
+     * that are common to all product-type CPTs.
      *
      * @param string $post_type The post type slug
      * @param string $singular Singular label
@@ -118,6 +195,8 @@ class HK_Funeral_Product_CPT_Factory {
     
     /**
      * Register SVG icon for a CPT
+     * 
+     * Sets up a custom SVG icon in the admin menu for a CPT using CSS.
      * 
      * @param string $post_type The post type slug
      * @param string $svg_icon SVG icon markup
