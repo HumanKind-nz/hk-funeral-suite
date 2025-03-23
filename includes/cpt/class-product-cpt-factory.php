@@ -4,7 +4,7 @@
  *
  * @package    HK_Funeral_Suite
  * @subpackage CPT
- * @version    1.1.1
+ * @version    1.1.3
  * @since      1.3.0
  */
 
@@ -34,6 +34,26 @@ class HK_Funeral_Product_CPT_Factory {
     private static $registered_cpts = array();
     
     /**
+     * Track registered CPTs within a single request
+     *
+     * @var array
+     * @access private
+     * @static
+     */
+    private static $request_registered = array();
+    
+    /**
+     * Log debug messages if debug mode is enabled
+     *
+     * @param string $message The message to log
+     */
+    private static function debug_log($message) {
+        if (defined('HK_FS_DEBUG') && HK_FS_DEBUG) {
+            error_log('HK Funeral Suite: ' . $message);
+        }
+    }
+    
+    /**
      * Register a new product-type CPT
      *
      * Creates a new custom post type with all standard funeral product features.
@@ -53,11 +73,18 @@ class HK_Funeral_Product_CPT_Factory {
      * 
      * @return bool True on successful registration, false on failure.
      */
-    public static function register_product_cpt($args) {
+    public static function register_product_cpt($args) {    
+        // Check if this CPT is already registered in this request
+        if (isset(self::$request_registered[$args['post_type']])) {
+            return true; // Already registered in this request
+        }
+        
+        // Track this registration in the request cache
+        self::$request_registered[$args['post_type']] = true;
+        
         // Check for required fields
         if (!isset($args['post_type']) || !isset($args['singular']) || !isset($args['plural'])) {
-            // Log error - missing required fields
-            error_log('HK Funeral Suite: Failed to register CPT - missing required fields');
+            self::debug_log('Failed to register CPT - missing required fields');
             return false;
         }
         
@@ -81,10 +108,17 @@ class HK_Funeral_Product_CPT_Factory {
             'option_suffix' => strtolower($plural)
         );
         
+        // Check if we've already registered this CPT in a previous request
+        $registered_cpts = get_transient('hk_fs_registered_cpts');
+        if (is_array($registered_cpts) && isset($registered_cpts[$post_type])) {
+            // Already registered in a previous request
+            return true;
+        }
+        
         // Fire pre-registration hook - allows early modification of args
         do_action('hk_fs_before_register_cpt', $post_type, $args);
         
-        // Register post type - IMPORTANT: Change priority to 10 (default) instead of 0
+        // Register post type - with default priority
         add_action('init', function() use ($post_type, $singular, $plural, $menu_name, $slug, $icon, $public_option) {
             $labels = array(
                 'name'                  => $plural, // Already translated in the call
@@ -126,19 +160,26 @@ class HK_Funeral_Product_CPT_Factory {
             
             $cpt_args = apply_filters("hk_fs_{$post_type}_post_type_args", $cpt_args);
             
-            // Debug output - helpful for troubleshooting
-            error_log("Registering CPT: hk_fs_{$post_type}");
+            self::debug_log("Registering CPT: hk_fs_{$post_type}");
             
             register_post_type("hk_fs_{$post_type}", $cpt_args);
             
+            // Track registrations in transient for future requests
+            $registered_cpts = get_transient('hk_fs_registered_cpts') ?: array();
+            $registered_cpts[$post_type] = array(
+                'version' => HK_FS_VERSION,
+                'time' => time()
+            );
+            set_transient('hk_fs_registered_cpts', $registered_cpts, DAY_IN_SECONDS);
+            
             // Fire post-registration hook for this specific CPT
             do_action("hk_fs_registered_{$post_type}_cpt", $post_type);
-        }, 10); // Changed from 0 to 10 (default priority)
+        }, 10);
         
-        // Register category taxonomy - also at default priority 
+        // Register category taxonomy
         add_action('init', function() use ($post_type, $singular, $plural) {
             hk_fs_register_category_taxonomy($post_type, $singular, $plural);
-        }, 10); // Changed from 0 to 10 (default priority)
+        }, 10);
         
         // Add custom SVG icon if provided
         if ($svg_icon) {
@@ -149,7 +190,6 @@ class HK_Funeral_Product_CPT_Factory {
         self::register_standard_features($post_type, $singular, $plural, $public_option);
         
         // Fire action to notify other system components about this CPT registration
-        // This is the main integration point for other classes to hook into
         do_action('hk_fs_register_cpt', $post_type, strtolower($plural), array(
             'singular' => $singular,
             'plural' => $plural,
@@ -227,5 +267,15 @@ class HK_Funeral_Product_CPT_Factory {
             </style>
             <?php
         });
+    }
+    
+    /**
+     * Reset the registration cache
+     * 
+     * Useful after plugin update or when CPT settings change
+     */
+    public static function reset_registration_cache() {
+        delete_transient('hk_fs_registered_cpts');
+        self::debug_log('CPT registration cache reset');
     }
 }
