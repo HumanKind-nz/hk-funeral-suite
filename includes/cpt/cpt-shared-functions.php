@@ -512,3 +512,101 @@ function hk_fs_register_admin_styles($post_type) {
         <?php
     });
 }
+
+/**
+ * Generate capability settings for CPT registration
+ *
+ * @param string $type The CPT type ('post' or 'page')
+ * @return array Array of capability mappings
+ */
+function hk_fs_get_cpt_capabilities($type = 'post') {
+    return array(
+        'edit_post'          => 'manage_funeral_content',
+        'edit_posts'         => 'manage_funeral_content',
+        'edit_others_posts'  => 'manage_funeral_content',
+        'publish_posts'      => 'manage_funeral_content',
+        'read_post'          => 'manage_funeral_content',
+        'read_private_posts' => 'manage_funeral_content',
+        'delete_post'        => 'manage_funeral_content'
+    );
+}
+
+/**
+ * Check if current user has access to funeral content
+ *
+ * @return bool Whether the user can access funeral content
+ */
+function hk_fs_current_user_can_access() {
+    return current_user_can('manage_funeral_content') || current_user_can('administrator');
+}
+
+/**
+ * Restrict CPT admin menu access based on capabilities
+ *
+ * @param string $post_type The CPT slug without the 'hk_fs_' prefix
+ */
+function hk_fs_restrict_admin_menu_access($post_type) {
+    add_action('admin_menu', function() use ($post_type) {
+        if (!current_user_can('manage_funeral_content')) {
+            remove_menu_page("edit.php?post_type=hk_fs_{$post_type}");
+        }
+    }, 999);
+}
+
+/**
+ * Generate standard CPT registration args with capability handling
+ *
+ * @param array $args Basic CPT args including labels, etc.
+ * @param string $post_type The post type slug without the 'hk_fs_' prefix
+ * @param bool $make_public Whether the CPT should be publicly visible
+ * @return array Complete args array for register_post_type()
+ */
+function hk_fs_generate_cpt_args($args, $post_type, $make_public) {
+    // Default args if not specified
+    $default_args = array(
+        'public'              => true,
+        'publicly_queryable'  => $make_public,
+        'show_ui'             => true,
+        'show_in_menu'        => true,
+        'menu_position'       => 6,
+        'query_var'           => $make_public,
+        'capability_type'     => 'post',
+        'capabilities'        => hk_fs_get_cpt_capabilities('post'),
+        'has_archive'         => $make_public,
+        'hierarchical'        => false,
+        'supports'            => array('title', 'editor', 'thumbnail', 'revisions'),
+        'show_in_rest'        => true,
+        'exclude_from_search' => !$make_public,
+    );
+    
+    // Merge with provided args, with provided args taking precedence
+    $merged_args = array_merge($default_args, $args);
+    
+    // Always ensure capabilities are set correctly
+    $merged_args['capabilities'] = hk_fs_get_cpt_capabilities(
+        isset($args['capability_type']) ? $args['capability_type'] : 'post'
+    );
+    
+    return $merged_args;
+}
+
+/**
+ * Restrict direct admin screen access for a CPT
+ *
+ * @param string $post_type The CPT slug without the 'hk_fs_' prefix
+ */
+function hk_fs_restrict_admin_screen_access($post_type) {
+    add_action('current_screen', function() use ($post_type) {
+        $screen = get_current_screen();
+        
+        if (!$screen) {
+            return;
+        }
+        
+        // Check if this is our CPT's screen
+        if ($screen->post_type === "hk_fs_{$post_type}" && !current_user_can('manage_funeral_content')) {
+            wp_redirect(admin_url());
+            exit;
+        }
+    });
+}
