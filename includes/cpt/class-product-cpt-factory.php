@@ -4,7 +4,7 @@
  *
  * @package    HK_Funeral_Suite
  * @subpackage CPT
- * @version    1.1.0
+ * @version    1.1.1
  * @since      1.3.0
  */
 
@@ -84,7 +84,7 @@ class HK_Funeral_Product_CPT_Factory {
         // Fire pre-registration hook - allows early modification of args
         do_action('hk_fs_before_register_cpt', $post_type, $args);
         
-        // Register post type
+        // Register post type - IMPORTANT: Change priority to 10 (default) instead of 0
         add_action('init', function() use ($post_type, $singular, $plural, $menu_name, $slug, $icon, $public_option) {
             $labels = array(
                 'name'                  => $plural, // Already translated in the call
@@ -126,16 +126,19 @@ class HK_Funeral_Product_CPT_Factory {
             
             $cpt_args = apply_filters("hk_fs_{$post_type}_post_type_args", $cpt_args);
             
+            // Debug output - helpful for troubleshooting
+            error_log("Registering CPT: hk_fs_{$post_type}");
+            
             register_post_type("hk_fs_{$post_type}", $cpt_args);
             
             // Fire post-registration hook for this specific CPT
             do_action("hk_fs_registered_{$post_type}_cpt", $post_type);
-        }, 0);
+        }, 10); // Changed from 0 to 10 (default priority)
         
-        // Register category taxonomy
+        // Register category taxonomy - also at default priority 
         add_action('init', function() use ($post_type, $singular, $plural) {
             hk_fs_register_category_taxonomy($post_type, $singular, $plural);
-        }, 0);
+        }, 10); // Changed from 0 to 10 (default priority)
         
         // Add custom SVG icon if provided
         if ($svg_icon) {
