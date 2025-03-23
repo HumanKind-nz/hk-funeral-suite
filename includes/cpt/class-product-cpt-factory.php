@@ -4,7 +4,7 @@
  *
  * @package    HK_Funeral_Suite
  * @subpackage CPT
- * @version    1.1.3
+ * @version    1.1.4
  * @since      1.3.0
  */
 
@@ -74,14 +74,6 @@ class HK_Funeral_Product_CPT_Factory {
      * @return bool True on successful registration, false on failure.
      */
     public static function register_product_cpt($args) {    
-        // Check if this CPT is already registered in this request
-        if (isset(self::$request_registered[$args['post_type']])) {
-            return true; // Already registered in this request
-        }
-        
-        // Track this registration in the request cache
-        self::$request_registered[$args['post_type']] = true;
-        
         // Check for required fields
         if (!isset($args['post_type']) || !isset($args['singular']) || !isset($args['plural'])) {
             self::debug_log('Failed to register CPT - missing required fields');
@@ -97,6 +89,15 @@ class HK_Funeral_Product_CPT_Factory {
         $icon = isset($args['icon']) ? $args['icon'] : 'dashicons-archive';
         $svg_icon = isset($args['svg_icon']) ? $args['svg_icon'] : null;
         
+        // Check if this CPT is already registered in this request
+        if (isset(self::$request_registered[$post_type])) {
+            self::debug_log("CPT already registered in this request: hk_fs_{$post_type}");
+            return true; // Already registered in this request
+        }
+        
+        // Track this registration in the request cache
+        self::$request_registered[$post_type] = true;
+        
         // Set up option names
         $public_option = 'hk_fs_enable_public_' . strtolower($plural);
         
@@ -108,78 +109,57 @@ class HK_Funeral_Product_CPT_Factory {
             'option_suffix' => strtolower($plural)
         );
         
-        // Check if we've already registered this CPT in a previous request
-        $registered_cpts = get_transient('hk_fs_registered_cpts');
-        if (is_array($registered_cpts) && isset($registered_cpts[$post_type])) {
-            // Already registered in a previous request
-            return true;
-        }
-        
         // Fire pre-registration hook - allows early modification of args
         do_action('hk_fs_before_register_cpt', $post_type, $args);
         
-        // Register post type - with default priority
-        add_action('init', function() use ($post_type, $singular, $plural, $menu_name, $slug, $icon, $public_option) {
-            $labels = array(
-                'name'                  => $plural, // Already translated in the call
-                'singular_name'         => $singular, // Already translated in the call
-                'menu_name'             => _x($menu_name, 'Admin Menu text', 'hk-funeral-cpt'),
-                'add_new'               => __('Add New', 'hk-funeral-cpt'),
-                'add_new_item'          => sprintf(__('Add New %s', 'hk-funeral-cpt'), $singular),
-                'edit_item'             => sprintf(__('Edit %s', 'hk-funeral-cpt'), $singular),
-                'new_item'              => sprintf(__('New %s', 'hk-funeral-cpt'), $singular),
-                'view_item'             => sprintf(__('View %s', 'hk-funeral-cpt'), $singular),
-                'view_items'            => sprintf(__('View %s', 'hk-funeral-cpt'), $plural),
-                'search_items'          => sprintf(__('Search %s', 'hk-funeral-cpt'), $plural),
-                'not_found'             => sprintf(__('No %s found.', 'hk-funeral-cpt'), strtolower($plural)),
-                'not_found_in_trash'    => sprintf(__('No %s found in Trash.', 'hk-funeral-cpt'), strtolower($plural)),
-                'featured_image'        => sprintf(__('%s Image', 'hk-funeral-cpt'), $singular),
-                'set_featured_image'    => sprintf(__('Set %s image', 'hk-funeral-cpt'), strtolower($singular)),
-                'remove_featured_image' => sprintf(__('Remove %s image', 'hk-funeral-cpt'), strtolower($singular)),
-                'use_featured_image'    => sprintf(__('Use as %s image', 'hk-funeral-cpt'), strtolower($singular)),
-            );
-            
-            // Get the public setting
-            $make_public = get_option($public_option, false);
-            
-            // Generate CPT args using shared function
-            $cpt_args = hk_fs_generate_cpt_args(
-                [
-                    'labels' => $labels,
-                    'menu_icon' => $icon,
-                    'supports' => array('title', 'editor', 'thumbnail', 'page-attributes', 'revisions'),
-                    'rewrite' => $make_public ? array('slug' => $slug) : false,
-                    'template' => array(
-                        array("hk-funeral-suite/{$post_type}"),
-                        array('core/paragraph')
-                    ),
-                ],
-                $post_type,
-                $make_public
-            );
-            
-            $cpt_args = apply_filters("hk_fs_{$post_type}_post_type_args", $cpt_args);
-            
-            self::debug_log("Registering CPT: hk_fs_{$post_type}");
-            
-            register_post_type("hk_fs_{$post_type}", $cpt_args);
-            
-            // Track registrations in transient for future requests
-            $registered_cpts = get_transient('hk_fs_registered_cpts') ?: array();
-            $registered_cpts[$post_type] = array(
-                'version' => HK_FS_VERSION,
-                'time' => time()
-            );
-            set_transient('hk_fs_registered_cpts', $registered_cpts, DAY_IN_SECONDS);
-            
-            // Fire post-registration hook for this specific CPT
-            do_action("hk_fs_registered_{$post_type}_cpt", $post_type);
-        }, 10);
+        // DIRECTLY register the post type instead of using another hook
+        $labels = array(
+            'name'                  => $plural, // Already translated in the call
+            'singular_name'         => $singular, // Already translated in the call
+            'menu_name'             => _x($menu_name, 'Admin Menu text', 'hk-funeral-cpt'),
+            'add_new'               => __('Add New', 'hk-funeral-cpt'),
+            'add_new_item'          => sprintf(__('Add New %s', 'hk-funeral-cpt'), $singular),
+            'edit_item'             => sprintf(__('Edit %s', 'hk-funeral-cpt'), $singular),
+            'new_item'              => sprintf(__('New %s', 'hk-funeral-cpt'), $singular),
+            'view_item'             => sprintf(__('View %s', 'hk-funeral-cpt'), $singular),
+            'view_items'            => sprintf(__('View %s', 'hk-funeral-cpt'), $plural),
+            'search_items'          => sprintf(__('Search %s', 'hk-funeral-cpt'), $plural),
+            'not_found'             => sprintf(__('No %s found.', 'hk-funeral-cpt'), strtolower($plural)),
+            'not_found_in_trash'    => sprintf(__('No %s found in Trash.', 'hk-funeral-cpt'), strtolower($plural)),
+            'featured_image'        => sprintf(__('%s Image', 'hk-funeral-cpt'), $singular),
+            'set_featured_image'    => sprintf(__('Set %s image', 'hk-funeral-cpt'), strtolower($singular)),
+            'remove_featured_image' => sprintf(__('Remove %s image', 'hk-funeral-cpt'), strtolower($singular)),
+            'use_featured_image'    => sprintf(__('Use as %s image', 'hk-funeral-cpt'), strtolower($singular)),
+        );
         
-        // Register category taxonomy
-        add_action('init', function() use ($post_type, $singular, $plural) {
-            hk_fs_register_category_taxonomy($post_type, $singular, $plural);
-        }, 10);
+        // Get the public setting
+        $make_public = get_option($public_option, false);
+        
+        // Generate CPT args using shared function
+        $cpt_args = hk_fs_generate_cpt_args(
+            [
+                'labels' => $labels,
+                'menu_icon' => $icon,
+                'supports' => array('title', 'editor', 'thumbnail', 'page-attributes', 'revisions'),
+                'rewrite' => $make_public ? array('slug' => $slug) : false,
+                'template' => array(
+                    array("hk-funeral-suite/{$post_type}"),
+                    array('core/paragraph')
+                ),
+            ],
+            $post_type,
+            $make_public
+        );
+        
+        $cpt_args = apply_filters("hk_fs_{$post_type}_post_type_args", $cpt_args);
+        
+        self::debug_log("Registering CPT: hk_fs_{$post_type}");
+        
+        // DIRECTLY register the post type
+        register_post_type("hk_fs_{$post_type}", $cpt_args);
+        
+        // DIRECTLY register the taxonomy
+        hk_fs_register_category_taxonomy($post_type, $singular, $plural);
         
         // Add custom SVG icon if provided
         if ($svg_icon) {
@@ -196,6 +176,7 @@ class HK_Funeral_Product_CPT_Factory {
             'option_suffix' => strtolower($plural)
         ));
         
+        self::debug_log("Successfully registered CPT: hk_fs_{$post_type}");
         return true;
     }
     
