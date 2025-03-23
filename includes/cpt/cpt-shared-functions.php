@@ -1,0 +1,514 @@
+<?php
+/**
+ * Shared Functions for Custom Post Types
+ *
+ * @package    HK_Funeral_Suite
+ * @subpackage CPT
+ * @version    1.0.0
+ * @since      1.3.0
+ */
+
+// If this file is called directly, abort.
+if (!defined('WPINC')) {
+    die;
+}
+
+/**
+ * Registers a settings submenu link for a CPT
+ *
+ * @param string $post_type The CPT slug without the 'hk_fs_' prefix
+ */
+function hk_fs_register_settings_submenu($post_type) {
+    add_submenu_page(
+        "edit.php?post_type=hk_fs_{$post_type}",
+        'HK Funeral Suite Settings',
+        'HK Funeral Suite Settings',
+        'manage_funeral_settings',
+        'options-general.php?page=hk-funeral-suite-settings'
+    );
+}
+
+/**
+ * Register price meta field for a CPT
+ *
+ * @param string $post_type The CPT slug without the 'hk_fs_' prefix
+ */
+function hk_fs_register_price_meta($post_type) {
+    // Register REST API field
+    register_rest_field(
+        "hk_fs_{$post_type}",
+        'price',
+        array(
+            'get_callback' => function($post) use ($post_type) {
+                return get_post_meta($post['id'], "_hk_fs_{$post_type}_price", true);
+            },
+            'schema' => array(
+                'type' => 'string',
+                'description' => "Price of the {$post_type}"
+            )
+        )
+    );
+
+    // Register meta for REST API access
+    register_post_meta("hk_fs_{$post_type}", "_hk_fs_{$post_type}_price", [
+        'show_in_rest' => true,
+        'single' => true,
+        'type' => 'string',
+        'auth_callback' => function() {
+            return current_user_can('edit_posts');
+        }
+    ]);
+}
+
+/**
+ * Register category taxonomy for a CPT
+ *
+ * @param string $post_type The CPT slug without the 'hk_fs_' prefix
+ * @param string $singular Singular label
+ * @param string $plural Plural label
+ */
+function hk_fs_register_category_taxonomy($post_type, $singular, $plural) {
+    $labels = array(
+        'name'              => _x("{$singular} Categories", 'taxonomy general name', 'hk-funeral-cpt'),
+        'singular_name'     => _x("{$singular} Category", 'taxonomy singular name', 'hk-funeral-cpt'),
+        'menu_name'         => __('Categories', 'hk-funeral-cpt'),
+        'all_items'         => __('All Categories', 'hk-funeral-cpt'),
+        'edit_item'         => __('Edit Category', 'hk-funeral-cpt'),
+        'update_item'       => __('Update Category', 'hk-funeral-cpt'),
+        'add_new_item'      => __('Add New Category', 'hk-funeral-cpt'),
+        'new_item_name'     => __('New Category Name', 'hk-funeral-cpt'),
+        'search_items'      => __('Search Categories', 'hk-funeral-cpt'),
+        'parent_item'       => __('Parent Category', 'hk-funeral-cpt'),
+        'parent_item_colon' => __('Parent Category:', 'hk-funeral-cpt'),
+    );
+
+    $args = array(
+        'labels'            => $labels,
+        'hierarchical'      => true,
+        'public'            => true,
+        'show_ui'           => true,
+        'show_admin_column' => true,
+        'show_in_nav_menus' => true,
+        'show_tagcloud'     => true,
+        'show_in_rest'      => true,
+        'query_var'         => true,
+        'rewrite'           => array('slug' => strtolower($post_type) . '-category'),
+    );
+
+    register_taxonomy("hk_fs_{$post_type}_category", array("hk_fs_{$post_type}"), $args);
+}
+
+/**
+ * Add custom title placeholder for a CPT
+ *
+ * @param string $post_type The CPT slug without the 'hk_fs_' prefix
+ * @param string $singular Singular name for the placeholder
+ */
+function hk_fs_register_title_placeholder($post_type, $singular) {
+    add_filter('enter_title_here', function($title) use ($post_type, $singular) {
+        $screen = get_current_screen();
+        
+        if ("hk_fs_{$post_type}" == $screen->post_type) {
+            $title = "Enter " . strtolower($singular) . " name here";
+        }
+        
+        return $title;
+    });
+}
+
+/**
+ * Register price meta box for a CPT
+ *
+ * @param string $post_type The CPT slug without the 'hk_fs_' prefix
+ * @param string $singular Singular label for the CPT
+ */
+function hk_fs_register_price_metabox($post_type, $singular) {
+    // Add meta box
+    add_meta_box(
+        "hk_fs_{$post_type}_pricing",
+        __('Pricing Information', 'hk-funeral-cpt'),
+        "hk_fs_{$post_type}_pricing_callback",
+        "hk_fs_{$post_type}",
+        'side',
+        'high'
+    );
+    
+    // Define callback function if it doesn't exist
+    if (!function_exists("hk_fs_{$post_type}_pricing_callback")) {
+        $GLOBALS["hk_fs_{$post_type}_pricing_callback"] = function($post) use ($post_type) {
+            wp_nonce_field("hk_fs_{$post_type}_pricing_nonce", "hk_fs_{$post_type}_pricing_nonce");
+            $price = get_post_meta($post->ID, "_hk_fs_{$post_type}_price", true);
+            $managed_by_sheets = get_option("hk_fs_{$post_type}_price_google_sheets", false);
+            
+            ?>
+            <div class="price-field-container <?php echo $managed_by_sheets ? 'sheet-managed' : ''; ?>">
+                <p>
+                    <label for="hk_fs_<?php echo $post_type; ?>_price"><?php _e('Price ($):', 'hk-funeral-cpt'); ?></label>
+                    <input type="number" id="hk_fs_<?php echo $post_type; ?>_price" name="hk_fs_<?php echo $post_type; ?>_price" 
+                           value="<?php echo esc_attr($price); ?>" step="0.01" min="0" style="width: 100%;"
+                           <?php echo $managed_by_sheets ? 'disabled="disabled"' : ''; ?>>
+                </p>
+                
+                <?php if ($managed_by_sheets): ?>
+                <div class="sheet-integration-notice">
+                    <p style="color: #d63638; margin-top: 8px; display: flex; align-items: center;">
+                        <span class="dashicons dashicons-cloud" style="margin-right: 5px;"></span>
+                        <strong><?php _e('Managed via Google Sheets', 'hk-funeral-cpt'); ?></strong>
+                    </p>
+                    <p class="description" style="margin-top: 5px;">
+                        <?php _e('Price is managed through Google Sheets integration and cannot be modified here.', 'hk-funeral-cpt'); ?>
+                    </p>
+                </div>
+                <?php endif; ?>
+            </div>
+            <?php
+        };
+    }
+    
+    // Register save handler
+    add_action("save_post_hk_fs_{$post_type}", function($post_id) use ($post_type) {
+        if (!current_user_can('manage_funeral_content')) {
+            return;
+        }
+
+        if (!isset($_POST["hk_fs_{$post_type}_pricing_nonce"]) || 
+            !wp_verify_nonce($_POST["hk_fs_{$post_type}_pricing_nonce"], "hk_fs_{$post_type}_pricing_nonce")) {
+            return;
+        }
+
+        // Skip autosaves and revisions
+        if (wp_is_post_autosave($post_id) || wp_is_post_revision($post_id)) {
+            return;
+        }
+
+        // Only update price if not managed by Google Sheets
+        $managed_by_sheets = get_option("hk_fs_{$post_type}_price_google_sheets", false);
+        
+        if (!$managed_by_sheets && isset($_POST["hk_fs_{$post_type}_price"])) {
+            $price = sanitize_text_field($_POST["hk_fs_{$post_type}_price"]);
+            update_post_meta($post_id, "_hk_fs_{$post_type}_price", $price);
+        }
+    });
+}
+
+/**
+ * Register Google Sheets integration notice for a CPT
+ *
+ * @param string $post_type The CPT slug without the 'hk_fs_' prefix
+ * @param string $singular Singular label
+ */
+function hk_fs_register_sheets_notice($post_type, $singular) {
+    add_action('admin_notices', function() use ($post_type, $singular) {
+        $screen = get_current_screen();
+        
+        if (!$screen || $screen->post_type !== "hk_fs_{$post_type}") {
+            return;
+        }
+        
+        $managed_by_sheets = get_option("hk_fs_{$post_type}_price_google_sheets", false);
+        
+        if ($managed_by_sheets) {
+            ?>
+            <div class="notice notice-info">
+                <p>
+                    <span class="dashicons dashicons-cloud" style="color:#0073aa; font-size:18px; vertical-align:middle;"></span>
+                    <strong><?php _e('Google Sheets Integration Active:', 'hk-funeral-cpt'); ?></strong>
+                    <?php printf(
+                        __('%s pricing is currently managed via Google Sheets. Price fields are disabled in the admin interface.', 'hk-funeral-cpt'),
+                        $singular
+                    ); ?>
+                    <a href="<?php echo admin_url('options-general.php?page=hk-funeral-suite-settings'); ?>">
+                        <?php _e('Change this setting', 'hk-funeral-cpt'); ?>
+                    </a>
+                </p>
+            </div>
+            <?php
+        }
+    });
+}
+
+/**
+ * Add price column to admin list for a CPT
+ *
+ * @param string $post_type The CPT slug without the 'hk_fs_' prefix
+ */
+function hk_fs_add_price_column($post_type) {
+    // Add price column
+    add_filter("manage_hk_fs_{$post_type}_posts_columns", function($columns) {
+        $new_columns = array();
+        
+        foreach($columns as $key => $value) {
+            $new_columns[$key] = $value;
+            if ($key === 'title') {
+                $new_columns['price'] = __('Price', 'hk-funeral-cpt');
+            }
+        }
+        
+        return $new_columns;
+    });
+    
+    // Display price in column
+    add_action("manage_hk_fs_{$post_type}_posts_custom_column", function($column, $post_id) use ($post_type) {
+        if ($column === 'price') {
+            $price = get_post_meta($post_id, "_hk_fs_{$post_type}_price", true);
+            $managed_by_sheets = get_option("hk_fs_{$post_type}_price_google_sheets", false);
+            
+            if (!empty($price)) {
+                // Check if the price is numeric
+                if (is_numeric($price)) {
+                    echo '$' . number_format((float)$price, 2);
+                } else {
+                    // Display the text as-is
+                    echo esc_html($price);
+                }
+                
+                // Add icon for Google Sheets managed prices
+                if ($managed_by_sheets) {
+                    echo ' <span class="dashicons dashicons-cloud" style="color:#0073aa;" title="Managed via Google Sheets"></span>';
+                }
+            } else {
+                echo '—';
+            }
+        }
+    }, 10, 2);
+    
+    // Make price column sortable
+    add_filter("manage_edit-hk_fs_{$post_type}_sortable_columns", function($columns) {
+        $columns['price'] = 'price';
+        return $columns;
+    });
+    
+    // Add sorting functionality for price column
+    add_action('pre_get_posts', function($query) use ($post_type) {
+        if (!is_admin() || !$query->is_main_query()) {
+            return;
+        }
+        
+        if ($query->get('post_type') === "hk_fs_{$post_type}" && $query->get('orderby') === 'price') {
+            $query->set('meta_key', "_hk_fs_{$post_type}_price");
+            $query->set('orderby', 'meta_value_num');
+        }
+    });
+}
+
+/**
+ * Register order meta for packages
+ *
+ * @param string $post_type The CPT slug without the 'hk_fs_' prefix
+ */
+function hk_fs_register_order_meta($post_type) {
+    // Register order meta for REST API
+    register_post_meta("hk_fs_{$post_type}", "_hk_fs_{$post_type}_order", array(
+        'show_in_rest' => true,
+        'single' => true,
+        'type' => 'number',
+        'auth_callback' => function() {
+            return current_user_can('manage_funeral_content');
+        }
+    ));
+}
+
+/**
+ * Add order metabox for packages
+ *
+ * @param string $post_type The CPT slug without the 'hk_fs_' prefix
+ */
+function hk_fs_register_order_metabox($post_type) {
+    // Add order meta box
+    add_meta_box(
+        "hk_fs_{$post_type}_ordering",
+        __('Display Order', 'hk-funeral-cpt'),
+        "hk_fs_{$post_type}_ordering_callback",
+        "hk_fs_{$post_type}",
+        'side',
+        'high'
+    );
+    
+    // Define callback function
+    if (!function_exists("hk_fs_{$post_type}_ordering_callback")) {
+        $GLOBALS["hk_fs_{$post_type}_ordering_callback"] = function($post) use ($post_type) {
+            wp_nonce_field("hk_fs_{$post_type}_ordering_nonce", "hk_fs_{$post_type}_ordering_nonce");
+            
+            $order = get_post_meta($post->ID, "_hk_fs_{$post_type}_order", true);
+            if (empty($order) && $order !== 0) {
+                $order = 10;
+            }
+            
+            ?>
+            <p>
+                <label for="hk_fs_<?php echo $post_type; ?>_order"><?php _e('Display Order:', 'hk-funeral-cpt'); ?></label>
+                <input type="number" id="hk_fs_<?php echo $post_type; ?>_order" name="hk_fs_<?php echo $post_type; ?>_order" 
+                      value="<?php echo esc_attr($order); ?>" step="1" min="0" style="width: 100%;">
+                <span class="description"><?php _e('Lower numbers will be displayed first.', 'hk-funeral-cpt'); ?></span>
+            </p>
+            <?php
+        };
+    }
+    
+    // Register save handler for order
+    add_action("save_post_hk_fs_{$post_type}", function($post_id) use ($post_type) {
+        // Skip autosaves and revisions
+        if (wp_is_post_autosave($post_id) || wp_is_post_revision($post_id)) {
+            return;
+        }
+        
+        // Check nonce
+        if (isset($_POST["hk_fs_{$post_type}_ordering_nonce"]) && 
+            wp_verify_nonce($_POST["hk_fs_{$post_type}_ordering_nonce"], "hk_fs_{$post_type}_ordering_nonce")) {
+            
+            if (isset($_POST["hk_fs_{$post_type}_order"])) {
+                update_post_meta($post_id, "_hk_fs_{$post_type}_order", 
+                    absint($_POST["hk_fs_{$post_type}_order"]));
+            }
+        }
+    });
+}
+
+/**
+ * Add order column to admin list
+ *
+ * @param string $post_type The CPT slug without the 'hk_fs_' prefix
+ */
+function hk_fs_add_order_column($post_type) {
+    // Add order column
+    add_filter("manage_hk_fs_{$post_type}_posts_columns", function($columns) {
+        $new_columns = array();
+        
+        foreach($columns as $key => $value) {
+            $new_columns[$key] = $value;
+            if ($key === 'price') {
+                $new_columns['order'] = __('Order', 'hk-funeral-cpt');
+            }
+        }
+        
+        return $new_columns;
+    });
+    
+    // Display order in column
+    add_action("manage_hk_fs_{$post_type}_posts_custom_column", function($column, $post_id) use ($post_type) {
+        if ($column === 'order') {
+            $order = get_post_meta($post_id, "_hk_fs_{$post_type}_order", true);
+            echo !empty($order) ? esc_html($order) : '10';
+        }
+    }, 10, 2);
+    
+    // Make order column sortable
+    add_filter("manage_edit-hk_fs_{$post_type}_sortable_columns", function($columns) {
+        $columns['order'] = 'order';
+        return $columns;
+    });
+    
+    // Add sorting functionality for order column
+    add_action('pre_get_posts', function($query) use ($post_type) {
+        if (!is_admin() || !$query->is_main_query()) {
+            return;
+        }
+        
+        // Default sorting by order
+        if ($query->get('post_type') === "hk_fs_{$post_type}" && !$query->get('orderby')) {
+            $query->set('meta_key', "_hk_fs_{$post_type}_order");
+            $query->set('orderby', 'meta_value_num');
+            $query->set('order', 'ASC');
+        }
+        
+        // Explicit sorting by order
+        if ($query->get('post_type') === "hk_fs_{$post_type}" && $query->get('orderby') === 'order') {
+            $query->set('meta_key', "_hk_fs_{$post_type}_order");
+            $query->set('orderby', 'meta_value_num');
+        }
+    });
+}
+
+/**
+ * Auto-insert block for a new post
+ *
+ * @param string $post_type The CPT slug without the 'hk_fs_' prefix
+ */
+function hk_fs_register_auto_insert_block($post_type) {
+    add_action('wp_insert_post', function($post_id, $post = null, $update = false) use ($post_type) {
+        // If we only got the ID, get the post object
+        if (!is_object($post)) {
+            $post = get_post($post_id);
+        }
+        
+        // Only proceed for our custom post type and new posts
+        if ($post->post_type !== "hk_fs_{$post_type}" || $post->post_content !== '') {
+            return;
+        }
+        
+        // Create block content
+        $block_content = "<!-- wp:hk-funeral-suite/{$post_type} /-->";
+        
+        // Update the post with our block
+        wp_update_post(array(
+            'ID' => $post->ID,
+            'post_content' => $block_content,
+        ));
+    }, 10, 3);
+}
+
+/**
+ * Register block template for a CPT
+ *
+ * @param string $post_type The CPT slug without the 'hk_fs_' prefix
+ * @param string $singular Singular label
+ */
+function hk_fs_register_block_template($post_type, $singular) {
+    add_action('init', function() use ($post_type, $singular) {
+        $post_type_object = get_post_type_object("hk_fs_{$post_type}");
+        
+        if ($post_type_object) {
+            $post_type_object->template = array(
+                array("hk-funeral-suite/{$post_type}"),
+                array('core/paragraph', array(
+                    'placeholder' => __("Add {$singular} description...", 'hk-funeral-cpt')
+                ))
+            );
+            
+            // Allow adding/removing other blocks
+            $post_type_object->template_lock = false;
+        }
+    }, 11); // Run after CPT registration
+}
+
+/**
+ * Add admin styles for Google Sheets integration
+ *
+ * @param string $post_type The CPT slug without the 'hk_fs_' prefix
+ */
+function hk_fs_register_admin_styles($post_type) {
+    add_action('admin_head', function() use ($post_type) {
+        $screen = get_current_screen();
+        
+        if (!$screen || $screen->post_type !== "hk_fs_{$post_type}") {
+            return;
+        }
+        
+        $managed_by_sheets = get_option("hk_fs_{$post_type}_price_google_sheets", false);
+        
+        ?>
+        <style type="text/css">
+            <?php if ($managed_by_sheets): ?>
+            #hk_fs_<?php echo $post_type; ?>_price[disabled] {
+                background-color: #f0f0f1;
+                border-color: #dcdcde;
+                color: #8c8f94;
+                box-shadow: none;
+            }
+            
+            .price-field-container.sheet-managed {
+                position: relative;
+            }
+            
+            .sheet-integration-notice {
+                background-color: rgba(214, 54, 56, 0.05);
+                border-left: 4px solid #d63638;
+                padding: 8px;
+                margin-top: 10px;
+                border-radius: 2px;
+            }
+            <?php endif; ?>
+        </style>
+        <?php
+    });
+}
