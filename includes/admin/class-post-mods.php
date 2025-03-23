@@ -42,6 +42,8 @@ class HK_Post_Mods {
 			'hk_fs_casket'  => 'hk_fs_enable_public_caskets',
 			'hk_fs_urn'     => 'hk_fs_enable_public_urns',
 			'hk_fs_package' => 'hk_fs_enable_public_packages',
+			'hk_fs_monument' => 'hk_fs_enable_public_monuments',
+			
 		);
 
 		// If the current post type is not one of our CPTs, exit.
