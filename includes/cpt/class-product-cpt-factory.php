@@ -23,7 +23,7 @@ class HK_Funeral_Product_CPT_Factory {
         // Extract required arguments
         $post_type = $args['post_type'];
         $singular = $args['singular'];
-        $plural = $args['plural'];
+        $plural = $args['plural'];     
         $menu_name = isset($args['menu_name']) ? $args['menu_name'] : 'HK ' . $plural;
         $slug = isset($args['slug']) ? $args['slug'] : strtolower($plural);
         $icon = isset($args['icon']) ? $args['icon'] : 'dashicons-archive';
@@ -35,22 +35,22 @@ class HK_Funeral_Product_CPT_Factory {
         // Register post type
         add_action('init', function() use ($post_type, $singular, $plural, $menu_name, $slug, $icon, $public_option) {
             $labels = array(
-                'name'                  => _x($plural, 'Post type general name', 'hk-funeral-cpt'),
-                'singular_name'         => _x($singular, 'Post type singular name', 'hk-funeral-cpt'),
+                'name'                  => $plural, // Already translated in the call
+                'singular_name'         => $singular, // Already translated in the call
                 'menu_name'             => _x($menu_name, 'Admin Menu text', 'hk-funeral-cpt'),
                 'add_new'               => __('Add New', 'hk-funeral-cpt'),
-                'add_new_item'          => __("Add New {$singular}", 'hk-funeral-cpt'),
-                'edit_item'             => __("Edit {$singular}", 'hk-funeral-cpt'),
-                'new_item'              => __("New {$singular}", 'hk-funeral-cpt'),
-                'view_item'             => __("View {$singular}", 'hk-funeral-cpt'),
-                'view_items'            => __("View {$plural}", 'hk-funeral-cpt'),
-                'search_items'          => __("Search {$plural}", 'hk-funeral-cpt'),
-                'not_found'             => __("No {$plural} found.", 'hk-funeral-cpt'),
-                'not_found_in_trash'    => __("No {$plural} found in Trash.", 'hk-funeral-cpt'),
-                'featured_image'        => __("{$singular} Image", 'hk-funeral-cpt'),
-                'set_featured_image'    => __("Set {$singular} image", 'hk-funeral-cpt'),
-                'remove_featured_image' => __("Remove {$singular} image", 'hk-funeral-cpt'),
-                'use_featured_image'    => __("Use as {$singular} image", 'hk-funeral-cpt'),
+                'add_new_item'          => sprintf(__('Add New %s', 'hk-funeral-cpt'), $singular),
+                'edit_item'             => sprintf(__('Edit %s', 'hk-funeral-cpt'), $singular),
+                'new_item'              => sprintf(__('New %s', 'hk-funeral-cpt'), $singular),
+                'view_item'             => sprintf(__('View %s', 'hk-funeral-cpt'), $singular),
+                'view_items'            => sprintf(__('View %s', 'hk-funeral-cpt'), $plural),
+                'search_items'          => sprintf(__('Search %s', 'hk-funeral-cpt'), $plural),
+                'not_found'             => sprintf(__('No %s found.', 'hk-funeral-cpt'), strtolower($plural)),
+                'not_found_in_trash'    => sprintf(__('No %s found in Trash.', 'hk-funeral-cpt'), strtolower($plural)),
+                'featured_image'        => sprintf(__('%s Image', 'hk-funeral-cpt'), $singular),
+                'set_featured_image'    => sprintf(__('Set %s image', 'hk-funeral-cpt'), strtolower($singular)),
+                'remove_featured_image' => sprintf(__('Remove %s image', 'hk-funeral-cpt'), strtolower($singular)),
+                'use_featured_image'    => sprintf(__('Use as %s image', 'hk-funeral-cpt'), strtolower($singular)),
             );
             
             // Get the public setting
