@@ -4,10 +4,10 @@
  *
  * @package    HK_Funeral_Suite
  * @subpackage Admin
- * @version    1.2.1
+ * @version    1.2.2
  * @since      1.0.0
  * @changelog
- *   1.2.1 - Added monuments cpt
+ *   1.2.2 - Added monuments cpt
  *   1.2.0 - Added dynamic CPT registration support
  *   1.1.2 - Removed update button
  *   1.1.0 - Added Google Sheets integration settings
@@ -217,7 +217,7 @@ class HK_Funeral_Settings {
 		));
 		
 		// Register CPT visibility settings for core types
-		$core_cpts = array('staff', 'caskets', 'urns', 'packages');
+		$core_cpts = array('staff', 'caskets', 'urns', 'packages','monuments');
 		foreach ($core_cpts as $cpt) {
 		    register_setting('hk_fs_settings', "hk_fs_enable_public_{$cpt}", array(
                 'type' => 'boolean',
