@@ -154,11 +154,14 @@ add_action('init', 'hk_fs_register_blocks', 15); // Run after CPTs are registere
 function hk_fs_create_block_directories() {
     $dirs = array(
         HK_FS_PLUGIN_DIR . 'includes/blocks/',
+        HK_FS_PLUGIN_DIR . 'includes/blocks/assets/',
         HK_FS_PLUGIN_DIR . 'includes/blocks/team-member-block/',
         HK_FS_PLUGIN_DIR . 'includes/blocks/pricing-package-block/',
         HK_FS_PLUGIN_DIR . 'includes/blocks/casket-block/',
-        HK_FS_PLUGIN_DIR . 'includes/blocks/urn-block/',
-        HK_FS_PLUGIN_DIR . 'includes/blocks/assets/'
+        HK_FS_PLUGIN_DIR . 'includes/blocks/urn-block/'
+        // Add new block directories here
+        // HK_FS_PLUGIN_DIR . 'includes/blocks/monument-block/',
+        // HK_FS_PLUGIN_DIR . 'includes/blocks/keepsake-block/'
     );
     
     foreach ($dirs as $dir) {
@@ -215,6 +218,8 @@ function hk_fs_activate_plugin() {
         'caskets' => true,
         'urns' => true,
         'packages' => false
+        //'monuments' => false, // New CPT, default to disabled
+        //'keepsakes' => false  // New CPT, default to disabled
     );
     
     if (!get_option('hk_fs_enabled_cpts')) {
