@@ -350,6 +350,81 @@ function hk_fs_create_system_font_styles() {
 	margin-bottom: 15px;
 }
 
+.monument-block {
+	background: #f8f9fa;
+	border: 1px solid #e2e4e7;
+	border-radius: 4px;
+	padding: 20px;
+	margin-bottom: 20px;
+	font-family: var(--hk-fs-font-family) !important;
+}
+.monument-section-title {
+	margin-top: 0;
+	margin-bottom: 15px;
+	font-size: 18px;
+	font-weight: var(--hk-fs-heading-weight);
+	color: #1e1e1e;
+	font-family: var(--hk-fs-font-family) !important;
+}
+.monument-fields {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 15px;
+}
+.monument-fields .components-base-control .components-base-control__label,
+.monument-fields .components-truncate.components-text.components-input-control__label  {
+	font-weight: 500;
+	font-size: 14px;
+	font-family: var(--hk-fs-font-family) !important;
+}
+.monument-fields .components-text-control__input,
+.monument-fields .components-select-control__input {
+	font-size: 15px;
+	padding: 8px 12px;
+	font-family: var(--hk-fs-font-family) !important;
+}
+
+.monument-image-section {
+	margin-bottom: 20px;
+	border: 2px solid #00a0d2;
+	padding: 10px;
+}
+
+.monument-featured-image-container {
+	margin-bottom: 15px;
+}
+
+.monument-image-preview {
+	margin-bottom: 10px;
+	border: 1px solid #e2e4e7;
+	padding: 5px;
+	background: #fff;
+	max-width: 250px;
+}
+
+.monument-image-buttons {
+	display: flex;
+	gap: 10px;
+	margin-bottom: 15px;
+}
+
+/* Google Sheets integration styles for monument block */
+.monument-block .components-text-control__input:disabled {
+    background-color: #f0f0f1;
+    border-color: #dcdcde;
+    color: #8c8f94;
+    box-shadow: none;
+}
+
+.monument-block .sheet-integration-notice {
+    background-color: rgba(214, 54, 56, 0.05);
+    border-left: 4px solid #d63638;
+    padding: 8px;
+    margin-top: 5px;
+    margin-bottom: 15px;
+    border-radius: 2px;
+}
+
 /* Make sure selects have the same styling */
 .components-select-control__input {
 	height: auto !important;
