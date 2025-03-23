@@ -4,7 +4,7 @@
  *
  * @package    HK_Funeral_Suite
  * @subpackage CPT
- * @version    1.0.0
+ * @version    1.0.1
  * @since      1.3.0
  */
 
@@ -87,7 +87,20 @@ class HK_Funeral_Product_CPT_Factory {
             self::register_svg_icon($post_type, $svg_icon);
         }
         
-        // Use shared functions for standard CPT features
+        // Register all standard features for this product CPT
+        self::register_standard_features($post_type, $singular, $plural, $public_option);
+    }
+    
+    /**
+     * Register all standard features for a product CPT
+     *
+     * @param string $post_type The post type slug
+     * @param string $singular Singular label
+     * @param string $plural Plural label
+     * @param string $public_option The option name for public visibility setting
+     */
+    private static function register_standard_features($post_type, $singular, $plural, $public_option) {
+        // Register all standard features
         hk_fs_register_settings_submenu($post_type);
         hk_fs_register_title_placeholder($post_type, $singular);
         hk_fs_register_price_meta($post_type);
@@ -98,6 +111,9 @@ class HK_Funeral_Product_CPT_Factory {
         hk_fs_register_block_template($post_type, $singular);
         hk_fs_register_admin_styles($post_type);
         hk_fs_restrict_admin_screen_access($post_type);
+        
+        // Register option change handler for rewrite rules
+        add_action("update_option_{$public_option}", 'hk_fs_handle_public_option_changes', 10, 2);
     }
     
     /**
