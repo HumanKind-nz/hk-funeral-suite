@@ -4,9 +4,10 @@
  *
  * @package    HK_Funeral_Suite
  * @subpackage Admin
- * @version    1.1.0
+ * @version    1.1.1
  * @since      1.1.9
  * @changelog
+ *   1.1.1 - Added monuments cpt
  *   1.1.0 - Added support for dynamically registered CPTs through hooks
  *   1.0.0 - Initial version with hardcoded CPT support
  */
@@ -53,6 +54,11 @@ class HK_Funeral_Admin_Columns {
         'hk_fs_package' => array(
             'needs_featured_image' => false,
             'option_suffix' => 'packages',
+            'title_label' => 'Name' 
+        ),
+        'hk_fs_monument' => array(
+            'needs_featured_image' => true,
+            'option_suffix' => 'monuments',
             'title_label' => 'Name' 
         )
     );
