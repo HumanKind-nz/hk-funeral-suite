@@ -5,6 +5,12 @@ All notable changes to the HumanKind Funeral Suite plugin will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2025-03-23
+- **Added** Monuments custom post type for showcasing monuments and headstones
+- **Added** Moved to shared CPT registration code for simplicity and easier extra CPTs
+- **Added** Custom user roles for Funeral Staff and Funeral Manager for permissions and management
+- **Improved** Centralised product registration with hooks for plugin extensibility
+
 ## [1.2.4] - 2025-03-15
 - **Added** Support for hiding SEOPress metaboxes on CPTs and UI cleanup
 
