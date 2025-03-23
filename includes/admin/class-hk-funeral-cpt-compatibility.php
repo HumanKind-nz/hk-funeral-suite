@@ -30,7 +30,8 @@ class HK_Funeral_Compatibility {
         'hk_fs_staff',
         'hk_fs_casket',
         'hk_fs_urn',
-        'hk_fs_package'
+        'hk_fs_package',
+        'hk_fs_monument'
     );
     
     /**
