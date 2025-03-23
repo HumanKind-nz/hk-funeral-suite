@@ -3,7 +3,7 @@
  * Plugin Name: HumanKind Funeral Suite
  * Plugin URI: https://github.com/HumanKind-nz/hk-funeral-suite/
  * Description: A powerful WordPress plugin to streamline funeral home websites adding custom post types, taxonomies and fields for Staff, Caskets, Urns, and Pricing Packages, along with specialised Gutenberg blocks for easy content management. 
- * Version: 1.3.0-beta.1
+ * Version: 1.3.0-beta.2
  * Author: HumanKind, Weave Digital Studio, Gareth Bissland
  * Author URI: https://weave.co.nz
  * License: GPL v2.0 or later
@@ -20,7 +20,7 @@ if (!defined('WPINC')) {
 }
 
 // Define plugin constants
-define('HK_FS_VERSION', '1.3.0-beta.1'); 
+define('HK_FS_VERSION', '1.3.0-beta.2'); 
 define('HK_FS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('HK_FS_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('HK_FS_BASENAME', plugin_basename(__FILE__));
@@ -93,7 +93,7 @@ $settings = HK_Funeral_Settings::get_instance();
 // Load the CPT registration file
 require_once HK_FS_PLUGIN_DIR . 'includes/cpt/cpt-registration.php';
 
-// You can also modify your existing CPT loading function to handle non-product CPTs
+// Load non-product CPTs
 function hk_fs_load_enabled_cpts() {
     $settings = HK_Funeral_Settings::get_instance();
     
@@ -107,8 +107,6 @@ function hk_fs_load_enabled_cpts() {
     // since they're handled by the factory
 }
 add_action('plugins_loaded', 'hk_fs_load_enabled_cpts', 20); // Higher priority to ensure settings are loaded first
-
-
 
 /**
  * Register custom Gutenberg blocks
@@ -136,6 +134,17 @@ function hk_fs_register_blocks() {
         // Include the Urn block
         require_once HK_FS_PLUGIN_DIR . 'includes/blocks/urn-block/init.php';
     }
+    
+    // For future CPT additions, add similar code here
+    /*
+    if ($settings->is_cpt_enabled('monuments')) {
+        require_once HK_FS_PLUGIN_DIR . 'includes/blocks/monument-block/init.php';
+    }
+    
+    if ($settings->is_cpt_enabled('keepsakes')) {
+        require_once HK_FS_PLUGIN_DIR . 'includes/blocks/keepsake-block/init.php';
+    }
+    */
 }
 add_action('init', 'hk_fs_register_blocks', 15); // Run after CPTs are registered but before templates
 
@@ -158,23 +167,6 @@ function hk_fs_create_block_directories() {
         }
     }
 }
-
-function hk_fs_register_price_meta() {
-    register_rest_field(
-        array('hk_fs_casket', 'hk_fs_urn', 'hk_fs_package'),
-        'price',
-        array(
-            'get_callback' => function($post) {
-                return get_post_meta($post['id'], '_hk_fs_' . $post['type'] . '_price', true);
-            },
-            'schema' => array(
-                'type' => 'string',
-                'description' => 'Price of the item'
-            )
-        )
-    );
-}
-add_action('rest_api_init', 'hk_fs_register_price_meta');
 
 /**
  * Initialize GitHub updater if we're in admin
@@ -208,10 +200,9 @@ function hk_fs_handle_public_option_changes($old_value, $value) {
     }
 }
 
-// Add actions for each CPT public option
+// The following rewrite rule handler registrations are now handled by the factory
+// for product CPTs. We only need these for staff and packages CPTs.
 add_action('update_option_hk_fs_enable_public_staff', 'hk_fs_handle_public_option_changes', 10, 2);
-add_action('update_option_hk_fs_enable_public_caskets', 'hk_fs_handle_public_option_changes', 10, 2);
-add_action('update_option_hk_fs_enable_public_urns', 'hk_fs_handle_public_option_changes', 10, 2);
 add_action('update_option_hk_fs_enable_public_packages', 'hk_fs_handle_public_option_changes', 10, 2);
 
 /**
