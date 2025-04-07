@@ -28,6 +28,8 @@ class HK_Default_Blocks_Importer {
 		add_action('rest_insert_hk_fs_casket', [$this, 'add_default_blocks_after_api_insert'], 10, 3);
 		add_action('rest_insert_hk_fs_urn', [$this, 'add_default_blocks_after_api_insert'], 10, 3);
 		add_action('rest_insert_hk_fs_package', [$this, 'add_default_blocks_after_api_insert'], 10, 3);
+		add_action('rest_insert_hk_fs_monument', [$this, 'add_default_blocks_after_api_insert'], 10, 3);
+		add_action('rest_insert_hk_fs_keepsake', [$this, 'add_default_blocks_after_api_insert'], 10, 3);
 	}
 
 	/**
@@ -58,6 +60,12 @@ class HK_Default_Blocks_Importer {
 			case 'hk_fs_package':
 				return '<!-- wp:hk-funeral-suite/pricing-package {"price":"","order":"10"} /-->';
 				
+			case 'hk_fs_monument':
+				return '<!-- wp:hk-funeral-suite/monument {"price":"","selectedCategory":""} /-->';
+				
+			case 'hk_fs_keepsake':
+				return '<!-- wp:hk-funeral-suite/keepsake {"price":"","selectedCategory":""} /-->';
+				
 			default:
 				return '';
 		}
@@ -74,7 +82,7 @@ class HK_Default_Blocks_Importer {
 		$post_type = get_post_type($post_id);
 		
 		// Check if this is one of our custom post types
-		if (!in_array($post_type, ['hk_fs_staff', 'hk_fs_casket', 'hk_fs_urn', 'hk_fs_package'])) {
+		if (!in_array($post_type, ['hk_fs_staff', 'hk_fs_casket', 'hk_fs_urn', 'hk_fs_package', 'hk_fs_monument', 'hk_fs_keepsake'])) {
 			return;
 		}
 		
@@ -131,6 +139,12 @@ class HK_Default_Blocks_Importer {
 				break;
 			case 'hk_fs_package':
 				$block_name = 'hk-funeral-suite/pricing-package';
+				break;
+			case 'hk_fs_monument':
+				$block_name = 'hk-funeral-suite/monument';
+				break;
+			case 'hk_fs_keepsake':
+				$block_name = 'hk-funeral-suite/keepsake';
 				break;
 		}
 		

@@ -60,6 +60,11 @@ class HK_Funeral_Admin_Columns {
             'needs_featured_image' => true,
             'option_suffix' => 'monuments',
             'title_label' => 'Name' 
+        ),
+        'hk_fs_keepsake' => array(
+            'needs_featured_image' => true,
+            'option_suffix' => 'keepsakes',
+            'title_label' => 'Name' 
         )
     );
     

@@ -365,16 +365,6 @@
 	font-family: var(--hk-fs-font-family) !important;
 }
 
-/* Responsive adjustment for all block grids */
-@media (max-width: 782px) {
-	.team-member-fields,
-	.pricing-package-fields,
-	.casket-fields,
-	.urn-fields {
-		grid-template-columns: 1fr;
-	}
-}
-
 /* Monument block styling */
 .monument-block {
 	background: #f8f9fa;
@@ -449,4 +439,109 @@
     margin-top: 5px;
     margin-bottom: 15px;
     border-radius: 2px;
+}
+
+/* Keepsake block styling */
+.keepsake-block {
+	background: #f8f9fa;
+	border: 1px solid #e2e4e7;
+	border-radius: 4px;
+	padding: 20px;
+	margin-bottom: 20px;
+	font-family: var(--hk-fs-font-family) !important;
+	position: relative;
+}
+
+/* Debug marker for keepsake block */
+.keepsake-block::before {
+	content: "STYLES LOADED";
+	position: absolute;
+	top: -20px;
+	right: 0;
+	background: #28a745;
+	color: white;
+	padding: 2px 8px;
+	font-size: 10px;
+	font-weight: bold;
+	border-radius: 3px;
+	z-index: 1000;
+}
+
+.keepsake-section-title {
+	margin-top: 0;
+	margin-bottom: 15px;
+	font-size: 18px;
+	font-weight: var(--hk-fs-heading-weight);
+	color: #1e1e1e;
+	font-family: var(--hk-fs-font-family) !important;
+}
+.keepsake-fields {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 15px;
+}
+.keepsake-fields .components-base-control .components-base-control__label,
+.keepsake-fields .components-truncate.components-text.components-input-control__label  {
+	font-weight: 500;
+	font-size: 14px;
+	font-family: var(--hk-fs-font-family) !important;
+}
+.keepsake-fields .components-text-control__input,
+.keepsake-fields .components-select-control__input {
+	font-size: 15px;
+	padding: 8px 12px;
+	font-family: var(--hk-fs-font-family) !important;
+}
+
+.keepsake-image-section {
+	margin-bottom: 20px;
+	border: 2px solid #00a0d2;
+	padding: 10px;
+}
+
+.keepsake-featured-image-container {
+	margin-bottom: 15px;
+}
+
+.keepsake-image-preview {
+	margin-bottom: 10px;
+	border: 1px solid #e2e4e7;
+	padding: 5px;
+	background: #fff;
+	max-width: 250px;
+}
+
+.keepsake-image-buttons {
+	display: flex;
+	gap: 10px;
+	margin-bottom: 15px;
+}
+
+/* Google Sheets integration styles for keepsake block */
+.keepsake-block .components-text-control__input:disabled {
+    background-color: #f0f0f1;
+    border-color: #dcdcde;
+    color: #8c8f94;
+    box-shadow: none;
+}
+
+.keepsake-block .sheet-integration-notice {
+    background-color: rgba(214, 54, 56, 0.05);
+    border-left: 4px solid #d63638;
+    padding: 8px;
+    margin-top: 5px;
+    margin-bottom: 15px;
+    border-radius: 2px;
+}
+
+/* Responsive adjustment for all block grids */
+@media (max-width: 782px) {
+	.team-member-fields,
+	.pricing-package-fields,
+	.casket-fields,
+	.urn-fields,
+	.monument-fields,
+	.keepsake-fields {
+		grid-template-columns: 1fr;
+	}
 }

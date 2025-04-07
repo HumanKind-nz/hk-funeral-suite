@@ -468,7 +468,7 @@ function hk_fs_enqueue_editor_styles() {
 			'hk-fs-block-editor-styles',
 			HK_FS_PLUGIN_URL . 'includes/blocks/assets/block-editor-styles.css',
 			array('wp-edit-blocks'),
-			HK_FS_VERSION
+			HK_FS_VERSION . '.1' // Add .1 to force reload
 		);
 	}
 }
@@ -481,7 +481,7 @@ function hk_fs_add_editor_body_class($classes) {
 	global $post;
 	
 	if (isset($post)) {
-		$our_post_types = array('hk_fs_staff', 'hk_fs_casket', 'hk_fs_urn', 'hk_fs_package');
+		$our_post_types = array('hk_fs_staff', 'hk_fs_casket', 'hk_fs_urn', 'hk_fs_package', 'hk_fs_monument', 'hk_fs_keepsake');
 		
 		if (in_array($post->post_type, $our_post_types)) {
 			$classes .= ' post-type-' . $post->post_type;

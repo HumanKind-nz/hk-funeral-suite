@@ -3,7 +3,7 @@
  * Plugin Name: HumanKind Funeral Suite
  * Plugin URI: https://github.com/HumanKind-nz/hk-funeral-suite/
  * Description: A powerful WordPress plugin to streamline funeral home websites adding custom post types, taxonomies and fields for Staff, Caskets, Urns, and Pricing Packages, along with specialised Gutenberg blocks for easy content management. 
- * Version: 1.3.0
+ * Version: 1.4.0
  * Author: HumanKind, Weave Digital Studio, Gareth Bissland
  * Author URI: https://weave.co.nz
  * License: GPL v2.0 or later
@@ -20,7 +20,7 @@ if (!defined('WPINC')) {
 }
 
 // Define plugin constants
-define('HK_FS_VERSION', '1.3.0'); 
+define('HK_FS_VERSION', '1.4.0'); 
 define('HK_FS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('HK_FS_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('HK_FS_BASENAME', plugin_basename(__FILE__));
@@ -105,6 +105,9 @@ function hk_fs_load_enabled_cpts() {
     if ($settings->is_cpt_enabled('packages')) {
         require_once HK_FS_PLUGIN_DIR . 'includes/cpt/packages.php';
     }
+    if ($settings->is_cpt_enabled('keepsakes')) {
+        require_once HK_FS_PLUGIN_DIR . 'includes/cpt/keepsakes.php';
+    }
     // We don't need to include caskets.php and urns.php anymore
     // since they're handled by the factory
 }
@@ -141,12 +144,9 @@ function hk_fs_register_blocks() {
         require_once HK_FS_PLUGIN_DIR . 'includes/blocks/monument-block/init.php';
     }
         
-    /*
-     // For future CPT additions, add similar code here 
     if ($settings->is_cpt_enabled('keepsakes')) {
         require_once HK_FS_PLUGIN_DIR . 'includes/blocks/keepsake-block/init.php';
     }
-    */
 }
 add_action('init', 'hk_fs_register_blocks', 15); // Run after CPTs are registered but before templates
 
@@ -161,9 +161,8 @@ function hk_fs_create_block_directories() {
         HK_FS_PLUGIN_DIR . 'includes/blocks/pricing-package-block/',
         HK_FS_PLUGIN_DIR . 'includes/blocks/casket-block/',
         HK_FS_PLUGIN_DIR . 'includes/blocks/urn-block/',
-        HK_FS_PLUGIN_DIR . 'includes/blocks/monument-block/' 
-        // Add new block directories here
-        // HK_FS_PLUGIN_DIR . 'includes/blocks/keepsake-block/'
+        HK_FS_PLUGIN_DIR . 'includes/blocks/monument-block/',
+        HK_FS_PLUGIN_DIR . 'includes/blocks/keepsake-block/'
     );
     
     foreach ($dirs as $dir) {
@@ -220,8 +219,8 @@ function hk_fs_activate_plugin() {
         'caskets' => true,
         'urns' => true,
         'packages' => false,
-        'monuments' => false 
-        //'keepsakes' => false  // New CPT, default to disabled
+        'monuments' => false,
+        'keepsakes' => false  
     );
     
     if (!get_option('hk_fs_enabled_cpts')) {

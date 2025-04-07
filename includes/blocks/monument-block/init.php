@@ -30,6 +30,7 @@ function hk_fs_register_monument_block() {
 	);
 	register_block_type('hk-funeral-suite/monument', array(
 		'editor_script' => 'hk-fs-monument-block',
+		'editor_style' => 'hk-fs-block-editor-styles',
 		'attributes' => array(
 			'price' => array('type' => 'string', 'default' => ''),
 			'selectedCategory' => array('type' => 'string', 'default' => ''),

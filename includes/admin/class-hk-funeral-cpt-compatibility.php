@@ -31,7 +31,8 @@ class HK_Funeral_Compatibility {
         'hk_fs_casket',
         'hk_fs_urn',
         'hk_fs_package',
-        'hk_fs_monument'
+        'hk_fs_monument',
+        'hk_fs_keepsake'
     );
     
     /**
@@ -251,28 +252,35 @@ class HK_Funeral_Compatibility {
      * Load the appropriate compatibility filters based on enabled settings
      */
     public static function load_compatibility_filters() {
-        // GeneratePress compatibility
-        if (get_option('hk_fs_generatepress_compatibility', false)) {
-            add_action('add_meta_boxes', array(__CLASS__, 'remove_generatepress_meta_boxes'), 999);
-        }
-        
-        // Page Builder Framework compatibility
-        if (get_option('hk_fs_wpbf_compatibility', false)) {
-            add_action('admin_head', array(__CLASS__, 'remove_wpbf_meta_boxes'));
-        }
-        
-        // HappyFiles Pro compatibility
-        if (get_option('hk_fs_happyfiles_compatibility', false) && class_exists('HappyFiles\\Pro')) {
+        // Add HappyFiles compatibility
+        if (get_option('hk_fs_happyfiles_compatibility', false)) {
             self::setup_happyfiles_compatibility();
         }
         
-        // SEO Press metabox compatibility
-        if (get_option('hk_fs_seopress_metabox_compatibility', false) && 
-            (function_exists('seopress_init') || class_exists('\\SEOPRESS\\Core\\Kernel'))) {
-            // Remove both the SEO metabox and content analysis metabox
-            add_filter('seopress_metaboxe_seo', array(__CLASS__, 'remove_seopress_metabox_for_funeral_cpts'));
+        // Add SEOPress compatibility 
+        if (get_option('hk_fs_seopress_metabox_compatibility', false)) {
+            add_filter('seopress_metaboxe_term_seo', array(__CLASS__, 'remove_seopress_metabox_for_funeral_cpts'));
             add_filter('seopress_metaboxe_content_analysis', array(__CLASS__, 'remove_seopress_metabox_for_funeral_cpts'));
+            add_filter('seopress_metaboxe_titles', array(__CLASS__, 'remove_seopress_metabox_for_funeral_cpts'));
+            add_filter('seopress_metaboxe_social', array(__CLASS__, 'remove_seopress_metabox_for_funeral_cpts'));
+            add_filter('seopress_metaboxe_advanced', array(__CLASS__, 'remove_seopress_metabox_for_funeral_cpts'));
         }
+        
+        // Setup theme-specific compatibility
+        if (get_option('hk_fs_generatepress_compatibility', false) && self::is_theme_active('generatepress')) {
+            add_action('add_meta_boxes', array(__CLASS__, 'remove_generatepress_meta_boxes'), 100);
+        }
+        
+        if (get_option('hk_fs_wpbf_compatibility', false) && self::is_theme_active('page-builder-framework')) {
+            add_action('add_meta_boxes', array(__CLASS__, 'remove_wpbf_meta_boxes'), 100);
+        }
+        
+        // Update CPT slugs when keepsake cpt is registered
+        add_action('hk_fs_register_cpt', function($post_type, $option_suffix, $args) {
+            if ($post_type === 'keepsake') {
+                self::$cpt_slugs[] = "hk_fs_{$post_type}";
+            }
+        }, 10, 3);
     }
     
     /**

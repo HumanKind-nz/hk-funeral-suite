@@ -13,6 +13,7 @@ HumanKind Funeral Suite transforms WordPress sites for funeral homes, allowing t
 - **Caskets** – Showcase available caskets and pricing in an organised catalog  
 - **Urns** – Display urn options and pricing for families to choose from  
 - **Monuments** – Display monument & Headstone options and pricing for families to choose from 
+- **Keepsakes** – Display keepsake options and pricing
 - **Pricing Packages** – Present funeral service packages with clear pricing  
 
 Each content type comes with tailor-made fields and taxonomies to fit the needs of the funeral industry.  
@@ -20,7 +21,7 @@ Each content type comes with tailor-made fields and taxonomies to fit the needs 
 ## ✨ Features  
 
 - **Team Management** – Add and manage staff profiles with location & roles  
-- **Product Catalogs** – Create searchable listings for caskets, urns and monuments & headstones
+- **Product Catalogs** – Create searchable listings for caskets, urns, monuments, keepsakes and headstones
 - **Pricing Packages** – Display service packages with clear pricing  
 - **Feature Flexibility** – Enable or disable specific features as needed  
 
@@ -28,7 +29,7 @@ Each content type comes with tailor-made fields and taxonomies to fit the needs 
   
 - **Gutenberg Blocks for Post Entry**:
   - Team Member block with metadata fields for qualifications, position, contact info, and taxonomies
-  - Casket, Urn & Monument blocks with price and category fields
+  - Casket, Urn, Monument & Keepsake blocks with price and category fields
   - Pricing Package block with price and order fields
   
 - **Admin Features**:
@@ -134,9 +135,9 @@ This plugin supports automatic updates directly from GitHub using a custom updat
 6. Assign staff to locations and roles using the provided taxonomies
 7. Publish when ready
 
-### Managing Caskets, Urns or Monuments
+### Managing Caskets, Urns, Monuments or Keepsakes
 
-1. Navigate to "Caskets" or "Urns" or "Monuments" in the admin menu
+1. Navigate to "Caskets", "Urns", "Monuments" or "Keepsakes" in the admin menu
 2. Click "Add New"
 3. Enter the product name as the title
 4. Add a featured image
@@ -212,13 +213,17 @@ hk-funeral-suite/
 |   |   ├── monument-block/
 │   │   │   ├── init.php                # Monument block registration
 │   │   │   └── index.js                # Monument block script
+|   |   ├── keepsake-block/
+│   │   │   ├── init.php                # Keepsake block registration
+│   │   │   └── index.js                # Keepsake block script
 │   │   └── block-styles.php            # Shared block styling
 │   ├── cpt/
 │   │   ├── class-product-cpt-factory.php   # Factory for product-type CPTs
 │   │   ├── cpt-registration.php            # Dynamic CPT registration system
 │   │   ├── cpt-shared-functions.php        # Shared functions across all CPTs
 │   │   ├── staff.php                       # Staff CPT registration
-│   │   └── packages.php                    # Packages CPT registration
+│   │   ├── packages.php                    # Packages CPT registration
+│   │   └── keepsakes.php                   # Keepsakes CPT registration
 │   ├── import/
 │   │   └── class-default-blocks-importer.php  # Import integration
 │   └── class-shortcodes.php            # Shortcode registration and handling
@@ -235,6 +240,12 @@ hk-funeral-suite/
 
 ## 🔄 Changelog
 [ Full Changelog Here](CHANGELOG.md)
+
+### [1.4.0] - 2025-04-07
+- **Added** Keepsakes custom post type for showcasing memorial keepsakes
+- **Added** Custom meta fields for keepsakes including product code, metal type, and stones
+- **Added** Keepsake block with specialised fields for easy content management
+- **Improved** REST API support for keepsake meta fields
 
 ### [1.3.0] - 2025-03-23
 - **Added** Monuments custom post type for showcasing monuments and headstones

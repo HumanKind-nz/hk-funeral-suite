@@ -49,7 +49,8 @@ class HK_Funeral_Settings {
 		'caskets' => 'hk_fs_casket',
 		'urns' => 'hk_fs_urn',
 		'packages' => 'hk_fs_package',
-		'monuments' => 'hk_fs_monument'
+		'monuments' => 'hk_fs_monument',
+		'keepsakes' => 'hk_fs_keepsake'
 	);
 	
 	/**
@@ -62,7 +63,8 @@ class HK_Funeral_Settings {
 		'packages' => 'package',
 		'caskets' => 'casket',
 		'urns' => 'urn',
-		'monuments' => 'monument'
+		'monuments' => 'monument',
+		'keepsakes' => 'keepsake'
 	);
 	
 	/**
@@ -217,7 +219,7 @@ class HK_Funeral_Settings {
 		));
 		
 		// Register CPT visibility settings for core types
-		$core_cpts = array('staff', 'caskets', 'urns', 'packages','monuments');
+		$core_cpts = array('staff', 'caskets', 'urns', 'packages', 'monuments', 'keepsakes');
 		foreach ($core_cpts as $cpt) {
 		    register_setting('hk_fs_settings', "hk_fs_enable_public_{$cpt}", array(
                 'type' => 'boolean',
