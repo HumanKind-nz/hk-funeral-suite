@@ -4,9 +4,10 @@
  *
  * @package    HK_Funeral_Suite
  * @subpackage CPT
- * @version    1.0.11  
+ * @version    1.0.12  
  * @since      1.0.0
  * @changelog 
+ *   1.0.12 - Added shortcode admin column with copy functionality
  *   1.0.11 - updated capability_type from page to post
  *   1.0.10 - Remove content admin column. Not needed.
  *   1.0.9 - Remove extra intro meta box when block used 
@@ -329,6 +330,7 @@ function hk_fs_add_package_columns($columns) {
             $new_columns['intro'] = __('Intro', 'hk-funeral-cpt');
             $new_columns['price'] = __('Price', 'hk-funeral-cpt');
             $new_columns['order'] = __('Order', 'hk-funeral-cpt');
+            $new_columns['shortcode'] = __('Shortcode', 'hk-funeral-cpt');
         } elseif ($key !== 'content') {
             // Add all columns except 'content'
             $new_columns[$key] = $value;
@@ -372,6 +374,14 @@ function hk_fs_display_package_columns($column, $post_id) {
 	if ($column === 'order') {
 		$order = get_post_meta($post_id, '_hk_fs_package_order', true);
 		echo !empty($order) ? esc_html($order) : '10';
+	}
+	
+	if ($column === 'shortcode') {
+		$shortcode = '[hk_formatted_price key="_hk_fs_package_price" post_id="' . esc_attr($post_id) . '"]';
+		echo '<div class="hk-shortcode-container">';
+		echo '<input type="text" readonly class="hk-shortcode-display" value="' . esc_attr($shortcode) . '" onclick="this.select();" style="width: 100%; max-width: 300px; font-size: 12px; padding: 4px; background: #f0f0f1;">';
+		echo '<button type="button" class="button button-small hk-copy-shortcode" data-shortcode="' . esc_attr($shortcode) . '"><span class="dashicons dashicons-clipboard"></span></button>';
+		echo '</div>';
 	}
 }
 add_action('manage_hk_fs_package_posts_custom_column', 'hk_fs_display_package_columns', 10, 2);
@@ -473,8 +483,42 @@ function hk_fs_package_admin_styles() {
 	?>
 	<style type="text/css">
 		.column-intro {
-			width: 40% !important;
-			min-width: 300px;
+			width: 30% !important;
+			min-width: 250px;
+		}
+
+		.column-shortcode {
+			width: 350px !important;
+		}
+
+		.hk-shortcode-display {
+			cursor: pointer;
+			border: 1px solid #ddd;
+		}
+
+		.hk-shortcode-display:focus {
+			border-color: #2271b1;
+			box-shadow: 0 0 0 1px #2271b1;
+			outline: 2px solid transparent;
+		}
+		
+		.hk-shortcode-container {
+			display: flex;
+			align-items: center;
+		}
+		
+		.hk-copy-shortcode {
+			margin-left: 5px !important;
+			padding: 0 !important;
+			height: 28px !important;
+			width: 28px !important;
+		}
+		
+		.hk-copy-shortcode .dashicons {
+			width: 20px;
+			height: 20px;
+			font-size: 16px;
+			line-height: 1.3;
 		}
 		
 		<?php if ($managed_by_sheets): ?>
@@ -498,6 +542,53 @@ function hk_fs_package_admin_styles() {
 		}
 		<?php endif; ?>
 	</style>
+	
+	<script type="text/javascript">
+		jQuery(document).ready(function($) {
+			$('.hk-copy-shortcode').on('click', function() {
+				var shortcode = $(this).data('shortcode');
+				var $button = $(this);
+				var $icon = $button.find('.dashicons');
+				
+				// Try to use modern clipboard API first
+				if (navigator.clipboard && window.isSecureContext) {
+					navigator.clipboard.writeText(shortcode).then(function() {
+						showCopySuccess($button, $icon);
+					}).catch(function() {
+						// Fall back to the old method if clipboard API fails
+						fallbackCopyToClipboard(shortcode, $button, $icon);
+					});
+				} else {
+					// Use the older method for browsers that don't support clipboard API
+					fallbackCopyToClipboard(shortcode, $button, $icon);
+				}
+			});
+			
+			// Fallback copy method
+			function fallbackCopyToClipboard(text, $button, $icon) {
+				var tempInput = $('<input>');
+				$('body').append(tempInput);
+				tempInput.val(text).select();
+				document.execCommand('copy');
+				tempInput.remove();
+				showCopySuccess($button, $icon);
+			}
+			
+			// Show success animation
+			function showCopySuccess($button, $icon) {
+				$icon.removeClass('dashicons-clipboard').addClass('dashicons-yes');
+				$button.css('background-color', '#00a32a');
+				$button.css('color', '#fff');
+				
+				// Reset after 2 seconds
+				setTimeout(function() {
+					$icon.removeClass('dashicons-yes').addClass('dashicons-clipboard');
+					$button.css('background-color', '');
+					$button.css('color', '');
+				}, 2000);
+			}
+		});
+	</script>
 	<?php
 }
 add_action('admin_head', 'hk_fs_package_admin_styles');
