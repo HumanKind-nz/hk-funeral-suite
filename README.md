@@ -241,6 +241,9 @@ hk-funeral-suite/
 ## 🔄 Changelog
 [ Full Changelog Here](CHANGELOG.md)
 
+## [1.4.1] - 2025-04-08
+- **Added** Improved cache clearing for REST API meta updates including external data sources and page builders
+
 ### [1.4.0] - 2025-04-07
 - **Added** Keepsakes custom post type for showcasing memorial keepsakes
 - **Added** Custom meta fields for keepsakes including product code, metal type, and stones

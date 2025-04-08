@@ -4,7 +4,7 @@
  *
  * Registers and handles front-end shortcodes for HK Funeral Suite.
  *
- * Version: 1.2
+ * Version: 1.3 2025-04-08
  * Changelog: Added optional 'post_id' attribute to fetch meta values from a specific post instead of the current post.
  *
  * @package HK_Funeral_Suite
@@ -101,3 +101,75 @@ class HK_Shortcodes {
 
 // Initialise the shortcodes.
 HK_Shortcodes::init();
+
+/**
+ * Clear caches when specific meta fields are updated via REST API
+ */
+add_action('updated_post_meta', function($meta_id, $post_id, $meta_key, $meta_value) {
+    // Only trigger on REST API requests
+    if (!defined('REST_REQUEST') || !REST_REQUEST) {
+        return;
+    }
+
+    // Define the meta keys we want to watch for
+    $watched_meta_keys = array(
+        '_hk_fs_keepsake_price',
+        '_hk_fs_keepsake_product_code',
+        '_hk_fs_keepsake_metal',
+        '_hk_fs_keepsake_stones',
+        '_hk_fs_casket_price',
+        '_hk_fs_urn_price',
+        '_hk_fs_monument_price',
+        '_hk_fs_package_price',
+        // Add any other meta fields that would affect Beaver Builder layouts
+    );
+
+    // Check if the meta key starts with any of our watched meta keys prefixes
+    $should_clear = false;
+    foreach ($watched_meta_keys as $key) {
+        if (strpos($meta_key, $key) === 0) {
+            $should_clear = true;
+            break;
+        }
+    }
+
+    if (!$should_clear) {
+        return;
+    }
+
+    // Get the post type
+    $post_type = get_post_type($post_id);
+
+    // Define which post types should trigger cache clearing
+    $relevant_post_types = array(
+        'hk_fs_keepsake',
+        'hk_fs_casket',
+        'hk_fs_urn',
+        'hk_fs_monument',
+        'hk_fs_package',
+        'hk_fs_staff'
+    );
+
+    if (!in_array($post_type, $relevant_post_types)) {
+        return;
+    }
+
+    // Log the update if we have a logging function available
+    if (function_exists('wcph_write_log')) {
+        wcph_write_log('[' . date('Y-m-d H:i:s') . '] HK Funeral Suite - REST API meta update for ' . $meta_key . ' on ' . $post_type . ' (ID: ' . $post_id . ')');
+    }
+
+    // Clear caches if Weave Cache Purge Helper is active
+    if (function_exists('wcph_purge')) {
+        wcph_purge();
+    }
+
+    // Clear Beaver Builder caches if available
+    if (class_exists('FLBuilderModel')) {
+        FLBuilderModel::delete_all_asset_cache();
+    }
+    
+    // Trigger action for other cache clearing systems
+    do_action('hk_fs_meta_updated_via_rest', $post_id, $meta_key, $post_type);
+    
+}, 10, 4);
