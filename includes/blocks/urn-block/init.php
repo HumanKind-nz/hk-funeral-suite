@@ -88,7 +88,7 @@ function hk_fs_load_urn_block_data() {
 	// Get meta values
 	$meta_values = array(
 		'price' => get_post_meta($post->ID, '_hk_fs_urn_price', true),
-		'is_price_managed' => get_option('hk_fs_urn_price_google_sheets', false)
+		'is_price_managed' => get_option('hk_fs_urn_price_google_sheets', false),
 	);
 	
 	// Get taxonomy terms
@@ -100,5 +100,11 @@ function hk_fs_load_urn_block_data() {
 	
 	// Enqueue the script with the data
 	wp_localize_script('hk-fs-urn-block', 'hkFsUrnData', $meta_values);
+	
+	// Add a small inline script to force refresh the price managed status on page load
+	wp_add_inline_script('hk-fs-urn-block', 
+		'window.hkFsUrnData = ' . json_encode($meta_values) . ';', 
+		'before'
+	);
 }
 add_action('admin_enqueue_scripts', 'hk_fs_load_urn_block_data');

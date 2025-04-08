@@ -670,10 +670,13 @@ function hk_fs_load_block_data($post_type, $script_id, $object_name) {
      $screen = get_current_screen();
      $is_new_post = $screen && $screen->action === 'add' && $screen->post_type === "hk_fs_{$post_type}";
      
+     // Always fetch fresh data from the options table to avoid stale cache
+     $is_price_managed = get_option("hk_fs_{$post_type}_price_google_sheets", false);
+     
      // Default meta values that will be available for both new and existing posts
      $meta_values = array(
          'price' => '',
-         'is_price_managed' => get_option("hk_fs_{$post_type}_price_google_sheets", false),
+         'is_price_managed' => $is_price_managed,
          'selectedCategory' => ''
      );
      
@@ -690,6 +693,13 @@ function hk_fs_load_block_data($post_type, $script_id, $object_name) {
      // Check if script is registered
      if (wp_script_is($script_id, 'registered')) {
          wp_localize_script($script_id, $object_name, $meta_values);
+         
+         // Add inline script to force refresh the data on page load
+         wp_add_inline_script($script_id, 
+            "window.{$object_name} = " . json_encode($meta_values) . ";", 
+            'before'
+         );
+         
          if (defined('WP_DEBUG') && WP_DEBUG) {
              error_log("Successfully localized script {$script_id} with {$object_name}");
          }

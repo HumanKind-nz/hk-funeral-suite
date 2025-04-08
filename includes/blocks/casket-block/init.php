@@ -115,5 +115,11 @@ function hk_fs_load_casket_block_data() {
 	
 	// Enqueue the script with the data
 	wp_localize_script('hk-fs-casket-block', 'hkFsCasketData', $meta_values);
+	
+	// Add a small inline script to force refresh the price managed status on page load
+	wp_add_inline_script('hk-fs-casket-block', 
+		'window.hkFsCasketData = ' . json_encode($meta_values) . ';', 
+		'before'
+	);
 }
 add_action('admin_enqueue_scripts', 'hk_fs_load_casket_block_data');

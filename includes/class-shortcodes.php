@@ -4,7 +4,7 @@
  *
  * Registers and handles front-end shortcodes for HK Funeral Suite.
  *
- * Version: 1.3 2025-04-08
+ * Version: 1.2
  * Changelog: Added optional 'post_id' attribute to fetch meta values from a specific post instead of the current post.
  *
  * @package HK_Funeral_Suite

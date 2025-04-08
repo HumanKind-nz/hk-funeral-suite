@@ -121,15 +121,24 @@ function hk_fs_load_pricing_package_block_data() {
 		return;
 	}
 	
+	// Always fetch fresh data from the options table to avoid stale cache
+	$is_price_managed = get_option('hk_fs_package_price_google_sheets', false);
+	
 	// Get meta values
 	$meta_values = array(
 		'intro' => get_post_meta($post->ID, '_hk_fs_package_intro', true),
 		'price' => get_post_meta($post->ID, '_hk_fs_package_price', true),
 		'order' => get_post_meta($post->ID, '_hk_fs_package_order', true) ?: '10',
-		'is_price_managed' => get_option('hk_fs_package_price_google_sheets', false)
+		'is_price_managed' => $is_price_managed
 	);
 	
 	// Enqueue the script with the data
 	wp_localize_script('hk-fs-pricing-package-block', 'hkFsPackageData', $meta_values);
+	
+	// Add a small inline script to force refresh the price managed status on page load
+	wp_add_inline_script('hk-fs-pricing-package-block', 
+		'window.hkFsPackageData = ' . json_encode($meta_values) . ';', 
+		'before'
+	);
 }
 add_action('admin_enqueue_scripts', 'hk_fs_load_pricing_package_block_data');

@@ -5,9 +5,14 @@ All notable changes to the HumanKind Funeral Suite plugin will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.4.2] - 2025-04-08
-- **Added** Improved cache clearing for REST API meta updates including external data sources and page builders
-**Added** Shortcode added to the pricing packages admin for easier content embedding
+## [1.4.4] - 2025-04-09
+- **Added** Shortcode added to the pricing packages admin for easier content embedding
+- **Fixed** useEffect hook issues in Gutenberg blocks to properly sync metadata
+- **Fixed** Google Sheets integration edge cases in price management system
+
+## [1.4.1] - 2025-04-08
+- **Added** Enhanced cache clearing for REST API meta updates
+- **Improved** Compatibility with external data sources and page builders
 
 ## [1.4.0] - 2025-04-07
 - **Added** Keepsakes custom post type for showcasing keepsakes

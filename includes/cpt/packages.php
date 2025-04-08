@@ -263,6 +263,7 @@ function hk_fs_package_ordering_callback($post) {
 		$order = 10;
 	}
 	
+	// Don't ever disable the order field, even with Google Sheets integration
 	?>
 	<p>
 		<label for="hk_fs_package_order"><?php _e('Display Order:', 'hk-funeral-cpt'); ?></label>
@@ -296,7 +297,7 @@ function hk_fs_save_package_meta($post_id) {
 	if (isset($_POST['hk_fs_package_pricing_nonce']) && 
 		wp_verify_nonce($_POST['hk_fs_package_pricing_nonce'], 'hk_fs_package_pricing_nonce')) {
 		
-		// Only update price if not managed by Google Sheets
+		// Always get a fresh version of the setting
 		$managed_by_sheets = get_option('hk_fs_package_price_google_sheets', false);
 		
 		if (!$managed_by_sheets && isset($_POST['hk_fs_package_price'])) {
@@ -309,6 +310,7 @@ function hk_fs_save_package_meta($post_id) {
 	if (isset($_POST['hk_fs_package_ordering_nonce']) && 
 		wp_verify_nonce($_POST['hk_fs_package_ordering_nonce'], 'hk_fs_package_ordering_nonce')) {
 		
+		// Order can always be updated regardless of price management
 		if (isset($_POST['hk_fs_package_order'])) {
 			update_post_meta($post_id, '_hk_fs_package_order', 
 				absint($_POST['hk_fs_package_order']));

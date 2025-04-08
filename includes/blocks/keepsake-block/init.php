@@ -38,7 +38,7 @@ function hk_fs_register_keepsake_block() {
 			'featuredImageUrl' => array('type' => 'string', 'default' => ''),
 			'productCode' => array('type' => 'string', 'default' => ''),
 			'metal' => array('type' => 'string', 'default' => ''),
-			'stones' => array('type' => 'string', 'default' => '')
+			'stones' => array('type' => 'string', 'default' => ''),
 		),
 	));
 }
@@ -112,7 +112,7 @@ function hk_fs_load_keepsake_block_data() {
 		'is_price_managed' => get_option('hk_fs_keepsake_price_google_sheets', false),
 		'productCode' => get_post_meta($post->ID, '_hk_fs_keepsake_product_code', true),
 		'metal' => get_post_meta($post->ID, '_hk_fs_keepsake_metal', true),
-		'stones' => get_post_meta($post->ID, '_hk_fs_keepsake_stones', true)
+		'stones' => get_post_meta($post->ID, '_hk_fs_keepsake_stones', true),
 	);
 	
 	// Get taxonomy terms
@@ -124,6 +124,12 @@ function hk_fs_load_keepsake_block_data() {
 	
 	// Enqueue the script with the data
 	wp_localize_script('hk-fs-keepsake-block', 'hkFsKeepsakeData', $meta_values);
+	
+	// Add a small inline script to force refresh the price managed status on page load
+	wp_add_inline_script('hk-fs-keepsake-block', 
+		'window.hkFsKeepsakeData = ' . json_encode($meta_values) . ';', 
+		'before'
+	);
 	
 	// Ensure editor styles are loaded for this post type
 	wp_enqueue_style(

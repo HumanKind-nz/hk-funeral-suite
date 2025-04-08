@@ -305,7 +305,7 @@ class HK_Funeral_Settings {
 	public function render_features_field() {
 		// Get all CPTs to display - combine core and registered
 		$all_cpts = array_merge(
-		    array('staff', 'caskets', 'urns', 'packages', 'monuments'), // Core CPTs
+		    array('staff', 'caskets', 'urns', 'packages', 'monuments', 'keepsakes'), // Core CPTs
 		    array_keys(self::$registered_cpt_map) // Dynamically registered CPTs
 		);
 		$all_cpts = array_unique($all_cpts); // Remove duplicates in case a core CPT was re-registered
@@ -339,7 +339,7 @@ class HK_Funeral_Settings {
 	public function render_visibility_field() {
 		// Get all CPTs to display - combine core and registered
 		$all_cpts = array_merge(
-		    array('staff', 'caskets', 'urns', 'packages','monuments'), // Core CPTs
+		    array('staff', 'caskets', 'urns', 'packages', 'monuments', 'keepsakes'), // Core CPTs
 		    array_keys(self::$registered_cpt_map) // Dynamically registered CPTs
 		);
 		$all_cpts = array_unique($all_cpts); // Remove duplicates in case a core CPT was re-registered
@@ -417,6 +417,9 @@ class HK_Funeral_Settings {
 			and will be disabled in the WordPress admin interface. This prevents accidental edits that would be 
 			overwritten by the next Google Sheets sync. 
 		</p>
+		<p class="description" style="color: #d63638;">
+			<strong>Important:</strong> After changing these settings, please reload any open edit screens to apply your changes.
+		</p>
 		<p class="description">
 			For information on how to link a Google Sheet to updating your pricing please contact 
 			<a href="https://weave.co.nz" target="_blank">Weave Digital Studio / HumanKind Funeral Website</a>.
@@ -433,7 +436,7 @@ class HK_Funeral_Settings {
 	public function sanitize_cpt_settings($input) {
 		// Get list of valid CPTs (core + dynamically registered)
 		$valid_cpts = array_merge(
-		    array('staff', 'caskets', 'urns', 'packages','monuments'), // Core CPTs
+		    array('staff', 'caskets', 'urns', 'packages', 'monuments', 'keepsakes'), // Core CPTs
 		    array_keys(self::$registered_cpt_map) // Dynamically registered CPTs
 		);
 		$valid_cpts = array_unique($valid_cpts);

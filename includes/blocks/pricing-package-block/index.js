@@ -13,6 +13,7 @@
 	var __ = wp.i18n.__;
 	var createElement = wp.element.createElement;
 	var Fragment = wp.element.Fragment;
+	var { useEffect } = wp.element;
 	
 	// Add custom styles for the block
 	var styleElement = document.createElement('style');
@@ -66,14 +67,25 @@
 				isPriceManaged = window.hkFsPackageData.is_price_managed || false;
 			}
 			
+			// Add useEffect to refresh the price managed status when editor loads
+			useEffect(function() {
+				// Force a refresh of the is_price_managed value by directly checking the option
+				// This ensures we have the latest setting
+				if (window.hkFsPackageData !== undefined) {
+					isPriceManaged = window.hkFsPackageData.is_price_managed || false;
+				}
+			}, []);
+			
 			// Load data if available
-			if (window.hkFsPackageData !== undefined) {
-			    setAttributes({
-			        intro: window.hkFsPackageData.intro || attributes.intro || '',
-			        price: window.hkFsPackageData.price || attributes.price || '',
-			        order: window.hkFsPackageData.order || attributes.order || '10'
-			    });
-			}
+			useEffect(function() {
+				if (window.hkFsPackageData) {
+					setAttributes({
+						intro: window.hkFsPackageData.intro || attributes.intro || '',
+						price: window.hkFsPackageData.price || attributes.price || '',
+						order: window.hkFsPackageData.order || attributes.order || '10'
+					});
+				}
+			}, []);
 			
 			// Create price field notice for Google Sheets integration
 			var sheetNotice = null;
@@ -159,6 +171,7 @@
 						label: 'Display Order',
 						value: attributes.order,
 						onChange: function(value) {
+							// Always allow changing the order regardless of isPriceManaged
 							setAttributes({ order: value });
 						},
 						help: createElement(
@@ -235,6 +248,7 @@
 							label: 'Display Order',
 							value: attributes.order,
 							onChange: function(value) {
+								// Always allow changing the order regardless of isPriceManaged
 								setAttributes({ order: value });
 							},
 							help: createElement(

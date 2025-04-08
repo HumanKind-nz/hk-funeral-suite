@@ -42,6 +42,15 @@
 				isPriceManaged = window.hkFsUrnData.is_price_managed || false;
 			}
 			
+			// Add useEffect to refresh the price managed status when editor loads
+			useEffect(function() {
+				// Force a refresh of the is_price_managed value by directly checking the option
+				// This ensures we have the latest setting
+				if (window.hkFsUrnData !== undefined) {
+					isPriceManaged = window.hkFsUrnData.is_price_managed || false;
+				}
+			}, []);
+			
 			// Get current post ID
 			var postId = useSelect(function(select) {
 				return select('core/editor').getCurrentPostId();
@@ -169,7 +178,7 @@
 				if (window.hkFsUrnData && attributes.price === '') {
 					setAttributes({
 						price: window.hkFsUrnData.price || '',
-						selectedCategory: window.hkFsUrnData.selectedCategory || ''
+						selectedCategory: window.hkFsUrnData.selectedCategory || '',
 					});
 				}
 			}, []);

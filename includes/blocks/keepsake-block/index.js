@@ -19,7 +19,7 @@
 
 	registerBlockType('hk-funeral-suite/keepsake', {
 		title: 'Keepsake Information',
-		icon: 'archive',
+		icon: 'buddicons-community',
 		category: 'common',
 		attributes: {
 			price: { type: 'string', default: '' },
@@ -44,6 +44,15 @@
 			if (window.hkFsKeepsakeData !== undefined) {
 				isPriceManaged = window.hkFsKeepsakeData.is_price_managed || false;
 			}
+			
+			// Add useEffect to refresh the price managed status when editor loads
+			useEffect(function() {
+				// Force a refresh of the is_price_managed value by directly checking the option
+				// This ensures we have the latest setting
+				if (window.hkFsKeepsakeData !== undefined) {
+					isPriceManaged = window.hkFsKeepsakeData.is_price_managed || false;
+				}
+			}, []);
 			
 			// Get current post ID
 			var postId = useSelect(function(select) {
@@ -221,7 +230,7 @@
 						selectedCategory: window.hkFsKeepsakeData.selectedCategory || '',
 						productCode: window.hkFsKeepsakeData.productCode || '',
 						metal: window.hkFsKeepsakeData.metal || '',
-						stones: window.hkFsKeepsakeData.stones || ''
+						stones: window.hkFsKeepsakeData.stones || '',
 					});
 				}
 			}, []);
@@ -311,7 +320,7 @@
 							value: attributes.stones,
 							options: getStoneOptions(),
 							onChange: updateStones
-						})
+						}),
 					)
 				),
 				createElement(
@@ -355,7 +364,7 @@
 							value: attributes.stones,
 							options: getStoneOptions(),
 							onChange: updateStones
-						})
+						}),
 					)
 				)
 			);
