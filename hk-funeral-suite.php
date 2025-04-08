@@ -13,8 +13,6 @@
  * Requires PHP: 7.4
  * Tested up to: 6.7
  * 
- * Changelog:
- * 1.4.4 - Fixed useEffect hook issues in Gutenberg blocks to properly sync metadata
  */
 
 // Prevent direct access
