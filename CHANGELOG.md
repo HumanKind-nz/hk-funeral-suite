@@ -5,6 +5,9 @@ All notable changes to the HumanKind Funeral Suite plugin will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.5] - 2025-04-09
+- **Added** `decimals="0"` parameter to shortcodes in the package admin column
+
 ## [1.4.4] - 2025-04-09
 - **Added** Shortcode added to the pricing packages admin for easier content embedding
 - **Fixed** useEffect hook issues in Gutenberg blocks to properly sync metadata

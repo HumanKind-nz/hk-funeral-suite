@@ -379,7 +379,7 @@ function hk_fs_display_package_columns($column, $post_id) {
 	}
 	
 	if ($column === 'shortcode') {
-		$shortcode = '[hk_formatted_price key="_hk_fs_package_price" post_id="' . esc_attr($post_id) . '"]';
+		$shortcode = '[hk_formatted_price key="_hk_fs_package_price" post_id="' . esc_attr($post_id) . '" decimals="0"]';
 		echo '<div class="hk-shortcode-container">';
 		echo '<input type="text" readonly class="hk-shortcode-display" value="' . esc_attr($shortcode) . '" onclick="this.select();" style="width: 100%; max-width: 300px; font-size: 12px; padding: 4px; background: #f0f0f1;">';
 		echo '<button type="button" class="button button-small hk-copy-shortcode" data-shortcode="' . esc_attr($shortcode) . '"><span class="dashicons dashicons-clipboard"></span></button>';
