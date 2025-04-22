@@ -1,0 +1,66 @@
+/**
+ * HK Funeral Suite Admin Styles
+ */
+
+/* Price field container styles */
+.price-field-container {
+    background: #f9f9f9;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    padding: 10px;
+    margin-top: 5px;
+}
+
+.price-field-container.sheet-managed {
+    border-left: 4px solid #d63638;
+}
+
+.sheet-integration-notice {
+    background-color: rgba(214, 54, 56, 0.05);
+    border-left: 4px solid #d63638;
+    padding: 8px;
+    margin-top: 10px;
+    border-radius: 2px;
+}
+
+/* Admin column styles */
+.column-price,
+.column-order {
+    width: 100px;
+}
+
+/* Make the Google Sheets icon look nicer */
+.dashicons-cloud {
+    vertical-align: middle;
+}
+
+/* Disable styling for managed fields */
+input[disabled], 
+select[disabled], 
+textarea[disabled] {
+    background-color: #f0f0f1 !important;
+    border-color: #dcdcde !important;
+    color: #8c8f94 !important;
+    box-shadow: none !important;
+}
+
+/* CPT specific colors */
+.hk_fs_casket-admin-color {
+    color: #0073aa;
+}
+
+.hk_fs_urn-admin-color {
+    color: #7e8993;
+}
+
+.hk_fs_package-admin-color {
+    color: #3c6e21;
+}
+
+.hk_fs_monument-admin-color {
+    color: #826eb4;
+}
+
+.hk_fs_keepsake-admin-color {
+    color: #d63638;
+} 

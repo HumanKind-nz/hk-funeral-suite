@@ -30,26 +30,26 @@ When using field connections in Beaver Builder Themer, you'll always use the ori
 | Phone | `_hk_fs_staff_phone` |
 | Email | `_hk_fs_staff_email` |
 
-### Staff Beaver Themer Shortcodes
+### Staff Shortcodes
 For Beaver Themer layouts, you can use these shortcodes to display team member fields:
 ```
-[wpbb post:custom_field key='_hk_fs_staff_position']
-[wpbb post:custom_field key='_hk_fs_staff_qualification']
-[wpbb post:custom_field key='_hk_fs_staff_phone'] 
-[wpbb post:custom_field key='_hk_fs_staff_email']
+[hk_custom_field key="_hk_fs_staff_position"]
+[hk_custom_field key="_hk_fs_staff_qualification"]
+[hk_custom_field key="_hk_fs_staff_phone"]
+[hk_custom_field key="_hk_fs_staff_email"]
 ```
 
 You can also add formatting around these fields:
 ```
 <div class="staff-position">
-    <strong>Position:</strong> [wpbb post:custom_field key='_hk_fs_staff_position']
+    <strong>Position:</strong> [hk_custom_field key="_hk_fs_staff_position"]
 </div>
 <div class="staff-qualifications">
-    <strong>Qualifications:</strong> [wpbb post:custom_field key='_hk_fs_staff_qualification']
+    <strong>Qualifications:</strong> [hk_custom_field key="_hk_fs_staff_qualification"]
 </div>
 <div class="staff-contact">
-    <strong>Email:</strong> <a href="mailto:[wpbb post:custom_field key='_hk_fs_staff_email']">[wpbb post:custom_field key='_hk_fs_staff_email']</a>
-    <strong>Phone:</strong> <a href="tel:[wpbb post:custom_field key='_hk_fs_staff_phone']">[wpbb post:custom_field key='_hk_fs_staff_phone']</a>
+    <strong>Email:</strong> <a href="mailto:[hk_custom_field key="_hk_fs_staff_email"]">[hk_custom_field key="_hk_fs_staff_email"]</a>
+    <strong>Phone:</strong> <a href="tel:[hk_custom_field key="_hk_fs_staff_phone"]">[hk_custom_field key="_hk_fs_staff_phone"]</a>
 </div>
 ```
 
@@ -73,15 +73,15 @@ When using field connections in Beaver Builder Themer, you'll always use the ori
 |-------|----------------------------|
 | Price | `_hk_fs_urn_price` |
 
-### Urn Beaver Themer Shortcodes
+### Urn Shortcodes
 For Beaver Themer layouts, you can display urn prices using the `[hk_formatted_price]` shortcode (recommended):
 ```
 [hk_formatted_price key="_hk_fs_urn_price" prefix="Price:" suffix="inc GST"]
 ```
 
-Or using the basic Beaver Themer field connection:
+Or using the basic custom field shortcode:
 ```
-[wpbb post:custom_field key='_hk_fs_urn_price']
+[hk_custom_field key="_hk_fs_urn_price"]
 ```
 
 ### Urn Taxonomies
@@ -105,18 +105,18 @@ When using field connections in Beaver Builder Themer, you'll always use the ori
 | Price | `_hk_fs_package_price` |
 | Display Order | `_hk_fs_package_order` |
 
-### Packages Beaver Themer Shortcodes
+### Packages Shortcodes
 For Beaver Themer layouts, you can use these shortcodes to display package fields:
 ```
-[wpbb post:custom_field key='_hk_fs_package_intro']
+[hk_custom_field key="_hk_fs_package_intro"]
 [hk_formatted_price key="_hk_fs_package_price"]
-[wpbb post:custom_field key='_hk_fs_package_order']
+[hk_custom_field key="_hk_fs_package_order"]
 ```
 
 You can also add formatting around these fields:
 ```
 <div class="package-intro">
-    [wpbb post:custom_field key='_hk_fs_package_intro']
+    [hk_custom_field key="_hk_fs_package_intro"]
 </div>
 <div class="package-pricing">
     <strong>Package Price:</strong> [hk_formatted_price key="_hk_fs_package_price" suffix="inc GST"]
@@ -129,7 +129,7 @@ Only show the intro section if the field has content:
 ```
 [wpbb-if exists="post:custom_field" key='_hk_fs_package_intro']
     <div class="package-intro">
-        [wpbb post:custom_field key='_hk_fs_package_intro']
+        [hk_custom_field key="_hk_fs_package_intro"]
     </div>
 [/wpbb-if]
 ```
@@ -147,15 +147,15 @@ When using field connections in Beaver Builder Themer, you'll always use the ori
 |-------|----------------------------|
 | Price | `_hk_fs_casket_price` |
 
-### Casket Beaver Themer Shortcodes
+### Casket Shortcodes
 For Beaver Themer layouts, you can display casket prices using the `[hk_formatted_price]` shortcode (recommended):
 ```
 [hk_formatted_price key="_hk_fs_casket_price" prefix="Price:" suffix="inc GST"]
 ```
 
-Or using the basic Beaver Themer field connection:
+Or using the basic custom field shortcode:
 ```
-[wpbb post:custom_field key='_hk_fs_casket_price']
+[hk_custom_field key="_hk_fs_casket_price"]
 ```
 
 ### Casket Taxonomies
@@ -164,7 +164,7 @@ You can also use the casket category taxonomy in Beaver Themer:
 [wpbb term:hk_fs_casket_category]
 ```
 
-## Advanced Beaver Themer Examples
+## Advanced Shortcode Examples
 
 ### Price Formatting with HK Shortcode (Recommended)
 Format prices with proper currency and formatting options:
@@ -174,12 +174,16 @@ Format prices with proper currency and formatting options:
 </div>
 ```
 
-### Legacy Price Formatting Example
-If you need to use the Beaver Themer formatting options directly:
+### Custom Field with Default Value
+Display a field with a fallback value if empty:
 ```
-<div class="price-display">
-    $[wpbb post:custom_field key='_hk_fs_casket_price' format='number' thousands_sep=',' decimals='2']
-</div>
+[hk_custom_field key="_hk_fs_package_intro" default="No description available"]
+```
+
+### Custom Field with Raw Output
+Display a field without HTML formatting:
+```
+[hk_custom_field key="_hk_fs_package_intro" format="raw"]
 ```
 
 ### Conditional Display Example
@@ -187,12 +191,10 @@ Only show elements if a field has content:
 ```
 [wpbb-if exists="post:custom_field" key='_hk_fs_staff_qualification']
     <div class="qualification">
-        <strong>Qualifications:</strong> [wpbb post:custom_field key='_hk_fs_staff_qualification']
+        <strong>Qualifications:</strong> [hk_custom_field key="_hk_fs_staff_qualification"]
     </div>
 [/wpbb-if]
 ```
-
-
 
 ## Combining HK Shortcodes with Beaver Themer
 

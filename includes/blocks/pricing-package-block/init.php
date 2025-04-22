@@ -77,36 +77,52 @@ function hk_fs_render_pricing_package_block($attributes, $content) {
  * Save block data to post meta when the post is saved
  */
 function hk_fs_save_pricing_package_block_data($post_id, $post) {
-	// Only proceed for our custom post type
+	// Skip autosaves and revisions
+	if (wp_is_post_autosave($post_id) || wp_is_post_revision($post_id)) {
+		return;
+	}
+	
 	if ($post->post_type !== 'hk_fs_package') {
 		return;
 	}
-	// Check if the post content has our block
-	if (has_block('hk-funeral-suite/pricing-package', $post->post_content)) {
-		// Parse blocks to get our data
-		$blocks = parse_blocks($post->post_content);
-		
-		foreach ($blocks as $block) {
-			if ($block['blockName'] === 'hk-funeral-suite/pricing-package') {
-				$attrs = $block['attrs'];
-				
-				// Save each attribute to its corresponding meta field
-				if (isset($attrs['intro'])) {
-					update_post_meta($post_id, '_hk_fs_package_intro', sanitize_textarea_field($attrs['intro']));
-				}
-				
-				if (isset($attrs['price'])) {
-					update_post_meta($post_id, '_hk_fs_package_price', sanitize_text_field($attrs['price']));
-				}
-				
-				if (isset($attrs['order'])) {
-					update_post_meta($post_id, '_hk_fs_package_order', absint($attrs['order']));
-				}
-				
-				// We only need to process the first instance of our block
-				break;
+	
+	// Check if pricing is managed by Google Sheets
+	$managed_by_sheets = get_option('hk_fs_package_price_google_sheets', false);
+
+	$blocks = parse_blocks($post->post_content);
+	foreach ($blocks as $block) {
+		if ($block['blockName'] === 'hk-funeral-suite/pricing-package') {
+			$attrs = $block['attrs'];
+			
+			// Save package intro text
+			if (isset($attrs['intro'])) {
+				update_post_meta($post_id, '_hk_fs_package_intro', sanitize_textarea_field($attrs['intro']));
 			}
+			
+			// Save price only if not managed by Google Sheets
+			if (!$managed_by_sheets && isset($attrs['price'])) {
+				update_post_meta($post_id, '_hk_fs_package_price', sanitize_text_field($attrs['price']));
+			}
+			
+			// Save package display order
+			if (isset($attrs['order'])) {
+				update_post_meta($post_id, '_hk_fs_package_order', absint($attrs['order']));
+			}
+			
+			// Handle featured image
+			if (isset($attrs['featuredImageId']) && $attrs['featuredImageId'] > 0) {
+				set_post_thumbnail($post_id, $attrs['featuredImageId']);
+			} elseif (isset($attrs['featuredImageId']) && $attrs['featuredImageId'] === 0) {
+				delete_post_thumbnail($post_id);
+			}
+			
+			break; // Process only the first instance of the block
 		}
+	}
+	
+	// Use the shared cache purging function for consistent behavior
+	if (function_exists('hk_fs_optimized_cache_purge')) {
+		hk_fs_optimized_cache_purge($post_id, 'pricing package block save');
 	}
 }
 add_action('save_post', 'hk_fs_save_pricing_package_block_data', 10, 2);

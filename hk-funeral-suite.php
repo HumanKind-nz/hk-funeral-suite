@@ -3,7 +3,7 @@
  * Plugin Name: HumanKind Funeral Suite
  * Plugin URI: https://github.com/HumanKind-nz/hk-funeral-suite/
  * Description: A powerful WordPress plugin to streamline funeral home websites adding custom post types, taxonomies and fields for Staff, Caskets, Urns, and Pricing Packages, along with specialised Gutenberg blocks for easy content management. 
- * Version: 1.4.5
+ * Version: 1.4.7
  * Author: HumanKind, Weave Digital Studio, Gareth Bissland
  * Author URI: https://weave.co.nz
  * License: GPL v2.0 or later
@@ -21,7 +21,7 @@ if (!defined('WPINC')) {
 }
 
 // Define plugin constants
-define('HK_FS_VERSION', '1.4.5'); 
+define('HK_FS_VERSION', '1.4.7'); 
 define('HK_FS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('HK_FS_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('HK_FS_BASENAME', plugin_basename(__FILE__));
@@ -43,22 +43,29 @@ function hk_fs_cleanup_plugin() {
 }
 register_uninstall_hook(__FILE__, 'hk_fs_cleanup_plugin');
 
-// Load core files
-require_once HK_FS_PLUGIN_DIR . 'includes/admin/class-settings-page.php';
+// Load core files and capabilities first
 require_once HK_FS_PLUGIN_DIR . 'includes/admin/class-capabilities.php';
+require_once HK_FS_PLUGIN_DIR . 'includes/admin/class-settings-page.php'; // Required early for $settings
+require_once HK_FS_PLUGIN_DIR . 'includes/admin/class-block-editor.php'; // Required for block editor support
+
+// Initialize the core classes
+HK_Funeral_Block_Editor::init();
+
+// Get settings instance first
+$settings = HK_Funeral_Settings::get_instance();
+
+// Initialize settings class
+add_action('plugins_loaded', array('HK_Funeral_Settings', 'init'), 5);
 
 // Load block styles integration
 require_once HK_FS_PLUGIN_DIR . 'includes/blocks/block-styles.php';
 
-// Block Editor Customizations
-require_once HK_FS_PLUGIN_DIR . 'includes/admin/class-block-editor.php';
-
-// Admin Post Modifications (only for admin)
-require_once HK_FS_PLUGIN_DIR . 'includes/admin/class-post-mods.php';
-HK_Post_Mods::init();
-
 // Load shortcodes file (available on both front-end and admin)
 require_once HK_FS_PLUGIN_DIR . 'includes/class-shortcodes.php';
+
+// The following files are now loaded via hk_fs_load_admin_files() function
+// require_once HK_FS_PLUGIN_DIR . 'includes/admin/class-block-editor.php';
+// require_once HK_FS_PLUGIN_DIR . 'includes/admin/class-post-mods.php';
 
 // Load importer class for adding default blocks
 if ( file_exists( HK_FS_PLUGIN_DIR . 'includes/import/class-default-blocks-importer.php' ) ) {
@@ -84,9 +91,6 @@ require_once HK_FS_PLUGIN_DIR . 'includes/admin/class-hk-funeral-cpt-compatibili
 HK_Funeral_Capabilities::init();
 // Create block directories if they don't exist
 hk_fs_create_block_directories();
-
-// Initialize settings
-$settings = HK_Funeral_Settings::get_instance();
 
 // Then load shared CPT functions and factory
 require_once HK_FS_PLUGIN_DIR . 'includes/cpt/cpt-shared-functions.php';
@@ -243,3 +247,27 @@ function hk_fs_deactivate_plugin() {
     flush_rewrite_rules();
 }
 register_deactivation_hook(__FILE__, 'hk_fs_deactivate_plugin');
+
+// Admin classes - with file existence check
+function hk_fs_load_admin_files() {
+    $admin_files = array(
+        'class-admin.php',
+        'class-block-editor.php',  // This needs to load early
+        'class-hk-funeral-cpt-admin-columns.php',
+        'class-hk-funeral-cpt-compatibility.php',
+        'class-cache-debug.php'
+    );
+    // class-settings-page.php is already loaded directly
+
+    foreach ($admin_files as $file) {
+        $file_path = HK_FS_PLUGIN_DIR . 'includes/admin/' . $file;
+        if (file_exists($file_path)) {
+            require_once $file_path;
+        } else {
+            // Log error for debugging
+            error_log('HK Funeral Suite: Missing admin file: ' . $file_path);
+        }
+    }
+}
+// Hook this function to run earlier in the boot process
+add_action('plugins_loaded', 'hk_fs_load_admin_files', 5);

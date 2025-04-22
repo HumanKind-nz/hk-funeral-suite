@@ -42,6 +42,11 @@ function hk_fs_register_monument_block() {
 add_action('init', 'hk_fs_register_monument_block', 20);
 
 function hk_fs_save_monument_block_data($post_id, $post) {
+	// Skip autosaves and revisions
+	if (wp_is_post_autosave($post_id) || wp_is_post_revision($post_id)) {
+		return;
+	}
+	
 	if ($post->post_type !== 'hk_fs_monument') {
 		return;
 	}
@@ -73,6 +78,11 @@ function hk_fs_save_monument_block_data($post_id, $post) {
 			
 			break; // Process only the first instance of the block
 		}
+	}
+	
+	// Use the shared cache purging function for consistent behavior
+	if (function_exists('hk_fs_optimized_cache_purge')) {
+		hk_fs_optimized_cache_purge($post_id, 'monument block save');
 	}
 }
 add_action('save_post', 'hk_fs_save_monument_block_data', 10, 2);

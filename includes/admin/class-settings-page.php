@@ -687,4 +687,17 @@ class HK_Funeral_Settings {
 			update_option('hk_fs_flush_rewrite_rules', 'yes');
 		}
 	}
+
+	/**
+	 * Initialize the settings page
+	 */
+	public static function init() {
+		$instance = self::get_instance();
+		
+		// Register settings page - use the correct method name that exists (add_menu_page)
+		add_action('admin_menu', array($instance, 'add_menu_page'));
+		
+		// Register settings
+		add_action('admin_init', array($instance, 'register_settings'));
+	}
 }

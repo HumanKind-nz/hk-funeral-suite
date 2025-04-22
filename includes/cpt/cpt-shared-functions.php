@@ -721,3 +721,52 @@ function hk_fs_register_block_data_loader($post_type) {
         hk_fs_load_block_data($post_type, $script_id, $object_name);
     });
 }
+
+/**
+ * Optimized cache purging function
+ * This provides consistent cache purging behavior across all CPTs
+ * 
+ * @param int $post_id The post ID that triggered the update
+ * @param string $context Additional context information for logging
+ */
+function hk_fs_optimized_cache_purge($post_id = null, $context = 'unknown') {
+    // Log the update if we have a logging function available
+    if (function_exists('wcph_write_log')) {
+        wcph_write_log('[' . date('Y-m-d H:i:s') . '] HK Funeral Suite - Optimized cache purge initiated for ' . $context . ($post_id ? ' (ID: ' . $post_id . ')' : ''));
+    }
+    
+    // Use static variable for debouncing optimization
+    static $purge_requested = false;
+    static $posts_to_purge = array();
+    
+    // Add current post to the purge list if provided
+    if ($post_id) {
+        $posts_to_purge[$post_id] = true;
+    }
+    
+    // Only set up the purge once
+    if (!$purge_requested) {
+        $purge_requested = true;
+        
+        // Schedule a single purge at the end of the request
+        add_action('shutdown', function() use ($context, &$posts_to_purge) {
+            if (function_exists('wcph_write_log')) {
+                wcph_write_log('[' . date('Y-m-d H:i:s') . '] HK Funeral Suite - Executing delayed cache purge on shutdown for ' . $context . ' (Posts: ' . implode(', ', array_keys($posts_to_purge)) . ')');
+            }
+            
+            // First handle specific post caches (faster)
+            if (class_exists('FLBuilderModel')) {
+                foreach (array_keys($posts_to_purge) as $post_id) {
+                    // Targeted asset cache clearing for specific post
+                    FLBuilderModel::delete_asset_cache_for_post($post_id);
+                }
+            }
+            
+            // Then do a single full cache purge at the end
+            if (function_exists('wcph_purge')) {
+                wcph_purge();
+            }
+            
+        }, 999);
+    }
+}

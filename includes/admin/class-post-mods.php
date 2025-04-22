@@ -43,7 +43,7 @@ class HK_Post_Mods {
 			'hk_fs_urn'     => 'hk_fs_enable_public_urns',
 			'hk_fs_package' => 'hk_fs_enable_public_packages',
 			'hk_fs_monument' => 'hk_fs_enable_public_monuments',
-			
+			'hk_fs_keepsake' => 'hk_fs_enable_public_keepsakes',
 		);
 
 		// If the current post type is not one of our CPTs, exit.
@@ -63,3 +63,6 @@ class HK_Post_Mods {
 		$wp_admin_bar->remove_node( 'view' );
 	}
 }
+
+// Initialize the class using the admin_init hook for better compatibility
+add_action('admin_init', array('HK_Post_Mods', 'init'));

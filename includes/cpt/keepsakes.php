@@ -211,3 +211,24 @@ function hk_fs_load_keepsake_extensions() {
     }
 }
 add_action('init', 'hk_fs_load_keepsake_extensions', 20); // After CPT registration
+
+/**
+ * Hook into post save to ensure cache purging for the keepsake CPT
+ */
+function hk_fs_keepsake_post_save($post_id, $post) {
+    // Skip autosaves and revisions
+    if (wp_is_post_autosave($post_id) || wp_is_post_revision($post_id)) {
+        return;
+    }
+    
+    // Only process our post type
+    if ($post->post_type !== 'hk_fs_keepsake') {
+        return;
+    }
+    
+    // Use the shared cache purging function
+    if (function_exists('hk_fs_optimized_cache_purge')) {
+        hk_fs_optimized_cache_purge($post_id, 'keepsake_post_save');
+    }
+}
+add_action('save_post', 'hk_fs_keepsake_post_save', 99, 2);  // Run after all other save handlers

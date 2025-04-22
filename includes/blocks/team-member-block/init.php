@@ -108,58 +108,70 @@ function hk_fs_render_team_member_block($attributes, $content) {
  * Save block data to post meta when the post is saved
  */
 function hk_fs_save_team_member_block_data($post_id, $post) {
-	// Only proceed for our custom post type
+	// Skip autosaves and revisions
+	if (wp_is_post_autosave($post_id) || wp_is_post_revision($post_id)) {
+		return;
+	}
+	
 	if ($post->post_type !== 'hk_fs_staff') {
 		return;
 	}
 
-	// Check if the post content has our block
-	if (has_block('hk-funeral-suite/team-member', $post->post_content)) {
-		// Parse blocks to get our data
-		$blocks = parse_blocks($post->post_content);
-		
-		foreach ($blocks as $block) {
-			if ($block['blockName'] === 'hk-funeral-suite/team-member') {
-				$attrs = $block['attrs'];
-				
-				// Save each attribute to its corresponding meta field
-				if (isset($attrs['position'])) {
-					update_post_meta($post_id, '_hk_fs_staff_position', sanitize_text_field($attrs['position']));
-				}
-				
-				if (isset($attrs['qualification'])) {
-					update_post_meta($post_id, '_hk_fs_staff_qualification', sanitize_text_field($attrs['qualification']));
-				}
-				
-				if (isset($attrs['phone'])) {
-					update_post_meta($post_id, '_hk_fs_staff_phone', sanitize_text_field($attrs['phone']));
-				}
-				
-				if (isset($attrs['email'])) {
-					update_post_meta($post_id, '_hk_fs_staff_email', sanitize_email($attrs['email']));
-				}
-				
-				// Save featured image
-				if (isset($attrs['featuredImageId']) && $attrs['featuredImageId'] > 0) {
-					set_post_thumbnail($post_id, $attrs['featuredImageId']);
-				} elseif (isset($attrs['featuredImageId']) && $attrs['featuredImageId'] === 0) {
-					// Remove featured image if it was explicitly set to 0
-					delete_post_thumbnail($post_id);
-				}
-				
-				// Handle taxonomies
-				if (!empty($attrs['selectedLocation'])) {
-					wp_set_object_terms($post_id, intval($attrs['selectedLocation']), 'hk_fs_location');
-				}
-				
-				if (!empty($attrs['selectedRole'])) {
-					wp_set_object_terms($post_id, intval($attrs['selectedRole']), 'hk_fs_role');
-				}
-				
-				// We only need to process the first instance of our block
-				break;
+	// Check for and extract data from our block in the post content
+	$blocks = parse_blocks($post->post_content);
+	foreach ($blocks as $block) {
+		if ($block['blockName'] === 'hk-funeral-suite/team-member') {
+			$attrs = $block['attrs'];
+			
+			// Save staff position (job title)
+			if (isset($attrs['position'])) {
+				update_post_meta($post_id, '_hk_fs_staff_position', sanitize_text_field($attrs['position']));
 			}
+			
+			// Save qualification
+			if (isset($attrs['qualification'])) {
+				update_post_meta($post_id, '_hk_fs_staff_qualification', sanitize_text_field($attrs['qualification']));
+			}
+			
+			// Save phone number
+			if (isset($attrs['phone'])) {
+				update_post_meta($post_id, '_hk_fs_staff_phone', sanitize_text_field($attrs['phone']));
+			}
+			
+			// Save email
+			if (isset($attrs['email'])) {
+				update_post_meta($post_id, '_hk_fs_staff_email', sanitize_email($attrs['email']));
+			}
+			
+			// Ensure social links are saved as expected format
+			if (isset($attrs['socialLinks']) && is_array($attrs['socialLinks'])) {
+				$sanitized_links = array();
+				foreach ($attrs['socialLinks'] as $link) {
+					if (isset($link['url']) && !empty($link['url'])) {
+						$sanitized_links[] = array(
+							'platform' => isset($link['platform']) ? sanitize_text_field($link['platform']) : '',
+							'url' => esc_url_raw($link['url']),
+							'icon' => isset($link['icon']) ? sanitize_text_field($link['icon']) : ''
+						);
+					}
+				}
+				update_post_meta($post_id, '_hk_fs_staff_social_links', $sanitized_links);
+			}
+			
+			// Handle featured image
+			if (isset($attrs['featuredImageId']) && $attrs['featuredImageId'] > 0) {
+				set_post_thumbnail($post_id, $attrs['featuredImageId']);
+			} elseif (isset($attrs['featuredImageId']) && $attrs['featuredImageId'] === 0) {
+				delete_post_thumbnail($post_id);
+			}
+			
+			break; // Only process the first team member block found
 		}
+	}
+	
+	// Use the shared cache purging function for consistent behavior
+	if (function_exists('hk_fs_optimized_cache_purge')) {
+		hk_fs_optimized_cache_purge($post_id, 'team member block save');
 	}
 }
 add_action('save_post', 'hk_fs_save_team_member_block_data', 10, 2);

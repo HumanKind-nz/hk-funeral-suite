@@ -55,40 +55,45 @@ function hk_fs_render_casket_block($attributes, $content) {
  * Save block data to post meta when the post is saved
  */
 function hk_fs_save_casket_block_data($post_id, $post) {
-	 if ($post->post_type !== 'hk_fs_casket') {
-		 return;
-	 }
-	 
-	 // Check if pricing is managed by Google Sheets
-	 $managed_by_sheets = get_option('hk_fs_casket_price_google_sheets', false);
- 
-	 $blocks = parse_blocks($post->post_content);
-	 foreach ($blocks as $block) {
-		 if ($block['blockName'] === 'hk-funeral-suite/casket') {
-			 $attrs = $block['attrs'];
- 
-			 // Save price to post meta only if not managed by Google Sheets
-			 if (!$managed_by_sheets && isset($attrs['price'])) {
-				 update_post_meta($post_id, '_hk_fs_casket_price', sanitize_text_field($attrs['price']));
-			 }
- 
-			 // Sync featured image with actual post featured image
-			 if (isset($attrs['featuredImageId']) && $attrs['featuredImageId'] > 0) {
-				 set_post_thumbnail($post_id, $attrs['featuredImageId']);
-			 } elseif (isset($attrs['featuredImageId']) && $attrs['featuredImageId'] === 0) {
-				 delete_post_thumbnail($post_id);
-			 }
- 
-			 // Save selected category
-			 if (!empty($attrs['selectedCategory'])) {
-				 wp_set_object_terms($post_id, intval($attrs['selectedCategory']), 'hk_fs_casket_category');
-			 }
- 
-			 break; // Process only the first instance of the block
-		 }
-	 }
- }
- add_action('save_post', 'hk_fs_save_casket_block_data', 10, 2);
+	// Skip autosaves and revisions
+	if (wp_is_post_autosave($post_id) || wp_is_post_revision($post_id)) {
+		return;
+	}
+	
+	if ($post->post_type !== 'hk_fs_casket') {
+		return;
+	}
+
+	// Check if pricing is managed by Google Sheets
+	$managed_by_sheets = get_option('hk_fs_casket_price_google_sheets', false);
+
+	$blocks = parse_blocks($post->post_content);
+	foreach ($blocks as $block) {
+		if ($block['blockName'] === 'hk-funeral-suite/casket') {
+			$attrs = $block['attrs'];
+			
+			// Save price to post meta
+			if (!$managed_by_sheets && isset($attrs['price'])) {
+				update_post_meta($post_id, '_hk_fs_casket_price', sanitize_text_field($attrs['price']));
+			}
+			
+			// Save featured image
+			if (isset($attrs['featuredImageId']) && $attrs['featuredImageId'] > 0) {
+				set_post_thumbnail($post_id, $attrs['featuredImageId']);
+			} elseif (isset($attrs['featuredImageId']) && $attrs['featuredImageId'] === 0) {
+				delete_post_thumbnail($post_id);
+			}
+			
+			break; // Process only the first instance of the block
+		}
+	}
+	
+	// Use the shared cache purging function for consistent behavior
+	if (function_exists('hk_fs_optimized_cache_purge')) {
+		hk_fs_optimized_cache_purge($post_id, 'casket block save');
+	}
+}
+add_action('save_post', 'hk_fs_save_casket_block_data', 10, 2);
 /**
  * Load block data from post meta when editing
  */

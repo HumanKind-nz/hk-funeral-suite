@@ -22,6 +22,13 @@ if (!defined('WPINC')) {
  */
 class HK_Funeral_Block_Editor {
 	/**
+	 * Initialize the class 
+	 */
+	public static function init() {
+		new self();
+	}
+	
+	/**
 	 * Constructor
 	 */
 	public function __construct() {
@@ -77,7 +84,9 @@ class HK_Funeral_Block_Editor {
 			'core/heading',
 			'core/list',
 			'core/list-item',
-			'core/separator'
+			'core/separator',
+			'core/button',  // Button block
+			'core/buttons'  // Buttons container block
 		);
 		
 		// Define mapping of post types to their required blocks
@@ -86,7 +95,8 @@ class HK_Funeral_Block_Editor {
 			'hk_fs_casket'  => 'hk-funeral-suite/casket',
 			'hk_fs_urn'     => 'hk-funeral-suite/urn',
 			'hk_fs_staff'   => 'hk-funeral-suite/team-member',
-			'hk_fs_monument' => 'hk-funeral-suite/monument' // Add monuments mapping
+			'hk_fs_monument' => 'hk-funeral-suite/monument', // Add monuments mapping
+			'hk_fs_keepsake' => 'hk-funeral-suite/keepsake' // Add keepsakes mapping
 		);
 		
 		// Check if this is one of our custom post types
@@ -124,7 +134,8 @@ class HK_Funeral_Block_Editor {
 			'hk_fs_casket'  => 'hk-funeral-suite/casket',
 			'hk_fs_urn'     => 'hk-funeral-suite/urn',
 			'hk_fs_staff'   => 'hk-funeral-suite/team-member',
-			'hk_fs_monument' => 'hk-funeral-suite/monument' // Add monuments mapping
+			'hk_fs_monument' => 'hk-funeral-suite/monument', // Add monuments mapping
+			'hk_fs_keepsake' => 'hk-funeral-suite/keepsake' // Add keepsakes mapping
 		);
 		
 		// Only apply settings to our post types
@@ -154,7 +165,8 @@ class HK_Funeral_Block_Editor {
 			'hk_fs_casket'  => 'hk-funeral-suite/casket',
 			'hk_fs_urn'     => 'hk-funeral-suite/urn',
 			'hk_fs_staff'   => 'hk-funeral-suite/team-member',
-			'hk_fs_monument' => 'hk-funeral-suite/monument' // Add monuments mapping
+			'hk_fs_monument' => 'hk-funeral-suite/monument', // Add monuments mapping
+			'hk_fs_keepsake' => 'hk-funeral-suite/keepsake' // Add keepsakes mapping
 		);
 		
 		// Only apply to our post types
@@ -235,5 +247,7 @@ class HK_Funeral_Block_Editor {
 	}
 }
 
-// Initialize the class
-new HK_Funeral_Block_Editor();
+// No need for hook anymore - class is initialized directly in the main plugin file
+// add_action('init', function() {
+// 	HK_Funeral_Block_Editor::init();
+// }, 5);
