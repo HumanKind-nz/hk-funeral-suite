@@ -241,6 +241,18 @@ hk-funeral-suite/
 ## 🔄 Changelog
 [ Full Changelog Here](CHANGELOG.md)
 
+### 1.4.7 - 2024-04-22
+
+- **Added** new `[hk_custom_field]` shortcode for reliable custom field display in Beaver Builder
+- **Updated** Beaver Themer guide with new shortcode examples and best practices to docs
+
+### 1.4.6 - 2024-04-18 - Keepsakes
+
+- **Added** Support for the Keepsakes CPT in the Block Editor
+- **Added** Core button blocks (`core/button` and `core/buttons`) to all CPTs
+- **Fixed** issue with slow post saving due to inefficient cache purging. Overall NGINX page cache improvements
+- **Fixed** duplicate code in pricing package block save handler
+
 ### [1.4.5] - 2025-04-09
 - **Added** `decimals="0"` parameter to shortcodes in the package admin column
 
