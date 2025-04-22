@@ -41,7 +41,7 @@ Each content type comes with tailor-made fields and taxonomies to fit the needs 
   - Import compatibility with All Import Pro
   - REST API integration for programmatic content creation
   - Block template locking for consistent data entry
-  - Shortcode for pricing meta field
+  - Shortcodes for displaying custom fields and pricing in templates
 
 ## 📈 Google Sheet Sync for Pricing
 
@@ -80,7 +80,24 @@ When Google Sheets integration is enabled, the plugin adds hooks to:
 ## 🍰 Shortcodes
 
 ### `[hk_formatted_price]`
-Outputs a formatted price from a custom field.
+Outputs a formatted price from a custom field with proper currency formatting.
+
+**Key features:**
+- Currency symbol customisation
+- Prefix and suffix support
+- Adjustable decimal precision
+- Graceful fallback for non-numeric values (e.g., "P.O.A.")
+
+### `[hk_custom_field]`
+Displays any custom field value with optional formatting and fallbacks.
+
+**Key features:**
+- Date formatting support
+- Before/after content wrappers
+- Fallback content for empty fields
+- Option for raw output without wrappers
+- HTML tag stripping option
+
 More info see [Shortcode Usage Examples](shortcode-usage.md)
 
 ---
@@ -192,9 +209,11 @@ hk-funeral-suite/
 │   │   ├── class-capabilities.php      # Custom capabilities for CPTs
 │   │   ├── class-github-updater.php    # GitHub automatic updates
 │   │   ├── class-block-editor.php      # Custom block defaults for CPTs
-│   │   └── class-post-mods.php         # Post modifications/customizations
-│   │   └── class-hk-funeral-cpt-admin-columns.php  # Adjust admin columns, remove SEO columns.
-│   │   └── class-hk-funeral-cpt-compatibility.php  # Add theme/plugin compatibility optimsations.
+│   │   ├── class-post-mods.php         # Post modifications/customizations
+│   │   ├── class-admin.php             # Admin-specific functionality
+│   │   ├── class-cache-debug.php       # Cache debugging tools
+│   │   ├── class-hk-funeral-cpt-admin-columns.php  # Adjust admin columns, remove SEO columns
+│   │   └── class-hk-funeral-cpt-compatibility.php  # Add theme/plugin compatibility optimisations
 │   ├── blocks/
 │   │   ├── assets/                     # Shared block assets
 │   │   │   └── block-editor-styles.css # Block editor specific styles
@@ -226,7 +245,7 @@ hk-funeral-suite/
 │   │   └── keepsakes.php                   # Keepsakes CPT registration
 │   ├── import/
 │   │   └── class-default-blocks-importer.php  # Import integration
-│   └── class-shortcodes.php            # Shortcode registration and handling
+│   └── class-shortcodes.php            # Shortcode registration ([hk_formatted_price], [hk_custom_field])
 ├── assets/
 │   └── images/                        # Main plugin images
 │       └── hk-funeral-suite-banner.png                     
@@ -234,6 +253,7 @@ hk-funeral-suite/
 ├── README.md                          # Main documentation
 ├── CHANGELOG.md                       # Version history
 ├── beaver-themer-guide.md            # Beaver Themer integration guide
+├── shortcode-usage.md                # Shortcode usage examples
 ├── LICENSE                           # License file
 └── hk-funeral-suite.php              # Main plugin file
 ```
@@ -242,12 +262,9 @@ hk-funeral-suite/
 [ Full Changelog Here](CHANGELOG.md)
 
 ### 1.4.7 - 2024-04-22
-
-- **Added** new `[hk_custom_field]` shortcode for reliable custom field display in Beaver Builder
-- **Updated** Beaver Themer guide with new shortcode examples and best practices to docs
+- **Added** new `[hk_custom_field]` shortcode for reliable custom field display in Page Builders, including examples.
 
 ### 1.4.6 - 2024-04-18 - Keepsakes
-
 - **Added** Support for the Keepsakes CPT in the Block Editor
 - **Added** Core button blocks (`core/button` and `core/buttons`) to all CPTs
 - **Fixed** issue with slow post saving due to inefficient cache purging. Overall NGINX page cache improvements

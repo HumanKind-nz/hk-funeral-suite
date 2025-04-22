@@ -6,12 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## 1.4.7 - 2024-04-22
-
-- **Added** new `[hk_custom_field]` shortcode for reliable custom field display in Beaver Builder
-- **Updated** Beaver Themer guide with new shortcode examples and best practices to docs
+- **Added** new `[hk_custom_field]` shortcode for reliable custom field display in Page Builders, including examples.
 
 ## 1.4.6 - 2024-04-18 - Keepsakes
-
 - **Added** Support for the Keepsakes CPT in the Block Editor
 - **Added** Core button blocks (`core/button` and `core/buttons`) to all CPTs
 - **Fixed** issue with slow post saving due to inefficient cache purging. Overall NGINX page cache improvements
@@ -123,7 +120,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [1.0.0] - 2025-01-15
-
 - Four custom post types: Staff, Caskets, Urns, and Pricing Packages
 - Custom taxonomies for categorisation
 - Specialised Gutenberg blocks for each post type
