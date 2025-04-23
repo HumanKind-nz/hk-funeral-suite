@@ -46,7 +46,7 @@ This might output: `From <span class="hk-item-price">$2,000</span> inc gst`
 
 ### Adding Decimal Places
 
-Control the number of decimal places with the `decimals` attribute. For example, to show two decimal places:
+By default, prices show no decimal places. To display cents, use the `decimals` attribute:
 ```html
 [hk_formatted_price key="_hk_fs_package_price" decimals="2"]
 ```
@@ -75,7 +75,7 @@ This retrieves _hk_fs_package_price from post ID 123, no matter where it's used.
 
 ### Combined Example
 
-A fully customised example:
+A fully customised example with decimals:
 ```html
 [hk_formatted_price key="_hk_fs_package_price" symbol="£" prefix="Starting at" suffix="plus VAT" decimals="2"]
 ```

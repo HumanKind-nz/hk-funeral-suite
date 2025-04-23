@@ -324,12 +324,9 @@ add_action('save_post_hk_fs_package', 'hk_fs_save_package_meta');
  */
 function hk_fs_add_package_columns($columns) {
     $new_columns = array();
-    
-    // Remove 'content' column by not including it in the new array
-    foreach($columns as $key => $value) {
+    foreach ($columns as $key => $value) {
         if ($key === 'title') {
             $new_columns[$key] = $value;
-            $new_columns['intro'] = __('Intro', 'hk-funeral-cpt');
             $new_columns['price'] = __('Price', 'hk-funeral-cpt');
             $new_columns['order'] = __('Order', 'hk-funeral-cpt');
             $new_columns['shortcode'] = __('Shortcode', 'hk-funeral-cpt');
@@ -346,11 +343,6 @@ add_filter('manage_hk_fs_package_posts_columns', 'hk_fs_add_package_columns');
  * Display package data in custom columns
  */
 function hk_fs_display_package_columns($column, $post_id) {
-	if ($column === 'intro') {
-		$intro = get_post_meta($post_id, '_hk_fs_package_intro', true);
-		echo !empty($intro) ? wp_trim_words($intro, 10, '...') : '—';
-	}
-	
 	if ($column === 'price') {
 		$price = get_post_meta($post_id, '_hk_fs_package_price', true);
 		$managed_by_sheets = get_option('hk_fs_package_price_google_sheets', false);
@@ -358,7 +350,7 @@ function hk_fs_display_package_columns($column, $post_id) {
 		if (!empty($price)) {
 			// Check if the price is numeric
 			if (is_numeric($price)) {
-				echo '$' . number_format((float)$price, 2);
+				echo '$' . number_format((float)$price, 0);
 			} else {
 				// Display the text as-is
 				echo esc_html($price);
@@ -379,7 +371,7 @@ function hk_fs_display_package_columns($column, $post_id) {
 	}
 	
 	if ($column === 'shortcode') {
-		$shortcode = '[hk_formatted_price key="_hk_fs_package_price" post_id="' . esc_attr($post_id) . '" decimals="0"]';
+		$shortcode = '[hk_formatted_price key="_hk_fs_package_price" post_id="' . esc_attr($post_id) . '"]';
 		echo '<div class="hk-shortcode-container">';
 		echo '<input type="text" readonly class="hk-shortcode-display" value="' . esc_attr($shortcode) . '" onclick="this.select();" style="width: 100%; max-width: 300px; font-size: 12px; padding: 4px; background: #f0f0f1;">';
 		echo '<button type="button" class="button button-small hk-copy-shortcode" data-shortcode="' . esc_attr($shortcode) . '"><span class="dashicons dashicons-clipboard"></span></button>';
@@ -394,7 +386,6 @@ add_action('manage_hk_fs_package_posts_custom_column', 'hk_fs_display_package_co
 function hk_fs_sortable_package_columns($columns) {
 	$columns['price'] = 'price';
 	$columns['order'] = 'order';
-	$columns['intro'] = 'intro';
 	return $columns;
 }
 add_filter('manage_edit-hk_fs_package_sortable_columns', 'hk_fs_sortable_package_columns');
@@ -433,9 +424,6 @@ function hk_fs_package_orderby($query) {
 		} elseif ($query->get('orderby') === 'order') {
 			$query->set('meta_key', '_hk_fs_package_order');
 			$query->set('orderby', 'meta_value_num');
-		} elseif ($query->get('orderby') === 'intro') {
-			$query->set('meta_key', '_hk_fs_package_intro');
-			$query->set('orderby', 'meta_value');
 		}
 	}
 }
@@ -484,11 +472,6 @@ function hk_fs_package_admin_styles() {
 	
 	?>
 	<style type="text/css">
-		.column-intro {
-			width: 30% !important;
-			min-width: 250px;
-		}
-
 		.column-shortcode {
 			width: 350px !important;
 		}
