@@ -254,8 +254,7 @@ function hk_fs_load_admin_files() {
         'class-admin.php',
         'class-block-editor.php',  // This needs to load early
         'class-hk-funeral-cpt-admin-columns.php',
-        'class-hk-funeral-cpt-compatibility.php',
-        'class-cache-debug.php'
+        'class-hk-funeral-cpt-compatibility.php'
     );
     // class-settings-page.php is already loaded directly
 

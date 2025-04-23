@@ -211,7 +211,6 @@ hk-funeral-suite/
 │   │   ├── class-block-editor.php      # Custom block defaults for CPTs
 │   │   ├── class-post-mods.php         # Post modifications/customizations
 │   │   ├── class-admin.php             # Admin-specific functionality
-│   │   ├── class-cache-debug.php       # Cache debugging tools
 │   │   ├── class-hk-funeral-cpt-admin-columns.php  # Adjust admin columns, remove SEO columns
 │   │   └── class-hk-funeral-cpt-compatibility.php  # Add theme/plugin compatibility optimisations
 │   ├── blocks/
