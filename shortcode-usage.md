@@ -17,7 +17,7 @@ The `[hk_formatted_price]` shortcode provides a standardized way to display pric
 - **post_id** (optional): The post ID to query for the pricing field. If used on another page.
 - **suffix** (optional): A string that will be displayed after the formatted price for numeric fields.
 - **text_suffix** (optional): A suffix to append when the meta value is a non-numeric string.
-- **decimals** (optional): The number of decimal places to display. Default is `2`. Set to `0` if you don't want any decimals.
+- **decimals** (optional): The number of decimal places to display. Default is `0`. Set to `2` if you want to show cents.
 
 ### Basic Usage
 
@@ -25,7 +25,7 @@ Display a formatted price using the default settings:
 ```html
 [hk_formatted_price key="_hk_fs_package_price"]
 ```
-This outputs, for example, `$2,000.00` if the meta value is numeric.
+This outputs, for example, `$2,000` if the meta value is numeric.
 
 ### Customising the Currency Symbol
 
@@ -33,7 +33,7 @@ Use a different currency symbol by passing the `symbol` attribute:
 ```html
 [hk_formatted_price key="_hk_fs_package_price" symbol="€"]
 ```
-This might output: `€2,000.00`
+This might output: `€2,000`
 
 ### Adding a Prefix or Suffix
 
@@ -41,16 +41,16 @@ You can add text before or after the price (for numeric values):
 ```html
 [hk_formatted_price key="_hk_fs_package_price" prefix="From" suffix="inc gst"]
 ```
-This might output: `From <span class="hk-item-price">$2,000.00</span> inc gst`  
+This might output: `From <span class="hk-item-price">$2,000</span> inc gst`  
 *(Note: Only the price is wrapped in a span for styling.)*
 
-### Changing Decimal Places
+### Adding Decimal Places
 
-Control the number of decimal places with the `decimals` attribute. For example, to show no decimals:
+Control the number of decimal places with the `decimals` attribute. For example, to show two decimal places:
 ```html
-[hk_formatted_price key="_hk_fs_package_price" decimals="0"]
+[hk_formatted_price key="_hk_fs_package_price" decimals="2"]
 ```
-This might output: `<span class="hk-item-price">$2,000</span>`
+This might output: `<span class="hk-item-price">$2,000.00</span>`
 
 ### Example for Non-Numeric Value with Text Suffix
 
@@ -91,7 +91,7 @@ This might output:
 When the shortcode outputs a numeric price value, it generates HTML similar to the following:
 ```html
 <span class="hk-item-price-container">
-    From <span class="hk-item-price">$2,000.00</span> inc gst
+    From <span class="hk-item-price">$2,000</span> inc gst
 </span>
 ```
 

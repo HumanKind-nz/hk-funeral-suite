@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 1.4.7 - 2024-04-22
 - **Added** new `[hk_custom_field]` shortcode for reliable custom field display in Page Builders, including examples.
+- **Changed** default for `[hk_formatted_price]` shortcode to show 0 decimal places (use decimals="2" to display cents)
 
 ## 1.4.6 - 2024-04-18 - Keepsakes
 - **Added** Support for the Keepsakes CPT in the Block Editor

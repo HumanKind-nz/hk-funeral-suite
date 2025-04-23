@@ -37,7 +37,7 @@ class HK_Shortcodes {
 	 * - prefix: Text to appear before the formatted price.
 	 * - suffix: Text to appear after the formatted price (for numeric fields).
 	 * - text_suffix: Suffix to append when the meta value is a non-numeric string.
-	 * - decimals: Number of decimals to display (default: 2).
+	 * - decimals: Number of decimals to display (default: 0).
 	 *
 	 * @param array $atts Shortcode attributes.
 	 * @return string Formatted price or original value.
@@ -53,7 +53,7 @@ class HK_Shortcodes {
 			'prefix'      => '',
 			'suffix'      => '',
 			'text_suffix' => '',   // Suffix for non-numeric string fields.
-			'decimals'    => 2,    // Default number of decimals.
+			'decimals'    => 0,    // Default number of decimals.
 		), $atts, 'hk_formatted_price' );
 
 		// Determine which post ID to use (default to current post if not provided).
