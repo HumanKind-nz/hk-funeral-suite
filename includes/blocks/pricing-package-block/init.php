@@ -86,6 +86,12 @@ function hk_fs_save_pricing_package_block_data($post_id, $post) {
 		return;
 	}
 	
+	// Skip if this is a REST API request (Google Sheets integration)
+	// The REST API handles meta field updates directly
+	if (defined('REST_REQUEST') && REST_REQUEST) {
+		return;
+	}
+	
 	// Check if pricing is managed by Google Sheets
 	$managed_by_sheets = get_option('hk_fs_package_price_google_sheets', false);
 
@@ -94,7 +100,7 @@ function hk_fs_save_pricing_package_block_data($post_id, $post) {
 		if ($block['blockName'] === 'hk-funeral-suite/pricing-package') {
 			$attrs = $block['attrs'];
 			
-			// Save package intro text
+			// Save package intro text (always allowed)
 			if (isset($attrs['intro'])) {
 				update_post_meta($post_id, '_hk_fs_package_intro', sanitize_textarea_field($attrs['intro']));
 			}
@@ -102,9 +108,11 @@ function hk_fs_save_pricing_package_block_data($post_id, $post) {
 			// Save price only if not managed by Google Sheets
 			if (!$managed_by_sheets && isset($attrs['price'])) {
 				update_post_meta($post_id, '_hk_fs_package_price', sanitize_text_field($attrs['price']));
+			} elseif ($managed_by_sheets && defined('WP_DEBUG') && WP_DEBUG) {
+				error_log('HK Funeral Suite: Block price update blocked - managed by Google Sheets integration');
 			}
 			
-			// Save package display order
+			// Save package display order (always allowed)
 			if (isset($attrs['order'])) {
 				update_post_meta($post_id, '_hk_fs_package_order', absint($attrs['order']));
 			}

@@ -216,6 +216,9 @@ class HK_Funeral_Product_CPT_Factory {
         // Register block data loader - this is the key addition
         hk_fs_register_block_data_loader($post_type);
         
+        // Register REST API meta processing workaround for Google Sheets integration
+        hk_fs_register_rest_meta_processing($post_type);
+        
         // Register option change handler for rewrite rules
         add_action("update_option_{$public_option}", 'hk_fs_handle_public_option_changes', 10, 2);
     }

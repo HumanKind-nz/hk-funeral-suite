@@ -44,13 +44,22 @@ function hk_fs_register_keepsake_block() {
 }
 add_action('init', 'hk_fs_register_keepsake_block', 20);
 
+/**
+ * Save block data to post meta when the post is saved
+ */
 function hk_fs_save_keepsake_block_data($post_id, $post) {
 	// Skip autosaves and revisions
 	if (wp_is_post_autosave($post_id) || wp_is_post_revision($post_id)) {
 		return;
 	}
-
+	
 	if ($post->post_type !== 'hk_fs_keepsake') {
+		return;
+	}
+	
+	// Skip if this is a REST API request (Google Sheets integration)
+	// The REST API handles meta field updates directly
+	if (defined('REST_REQUEST') && REST_REQUEST) {
 		return;
 	}
 
@@ -65,31 +74,26 @@ function hk_fs_save_keepsake_block_data($post_id, $post) {
 			// Save price to post meta only if not managed by Google Sheets
 			if (!$managed_by_sheets && isset($attrs['price'])) {
 				update_post_meta($post_id, '_hk_fs_keepsake_price', sanitize_text_field($attrs['price']));
+			} elseif ($managed_by_sheets && defined('WP_DEBUG') && WP_DEBUG) {
+				error_log("HK Funeral Suite: Keepsake price update blocked - managed by Google Sheets integration");
 			}
 			
-			// Sync featured image with actual post featured image
+			// Save featured image
 			if (isset($attrs['featuredImageId']) && $attrs['featuredImageId'] > 0) {
 				set_post_thumbnail($post_id, $attrs['featuredImageId']);
 			} elseif (isset($attrs['featuredImageId']) && $attrs['featuredImageId'] === 0) {
 				delete_post_thumbnail($post_id);
 			}
 			
-			// Save selected category
-			if (!empty($attrs['selectedCategory'])) {
-				wp_set_object_terms($post_id, intval($attrs['selectedCategory']), 'hk_fs_keepsake_category');
-			}
-			
-			// Save product code
+			// Save keepsake-specific fields
 			if (isset($attrs['productCode'])) {
 				update_post_meta($post_id, '_hk_fs_keepsake_product_code', sanitize_text_field($attrs['productCode']));
 			}
 			
-			// Save metal
 			if (isset($attrs['metal'])) {
 				update_post_meta($post_id, '_hk_fs_keepsake_metal', sanitize_text_field($attrs['metal']));
 			}
 			
-			// Save stones
 			if (isset($attrs['stones'])) {
 				update_post_meta($post_id, '_hk_fs_keepsake_stones', sanitize_text_field($attrs['stones']));
 			}

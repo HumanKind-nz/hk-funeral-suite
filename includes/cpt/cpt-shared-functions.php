@@ -60,6 +60,18 @@ function hk_fs_register_price_meta($post_type) {
         'type' => 'string',
         'auth_callback' => function() {
             return current_user_can('edit_posts');
+        },
+        'sanitize_callback' => 'sanitize_text_field',
+        'update_callback' => function($value, $object, $field_name) use ($post_type) {
+            $result = update_post_meta($object->ID, $field_name, $value);
+            // Log Google Sheets price updates
+            if (defined('WP_DEBUG') && WP_DEBUG && defined('REST_REQUEST') && REST_REQUEST) {
+                error_log('HK Funeral Suite: Google Sheets updated ' . $post_type . ' price for post ' . $object->ID . ': ' . $value);
+            }
+            return $result;
+        },
+        'delete_callback' => function($object, $field_name) {
+            return delete_post_meta($object->ID, $field_name);
         }
     ]);
 }
@@ -316,7 +328,7 @@ function hk_fs_add_price_column($post_type) {
 }
 
 /**
- * Register order meta for packages
+ * Register order meta field for a CPT
  *
  * @param string $post_type The CPT slug without the 'hk_fs_' prefix
  */
@@ -327,7 +339,14 @@ function hk_fs_register_order_meta($post_type) {
         'single' => true,
         'type' => 'number',
         'auth_callback' => function() {
-            return current_user_can('manage_funeral_content');
+            return current_user_can('edit_posts');
+        },
+        'sanitize_callback' => 'absint',
+        'update_callback' => function($value, $object, $field_name) {
+            return update_post_meta($object->ID, $field_name, $value);
+        },
+        'delete_callback' => function($object, $field_name) {
+            return delete_post_meta($object->ID, $field_name);
         }
     ));
 }
@@ -769,4 +788,70 @@ function hk_fs_optimized_cache_purge($post_id = null, $context = 'unknown') {
             
         }, 999);
     }
+}
+
+/**
+ * Register REST API meta processing workaround for a CPT
+ * 
+ * This fixes an issue where WordPress doesn't automatically process meta fields
+ * from REST API requests into the meta_input property during post preparation.
+ *
+ * @param string $post_type The CPT slug without the 'hk_fs_' prefix
+ */
+function hk_fs_register_rest_meta_processing($post_type) {
+    add_action('init', function() use ($post_type) {
+        // Hook into the REST API meta field processing
+        add_filter("rest_pre_insert_hk_fs_{$post_type}", function($prepared_post, $request) use ($post_type) {
+            // Check if meta data is in the request
+            $params = $request->get_params();
+            if (isset($params['meta']) && is_array($params['meta'])) {
+                
+                // Check if WordPress has already processed meta_input
+                if (!isset($prepared_post->meta_input) || empty($prepared_post->meta_input)) {
+                    
+                    // Google Sheets integration status
+                    $managed_by_sheets = get_option("hk_fs_{$post_type}_price_google_sheets", false);
+                    
+                    if ($managed_by_sheets && defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log("HK Funeral Suite: Applying REST API meta processing workaround for {$post_type}");
+                    }
+                    
+                    // Force meta_input processing
+                    $prepared_post->meta_input = array();
+                    
+                    // Process each meta field from the request
+                    foreach ($params['meta'] as $meta_key => $meta_value) {
+                        if (strpos($meta_key, "_hk_fs_{$post_type}_") === 0) {
+                            $prepared_post->meta_input[$meta_key] = $meta_value;
+                        }
+                    }
+                }
+            }
+            
+            return $prepared_post;
+        }, 10, 2);
+        
+        // Add post-insert logging for Google Sheets integration
+        add_action("rest_insert_hk_fs_{$post_type}", function($post, $request, $creating) use ($post_type) {
+            $managed_by_sheets = get_option("hk_fs_{$post_type}_price_google_sheets", false);
+            
+            if ($managed_by_sheets) {
+                $params = $request->get_params();
+                if (isset($params['meta']['_hk_fs_' . $post_type . '_price'])) {
+                    $requested_price = $params['meta']['_hk_fs_' . $post_type . '_price'];
+                    $saved_price = get_post_meta($post->ID, '_hk_fs_' . $post_type . '_price', true);
+                    
+                    if ($requested_price === $saved_price) {
+                        if (defined('WP_DEBUG') && WP_DEBUG) {
+                            error_log("HK Funeral Suite: ✅ Google Sheets {$post_type} price sync successful: {$saved_price}");
+                        }
+                    } else {
+                        if (defined('WP_DEBUG') && WP_DEBUG) {
+                            error_log("HK Funeral Suite: ❌ Google Sheets {$post_type} price sync FAILED - Requested: {$requested_price}, Saved: {$saved_price}");
+                        }
+                    }
+                }
+            }
+        }, 10, 3);
+    });
 }

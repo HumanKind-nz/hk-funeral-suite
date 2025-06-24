@@ -5,11 +5,16 @@ All notable changes to the HumanKind Funeral Suite plugin will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 1.4.7 - 2024-04-22
+## [1.4.9] - 2025-06-24
+- **Fixed** Critical Google Sheets integration issue preventing REST API meta field updates
+- **Fixed** Block save handlers conflicting with REST API requests during Google Sheets sync
+- **Fixed** Traditional meta box save handlers interfering with REST API meta processing
+
+## [1.4.7] - 2025-04-22
 - **Added** new `[hk_custom_field]` shortcode for reliable custom field display in Page Builders, including examples.
 - **Changed** default for `[hk_formatted_price]` shortcode to show 0 decimal places (use decimals="2" to display cents)
 
-## 1.4.6 - 2024-04-18 - Keepsakes
+## [1.4.6] - 2025-04-18 - Keepsakes
 - **Added** Support for the Keepsakes CPT in the Block Editor
 - **Added** Core button blocks (`core/button` and `core/buttons`) to all CPTs
 - **Fixed** issue with slow post saving due to inefficient cache purging. Overall NGINX page cache improvements

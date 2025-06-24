@@ -4,7 +4,7 @@
  *
  * @package    HK_Funeral_Suite
  * @subpackage Admin
- * @version    1.0.7
+ * @version    1.0.8
  * @Since      1.1.0
  * @changelog
  *   1.0.7 - Added monument block support
@@ -86,7 +86,8 @@ class HK_Funeral_Block_Editor {
 			'core/list-item',
 			'core/separator',
 			'core/button',  // Button block
-			'core/buttons'  // Buttons container block
+			'core/buttons',  // Buttons container block
+			'core/shortcode'    // Shortcode block
 		);
 		
 		// Define mapping of post types to their required blocks

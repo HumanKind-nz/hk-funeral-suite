@@ -4,7 +4,7 @@
  *
  * @package    HK_Funeral_Suite
  * @subpackage CPT
- * @version    1.0.12  
+ * @version    1.0.16  
  * @since      1.0.0
  * @changelog 
  *   1.0.12 - Added shortcode admin column with copy functionality
@@ -114,7 +114,7 @@ if (!defined('WPINC')) {
  }
 
 /**
- * Register meta fields for REST API
+ * Register meta fields for REST API access
  */
 function hk_fs_register_meta_fields() {
 	register_post_meta('hk_fs_package', '_hk_fs_package_intro', array(
@@ -122,7 +122,14 @@ function hk_fs_register_meta_fields() {
 		'single' => true,
 		'type' => 'string',
 		'auth_callback' => function() {
-			return current_user_can('manage_funeral_content');
+			return current_user_can('edit_posts');
+		},
+		'sanitize_callback' => 'sanitize_textarea_field',
+		'update_callback' => function($value, $object, $field_name) {
+			return update_post_meta($object->ID, $field_name, $value);
+		},
+		'delete_callback' => function($object, $field_name) {
+			return delete_post_meta($object->ID, $field_name);
 		}
 	));
 	
@@ -131,7 +138,19 @@ function hk_fs_register_meta_fields() {
 		'single' => true,
 		'type' => 'string',
 		'auth_callback' => function() {
-			return current_user_can('manage_funeral_content');
+			return current_user_can('edit_posts');
+		},
+		'sanitize_callback' => 'sanitize_text_field',
+		'update_callback' => function($value, $object, $field_name) {
+			$result = update_post_meta($object->ID, $field_name, $value);
+			// Log successful Google Sheets price updates
+			if (defined('WP_DEBUG') && WP_DEBUG && defined('REST_REQUEST') && REST_REQUEST) {
+				error_log('HK Funeral Suite: Google Sheets updated price for post ' . $object->ID . ': ' . $value);
+			}
+			return $result;
+		},
+		'delete_callback' => function($object, $field_name) {
+			return delete_post_meta($object->ID, $field_name);
 		}
 	));
 	
@@ -140,11 +159,23 @@ function hk_fs_register_meta_fields() {
 		'single' => true,
 		'type' => 'number',
 		'auth_callback' => function() {
-			return current_user_can('manage_funeral_content');
+			return current_user_can('edit_posts');
+		},
+		'sanitize_callback' => 'absint',
+		'update_callback' => function($value, $object, $field_name) {
+			return update_post_meta($object->ID, $field_name, $value);
+		},
+		'delete_callback' => function($object, $field_name) {
+			return delete_post_meta($object->ID, $field_name);
 		}
 	));
 }
 add_action('init', 'hk_fs_register_meta_fields');
+
+/**
+ * Register REST API meta processing workaround for Google Sheets integration
+ */
+hk_fs_register_rest_meta_processing('package');
 
 /**
  * Add settings link to package menu
@@ -280,7 +311,13 @@ function hk_fs_package_ordering_callback($post) {
 function hk_fs_save_package_meta($post_id) {
 	// Skip autosaves and revisions
 	if (wp_is_post_autosave($post_id) || wp_is_post_revision($post_id)) {
-	    return;
+		return;
+	}
+	
+	// Skip if this is a REST API request (Google Sheets integration)
+	// The REST API handles meta field updates directly
+	if (defined('REST_REQUEST') && REST_REQUEST) {
+		return;
 	}
 	
 	// Check intro nonce
@@ -303,6 +340,8 @@ function hk_fs_save_package_meta($post_id) {
 		if (!$managed_by_sheets && isset($_POST['hk_fs_package_price'])) {
 			update_post_meta($post_id, '_hk_fs_package_price', 
 				sanitize_text_field($_POST['hk_fs_package_price']));
+		} elseif ($managed_by_sheets && defined('WP_DEBUG') && WP_DEBUG) {
+			error_log('HK Funeral Suite: Price update blocked - managed by Google Sheets integration');
 		}
 	}
 	
@@ -323,20 +362,20 @@ add_action('save_post_hk_fs_package', 'hk_fs_save_package_meta');
  * Add custom columns to admin list
  */
 function hk_fs_add_package_columns($columns) {
-    $new_columns = array();
-    foreach ($columns as $key => $value) {
-        if ($key === 'title') {
-            $new_columns[$key] = $value;
-            $new_columns['price'] = __('Price', 'hk-funeral-cpt');
-            $new_columns['order'] = __('Order', 'hk-funeral-cpt');
-            $new_columns['shortcode'] = __('Shortcode', 'hk-funeral-cpt');
-        } elseif ($key !== 'content') {
-            // Add all columns except 'content'
-            $new_columns[$key] = $value;
-        }
-    }
-    
-    return $new_columns;
+	$new_columns = array();
+	foreach ($columns as $key => $value) {
+		if ($key === 'title') {
+			$new_columns[$key] = $value;
+			$new_columns['price'] = __('Price', 'hk-funeral-cpt');
+			$new_columns['order'] = __('Order', 'hk-funeral-cpt');
+			$new_columns['shortcode'] = __('Shortcode', 'hk-funeral-cpt');
+		} elseif ($key !== 'content') {
+			// Add all columns except 'content'
+			$new_columns[$key] = $value;
+		}
+	}
+	
+	return $new_columns;
 }
 add_filter('manage_hk_fs_package_posts_columns', 'hk_fs_add_package_columns');
 /**
@@ -361,7 +400,7 @@ function hk_fs_display_package_columns($column, $post_id) {
 				echo ' <span class="dashicons dashicons-cloud" style="color:#0073aa;" title="Managed via Google Sheets"></span>';
 			}
 		} else {
-			echo '—';
+			echo 'â';
 		}
 	}
 	

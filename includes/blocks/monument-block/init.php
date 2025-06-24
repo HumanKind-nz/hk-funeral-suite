@@ -41,6 +41,9 @@ function hk_fs_register_monument_block() {
 }
 add_action('init', 'hk_fs_register_monument_block', 20);
 
+/**
+ * Save block data to post meta when the post is saved
+ */
 function hk_fs_save_monument_block_data($post_id, $post) {
 	// Skip autosaves and revisions
 	if (wp_is_post_autosave($post_id) || wp_is_post_revision($post_id)) {
@@ -48,6 +51,12 @@ function hk_fs_save_monument_block_data($post_id, $post) {
 	}
 	
 	if ($post->post_type !== 'hk_fs_monument') {
+		return;
+	}
+	
+	// Skip if this is a REST API request (Google Sheets integration)
+	// The REST API handles meta field updates directly
+	if (defined('REST_REQUEST') && REST_REQUEST) {
 		return;
 	}
 
@@ -62,9 +71,11 @@ function hk_fs_save_monument_block_data($post_id, $post) {
 			// Save price to post meta only if not managed by Google Sheets
 			if (!$managed_by_sheets && isset($attrs['price'])) {
 				update_post_meta($post_id, '_hk_fs_monument_price', sanitize_text_field($attrs['price']));
+			} elseif ($managed_by_sheets && defined('WP_DEBUG') && WP_DEBUG) {
+				error_log("HK Funeral Suite: Monument price update blocked - managed by Google Sheets integration");
 			}
 			
-			// Sync featured image with actual post featured image
+			// Save featured image
 			if (isset($attrs['featuredImageId']) && $attrs['featuredImageId'] > 0) {
 				set_post_thumbnail($post_id, $attrs['featuredImageId']);
 			} elseif (isset($attrs['featuredImageId']) && $attrs['featuredImageId'] === 0) {

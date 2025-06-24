@@ -46,6 +46,9 @@ function hk_fs_register_keepsake_meta() {
             return current_user_can('edit_posts');
         }
     ));
+    
+    // Register REST API meta processing workaround for Google Sheets integration
+    hk_fs_register_rest_meta_processing('keepsake');
 }
 add_action('init', 'hk_fs_register_keepsake_meta');
 
@@ -132,6 +135,12 @@ function hk_fs_render_keepsake_meta_box($post) {
  * Save the meta box data
  */
 function hk_fs_save_keepsake_meta($post_id) {
+    // Skip if this is a REST API request (Google Sheets integration)
+    // The REST API handles meta field updates directly
+    if (defined('REST_REQUEST') && REST_REQUEST) {
+        return;
+    }
+    
     // Check if nonce is set
     if (!isset($_POST['hk_fs_keepsake_meta_box_nonce'])) {
         return;
