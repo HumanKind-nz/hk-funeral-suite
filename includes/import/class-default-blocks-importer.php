@@ -150,10 +150,25 @@ class HK_Default_Blocks_Importer {
 		
 		// Check if content already has our block
 		if (!empty($block_name) && strpos($content, $block_name) === false) {
-			// Append default block to existing content
-			$new_content = $content . "\n" . $block_html;
+			// For imported content, we want to structure it properly:
+			// 1. Our required block first
+			// 2. Any existing content as paragraphs after
 			
-			// Update the post
+			$new_content = $block_html;
+			
+			// If there's existing content, add it as paragraphs after our block
+			if (!empty(trim($content))) {
+				// Split content into paragraphs and wrap each in paragraph blocks
+				$paragraphs = array_filter(explode("\n", trim($content)));
+				foreach ($paragraphs as $paragraph) {
+					$paragraph = trim($paragraph);
+					if (!empty($paragraph)) {
+						$new_content .= "\n\n<!-- wp:paragraph -->\n<p>" . esc_html($paragraph) . "</p>\n<!-- /wp:paragraph -->";
+					}
+				}
+			}
+			
+			// Update the post with the structured content
 			wp_update_post([
 				'ID' => $post_id,
 				'post_content' => $new_content

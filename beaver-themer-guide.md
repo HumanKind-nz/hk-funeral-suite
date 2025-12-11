@@ -37,6 +37,7 @@ For Beaver Themer layouts, you can use these shortcodes to display team member f
 [hk_custom_field key="_hk_fs_staff_qualification"]
 [hk_custom_field key="_hk_fs_staff_phone"]
 [hk_custom_field key="_hk_fs_staff_email"]
+[hk_team_member_content]
 ```
 
 You can also add formatting around these fields:
@@ -51,7 +52,12 @@ You can also add formatting around these fields:
     <strong>Email:</strong> <a href="mailto:[hk_custom_field key="_hk_fs_staff_email"]">[hk_custom_field key="_hk_fs_staff_email"]</a>
     <strong>Phone:</strong> <a href="tel:[hk_custom_field key="_hk_fs_staff_phone"]">[hk_custom_field key="_hk_fs_staff_phone"]</a>
 </div>
+<div class="staff-biography">
+    [hk_team_member_content fallback="No biography available"]
+</div>
 ```
+
+**Note:** The `[hk_team_member_content]` shortcode renders the paragraph blocks and other content blocks from the team member post, excluding the team-member block itself. This is useful for displaying the biography content that was added in the block editor.
 
 ### Staff Taxonomies
 You can also use these taxonomies in Beaver Themer:

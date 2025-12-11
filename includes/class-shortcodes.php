@@ -4,10 +4,11 @@
  *
  * Registers and handles front-end shortcodes for HK Funeral Suite.
  *
- * Version: 1.4.7
+ * Version: 1.4.8
  * Changelog: 
  * - Added optional 'post_id' attribute to fetch meta values from a specific post instead of the current post.
  * - Added new 'hk_custom_field' shortcode for reliable custom field display in Beaver Builder
+ * - Added new 'hk_team_member_content' shortcode to render paragraph blocks from team member posts
  *
  * @package HK_Funeral_Suite
  */
@@ -25,6 +26,7 @@ class HK_Shortcodes {
 	public static function init() {
 		add_shortcode( 'hk_formatted_price', array( __CLASS__, 'formatted_price_shortcode' ) );
 		add_shortcode( 'hk_custom_field', array( __CLASS__, 'custom_field_shortcode' ) );
+		add_shortcode( 'hk_team_member_content', array( __CLASS__, 'team_member_content_shortcode' ) );
 	}
 
 	/**
@@ -179,6 +181,101 @@ class HK_Shortcodes {
 		$output .= '</span>';
 		
 		return $output;
+	}
+
+	/**
+	 * Display team member content blocks (paragraphs, headings, etc.) excluding the team-member block.
+	 *
+	 * Attributes:
+	 * - post_id: The post ID to fetch the content from (optional, defaults to current post).
+	 * - fallback: Content to display if no content blocks are found.
+	 *
+	 * @param array $atts Shortcode attributes.
+	 * @return string Rendered block content.
+	 */
+	public static function team_member_content_shortcode( $atts ) {
+		global $post;
+
+		// Set default attributes
+		$atts = shortcode_atts( array(
+			'post_id'  => '',
+			'fallback' => '',
+		), $atts, 'hk_team_member_content' );
+
+		// Determine which post ID to use (default to current post if not provided)
+		$post_id = ! empty( $atts['post_id'] ) ? intval( $atts['post_id'] ) : ( isset( $post->ID ) ? $post->ID : 0 );
+
+		// If no valid post ID, return fallback or empty
+		if ( empty( $post_id ) ) {
+			return ! empty( $atts['fallback'] ) ? $atts['fallback'] : '';
+		}
+
+		// Get the post object
+		$post_obj = get_post( $post_id );
+		if ( ! $post_obj || empty( $post_obj->post_content ) ) {
+			return ! empty( $atts['fallback'] ) ? $atts['fallback'] : '';
+		}
+
+		// Check if parse_blocks function exists (WordPress 5.0+)
+		if ( ! function_exists( 'parse_blocks' ) ) {
+			// Fallback for older WordPress versions - just return the content
+			return apply_filters( 'the_content', $post_obj->post_content );
+		}
+
+		// Parse the blocks from post content
+		$blocks = parse_blocks( $post_obj->post_content );
+
+		if ( empty( $blocks ) ) {
+			return ! empty( $atts['fallback'] ) ? $atts['fallback'] : '';
+		}
+
+		// Filter out the team-member block and any null/empty blocks
+		$content_blocks = array();
+		foreach ( $blocks as $block ) {
+			// Skip the team-member block
+			if ( isset( $block['blockName'] ) && $block['blockName'] === 'hk-funeral-suite/team-member' ) {
+				continue;
+			}
+
+			// Skip null blocks (whitespace between blocks)
+			if ( is_null( $block['blockName'] ) && empty( trim( $block['innerHTML'] ) ) ) {
+				continue;
+			}
+
+			$content_blocks[] = $block;
+		}
+
+		// If no content blocks found, return fallback
+		if ( empty( $content_blocks ) ) {
+			return ! empty( $atts['fallback'] ) ? $atts['fallback'] : '';
+		}
+
+		// Render each block
+		$output = '';
+		foreach ( $content_blocks as $block ) {
+			// Use render_block if available (WordPress 5.0+)
+			if ( function_exists( 'render_block' ) ) {
+				$rendered = render_block( $block );
+				if ( ! empty( $rendered ) ) {
+					$output .= $rendered;
+				}
+			} else {
+				// Fallback: output innerHTML for older WordPress versions
+				if ( ! empty( $block['innerHTML'] ) ) {
+					$output .= $block['innerHTML'];
+				} elseif ( ! empty( $block['innerContent'] ) ) {
+					// Handle innerContent array
+					$output .= implode( '', $block['innerContent'] );
+				}
+			}
+		}
+
+		// Apply the_content filters for proper formatting
+		if ( ! empty( $output ) ) {
+			$output = apply_filters( 'the_content', $output );
+		}
+
+		return ! empty( $output ) ? $output : ( ! empty( $atts['fallback'] ) ? $atts['fallback'] : '' );
 	}
 }
 

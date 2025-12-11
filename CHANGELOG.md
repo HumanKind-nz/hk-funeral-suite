@@ -5,6 +5,46 @@ All notable changes to the HumanKind Funeral Suite plugin will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.17] - 2025-12-05
+- **Added** New `[hk_team_member_content]` shortcode to render paragraph blocks and other content blocks from team member posts
+- **Fixed** Team member biography content can now be displayed in Beaver Builder and classic themes using the new shortcode
+- **Improved** Shortcode filters out the team-member block and renders only the content blocks (paragraphs, headings, etc.)
+
+## [1.4.16]  
+- **CRITICAL FIX** Resolved double save_post issue where imported price data was being overwritten by empty block attributes
+- **Fixed** Save handlers now preserve existing meta data when block attributes are empty (preventing import data loss)
+- **Fixed** All Import Pro workflow now correctly maintains price data through the entire import → block insertion process
+
+## [1.4.15] 
+- **CRITICAL FIX** Modified save handlers for all product CPTs to preserve imported meta data when blocks haven't been added yet
+- **Fixed** Price data now properly saves during All Import Pro imports by preventing save handlers from overwriting imported data
+- **Fixed** Import workflow now correctly handles the timing between CSV import and block insertion
+
+## [1.4.14] 
+- **CRITICAL FIX** Removed restrictive auth_callback that was preventing All Import Pro from saving price meta fields
+- **Fixed** CSV imports now properly save price data to database during import process
+- **Fixed** Meta field registration no longer blocks legitimate import tools from updating pricing data
+
+## [1.4.13] 
+- **Fixed** Imported data not appearing in blocks - improved data loading timing and conditions
+- **Fixed** Block data loading now properly handles empty strings and default values
+- **Fixed** Script registration timing issues that prevented imported data from appearing
+- **Added** Debug logging to help troubleshoot import data loading issues
+- **Improved** All product blocks now consistently load imported data into block attributes
+
+## [1.4.11] - 2025-10-22
+- **Fixed** All Import Pro integration issues with CPT imports
+- **Fixed** Imported content now structured correctly with required blocks first, then content as paragraphs
+- **Fixed** Block data loading for imported posts - prices, categories, and images now sync properly  
+- **Fixed** Featured images from imports now appear correctly in block image sections
+- **Added** Missing useEffect hooks in all product blocks to load meta data into block attributes
+- **Improved** Import process ensures proper block-first content structure for all CPTs
+
+## [1.4.10] - 2025-07-25
+- **Fixed** Removed debug admin notices that were breaking AJAX requests and causing "Publishing Failed. The response is not a valid JSON response" errors
+- **Fixed** Eliminated error page CSS injection that was making admin pages look terrible  
+- **Added** Core HTML block (`core/html`) support to all funeral CPTs for enhanced content flexibility
+
 ## [1.4.9] - 2025-06-24
 - **Fixed** Critical Google Sheets integration issue preventing REST API meta field updates
 - **Fixed** Block save handlers conflicting with REST API requests during Google Sheets sync

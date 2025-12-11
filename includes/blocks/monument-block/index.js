@@ -51,6 +51,36 @@
 				}
 			}, []);
 			
+			// Load meta data into block attributes when editor loads
+			useEffect(function() {
+				if (window.hkFsMonumentData !== undefined) {
+					var data = window.hkFsMonumentData;
+					
+					// Set price if available and not already set (check for empty string specifically)
+					if (data.price && (attributes.price === '' || !attributes.price)) {
+						setAttributes({ price: data.price });
+					}
+					
+					// Set category if available and not already set
+					if (data.selectedCategory && (attributes.selectedCategory === '' || !attributes.selectedCategory)) {
+						setAttributes({ selectedCategory: data.selectedCategory });
+					}
+					
+					// Set featured image if available and not already set
+					if (data.featuredImageId && (!attributes.featuredImageId || attributes.featuredImageId === 0)) {
+						setAttributes({ 
+							featuredImageId: data.featuredImageId,
+							featuredImageUrl: data.featuredImageUrl || ''
+						});
+					}
+					
+					// Debug logging
+					if (typeof console !== 'undefined' && console.log) {
+						console.log('HK Funeral Suite: Loading monument data:', data);
+					}
+				}
+			}, []); // Empty dependency array means this runs once when component mounts
+			
 			// Get current post ID
 			var postId = useSelect(function(select) {
 				return select('core/editor').getCurrentPostId();

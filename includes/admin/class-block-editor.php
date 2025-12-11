@@ -87,7 +87,8 @@ class HK_Funeral_Block_Editor {
 			'core/separator',
 			'core/button',  // Button block
 			'core/buttons',  // Buttons container block
-			'core/shortcode'    // Shortcode block
+			'core/shortcode',    // Shortcode block
+			'core/html'     // HTML block
 		);
 		
 		// Define mapping of post types to their required blocks
@@ -181,25 +182,8 @@ class HK_Funeral_Block_Editor {
 		$script_url = HK_FS_PLUGIN_URL . 'assets/js/block-locking.js';
 		$script_path = HK_FS_PLUGIN_DIR . 'assets/js/block-locking.js';
 		
-		// Add debug notice
-		add_action('admin_notices', function() use ($script_url, $script_path, $required_block) {
-			echo '<div class="notice notice-info is-dismissible">';
-			echo '<p><strong>Debug Info:</strong></p>';
-			echo '<p>Script URL: ' . esc_html($script_url) . '</p>';
-			echo '<p>Script physical path: ' . esc_html($script_path) . '</p>';
-			echo '<p>File exists: ' . (file_exists($script_path) ? 'Yes' : 'No') . '</p>';
-			echo '<p>Required block: ' . esc_html($required_block) . '</p>';
-			echo '<p>Plugin version: ' . esc_html(HK_FS_VERSION) . '</p>';
-			echo '</div>';
-		});
-		
 		// Only proceed if the file exists
 		if (!file_exists($script_path)) {
-			add_action('admin_notices', function() {
-				echo '<div class="notice notice-error is-dismissible">';
-				echo '<p><strong>Error:</strong> Block locking script file not found. Please check the file path.</p>';
-				echo '</div>';
-			});
 			return;
 		}
 		
@@ -217,11 +201,6 @@ class HK_Funeral_Block_Editor {
 		));
 		
 		wp_enqueue_script('hk-fs-block-locking');
-		
-		// Add one more notice to confirm the script was enqueued
-		add_action('admin_footer', function() {
-			echo '<script>console.log("HK Funeral Suite: Block locking script loaded");</script>';
-		});
 	}
 	
 	/**

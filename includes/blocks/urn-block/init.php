@@ -62,30 +62,45 @@ function hk_fs_save_urn_block_data($post_id, $post) {
 	$managed_by_sheets = get_option('hk_fs_urn_price_google_sheets', false);
 
 	$blocks = parse_blocks($post->post_content);
+	$block_found = false;
+	
 	foreach ($blocks as $block) {
 		if ($block['blockName'] === 'hk-funeral-suite/urn') {
+			$block_found = true;
 			$attrs = $block['attrs'];
 			
 			// Save price to post meta only if not managed by Google Sheets
-			if (!$managed_by_sheets && isset($attrs['price'])) {
+			if (!$managed_by_sheets && isset($attrs['price']) && $attrs['price'] !== '') {
 				update_post_meta($post_id, '_hk_fs_urn_price', sanitize_text_field($attrs['price']));
+			} elseif (!$managed_by_sheets && isset($attrs['price']) && $attrs['price'] === '') {
+				// Don't overwrite existing meta if block attribute is empty (e.g., from imports)
+				$existing_price = get_post_meta($post_id, '_hk_fs_urn_price', true);
+				if (empty($existing_price)) {
+					// Only clear if there's no existing value
+					update_post_meta($post_id, '_hk_fs_urn_price', '');
+				}
 			} elseif ($managed_by_sheets && defined('WP_DEBUG') && WP_DEBUG) {
 				error_log("HK Funeral Suite: Urn price update blocked - managed by Google Sheets integration");
 			}
 			
-			// Sync featured image with actual post featured image
+			// Save featured image
 			if (isset($attrs['featuredImageId']) && $attrs['featuredImageId'] > 0) {
 				set_post_thumbnail($post_id, $attrs['featuredImageId']);
 			} elseif (isset($attrs['featuredImageId']) && $attrs['featuredImageId'] === 0) {
 				delete_post_thumbnail($post_id);
 			}
 			
-			// Save selected category
-			if (!empty($attrs['selectedCategory'])) {
-				wp_set_object_terms($post_id, intval($attrs['selectedCategory']), 'hk_fs_urn_category');
-			}
-			
 			break; // Process only the first instance of the block
+		}
+	}
+	
+	// If no blocks found (e.g., during import), preserve existing meta data
+	// This prevents imports from being overwritten when blocks haven't been added yet
+	if (!$block_found) {
+		// During imports, meta fields may have been set directly - don't interfere
+		$existing_price = get_post_meta($post_id, '_hk_fs_urn_price', true);
+		if (!empty($existing_price) && defined('WP_DEBUG') && WP_DEBUG) {
+			error_log("HK Funeral Suite: Preserving imported price data: $existing_price for post $post_id");
 		}
 	}
 	
@@ -109,8 +124,20 @@ function hk_fs_load_urn_block_data() {
 	// Get meta values
 	$meta_values = array(
 		'price' => get_post_meta($post->ID, '_hk_fs_urn_price', true),
-		'is_price_managed' => get_option('hk_fs_urn_price_google_sheets', false),
+		'is_price_managed' => get_option('hk_fs_urn_price_google_sheets', false)
 	);
+	
+	// Get featured image data
+	$featured_image_id = get_post_thumbnail_id($post->ID);
+	$meta_values['featuredImageId'] = $featured_image_id ? (int)$featured_image_id : 0;
+	
+	// Get the image URL if we have an ID
+	if ($featured_image_id) {
+		$image = wp_get_attachment_image_src($featured_image_id, 'full');
+		$meta_values['featuredImageUrl'] = $image ? $image[0] : '';
+	} else {
+		$meta_values['featuredImageUrl'] = '';
+	}
 	
 	// Get taxonomy terms
 	$category_terms = wp_get_object_terms($post->ID, 'hk_fs_urn_category');
@@ -119,13 +146,16 @@ function hk_fs_load_urn_block_data() {
 	// Add taxonomy terms to our data
 	$meta_values['selectedCategory'] = $category_id;
 	
-	// Enqueue the script with the data
-	wp_localize_script('hk-fs-urn-block', 'hkFsUrnData', $meta_values);
-	
-	// Add a small inline script to force refresh the price managed status on page load
-	wp_add_inline_script('hk-fs-urn-block', 
-		'window.hkFsUrnData = ' . json_encode($meta_values) . ';', 
-		'before'
-	);
+	// Make sure the script is registered before localizing
+	if (wp_script_is('hk-fs-urn-block', 'registered')) {
+		// Enqueue the script with the data
+		wp_localize_script('hk-fs-urn-block', 'hkFsUrnData', $meta_values);
+		
+		// Add a small inline script to force refresh the data on page load
+		wp_add_inline_script('hk-fs-urn-block', 
+			'window.hkFsUrnData = ' . json_encode($meta_values) . ';', 
+			'before'
+		);
+	}
 }
 add_action('admin_enqueue_scripts', 'hk_fs_load_urn_block_data');

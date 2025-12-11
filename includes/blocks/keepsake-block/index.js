@@ -54,6 +54,49 @@
 				}
 			}, []);
 			
+			// Load meta data into block attributes when editor loads
+			useEffect(function() {
+				if (window.hkFsKeepsakeData !== undefined) {
+					var data = window.hkFsKeepsakeData;
+					
+					// Set price if available and not already set (check for empty string specifically)
+					if (data.price && (attributes.price === '' || !attributes.price)) {
+						setAttributes({ price: data.price });
+					}
+					
+					// Set category if available and not already set
+					if (data.selectedCategory && (attributes.selectedCategory === '' || !attributes.selectedCategory)) {
+						setAttributes({ selectedCategory: data.selectedCategory });
+					}
+					
+					// Set featured image if available and not already set
+					if (data.featuredImageId && (!attributes.featuredImageId || attributes.featuredImageId === 0)) {
+						setAttributes({ 
+							featuredImageId: data.featuredImageId,
+							featuredImageUrl: data.featuredImageUrl || ''
+						});
+					}
+					
+					// Set keepsake-specific fields if available and not already set
+					if (data.productCode && (attributes.productCode === '' || !attributes.productCode)) {
+						setAttributes({ productCode: data.productCode });
+					}
+					
+					if (data.metalType && (attributes.metal === '' || !attributes.metal)) {
+						setAttributes({ metal: data.metalType });
+					}
+					
+					if (data.stones && (attributes.stones === '' || !attributes.stones)) {
+						setAttributes({ stones: data.stones });
+					}
+					
+					// Debug logging
+					if (typeof console !== 'undefined' && console.log) {
+						console.log('HK Funeral Suite: Loading keepsake data:', data);
+					}
+				}
+			}, []); // Empty dependency array means this runs once when component mounts
+			
 			// Get current post ID
 			var postId = useSelect(function(select) {
 				return select('core/editor').getCurrentPostId();

@@ -58,9 +58,6 @@ function hk_fs_register_price_meta($post_type) {
         'show_in_rest' => true,
         'single' => true,
         'type' => 'string',
-        'auth_callback' => function() {
-            return current_user_can('edit_posts');
-        },
         'sanitize_callback' => 'sanitize_text_field',
         'update_callback' => function($value, $object, $field_name) use ($post_type) {
             $result = update_post_meta($object->ID, $field_name, $value);

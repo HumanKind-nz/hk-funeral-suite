@@ -215,6 +215,53 @@ When the shortcode outputs a custom field value with default settings, it genera
 
 *Note:* When `raw="true"` is used, the value is returned without any HTML wrappers.
 
+## hk_team_member_content
+
+The `[hk_team_member_content]` shortcode renders the content blocks (paragraphs, headings, etc.) from a team member post, excluding the team-member block itself. This is particularly useful for displaying the biography or description content in Beaver Builder or classic themes.
+
+### Shortcode Attributes
+
+- **post_id** (optional): The post ID to fetch the content from (defaults to current post).
+- **fallback** (optional): Content to display if no content blocks are found.
+
+### Basic Usage
+
+Display the team member content for the current post:
+```html
+[hk_team_member_content]
+```
+
+### Fetch Content from a Specific Post
+
+```html
+[hk_team_member_content post_id="123"]
+```
+
+This retrieves the content blocks from team member post ID 123, regardless of where the shortcode is used.
+
+### Providing a Fallback
+
+Display a fallback message if no content is found:
+```html
+[hk_team_member_content fallback="No biography available"]
+```
+
+### Combined Example
+
+```html
+[hk_team_member_content post_id="123" fallback="No biography available"]
+```
+
+### How It Works
+
+This shortcode:
+1. Parses the block content from the team member post
+2. Filters out the `hk-funeral-suite/team-member` block
+3. Renders all remaining blocks (paragraphs, headings, lists, etc.)
+4. Returns the formatted HTML output
+
+This allows you to display the biography content that was added as paragraph blocks in the block editor, even when using Beaver Builder or classic themes that don't process Gutenberg blocks automatically.
+
 ## Using with Beaver Builder
 
 Both shortcodes can be used directly within Beaver Builder modules or Beaver Themer templates.
@@ -231,6 +278,9 @@ Both shortcodes can be used directly within Beaver Builder modules or Beaver The
         Email: <a href="mailto:[hk_custom_field key="_hk_fs_staff_email" raw="true"]">
             [hk_custom_field key="_hk_fs_staff_email" raw="true"]
         </a>
+    </div>
+    <div class="biography">
+        [hk_team_member_content]
     </div>
 </div>
 ```

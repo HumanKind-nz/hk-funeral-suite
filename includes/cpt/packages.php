@@ -311,7 +311,7 @@ function hk_fs_package_ordering_callback($post) {
 function hk_fs_save_package_meta($post_id) {
 	// Skip autosaves and revisions
 	if (wp_is_post_autosave($post_id) || wp_is_post_revision($post_id)) {
-		return;
+	    return;
 	}
 	
 	// Skip if this is a REST API request (Google Sheets integration)
@@ -362,20 +362,20 @@ add_action('save_post_hk_fs_package', 'hk_fs_save_package_meta');
  * Add custom columns to admin list
  */
 function hk_fs_add_package_columns($columns) {
-	$new_columns = array();
-	foreach ($columns as $key => $value) {
-		if ($key === 'title') {
-			$new_columns[$key] = $value;
-			$new_columns['price'] = __('Price', 'hk-funeral-cpt');
-			$new_columns['order'] = __('Order', 'hk-funeral-cpt');
-			$new_columns['shortcode'] = __('Shortcode', 'hk-funeral-cpt');
-		} elseif ($key !== 'content') {
-			// Add all columns except 'content'
-			$new_columns[$key] = $value;
-		}
-	}
-	
-	return $new_columns;
+    $new_columns = array();
+    foreach ($columns as $key => $value) {
+        if ($key === 'title') {
+            $new_columns[$key] = $value;
+            $new_columns['price'] = __('Price', 'hk-funeral-cpt');
+            $new_columns['order'] = __('Order', 'hk-funeral-cpt');
+            $new_columns['shortcode'] = __('Shortcode', 'hk-funeral-cpt');
+        } elseif ($key !== 'content') {
+            // Add all columns except 'content'
+            $new_columns[$key] = $value;
+        }
+    }
+    
+    return $new_columns;
 }
 add_filter('manage_hk_fs_package_posts_columns', 'hk_fs_add_package_columns');
 /**
@@ -400,7 +400,7 @@ function hk_fs_display_package_columns($column, $post_id) {
 				echo ' <span class="dashicons dashicons-cloud" style="color:#0073aa;" title="Managed via Google Sheets"></span>';
 			}
 		} else {
-			echo 'â';
+			echo '—';
 		}
 	}
 	
