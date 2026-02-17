@@ -384,109 +384,95 @@ function register_product_cpt( string $key ): void {
 	] );
 }
 
+// ─── Meta Definitions ───────────────────────────────────────────────────────
+
+/**
+ * Get all meta field definitions, keyed by post type.
+ *
+ * Single source of truth for every meta field the plugin registers.
+ * Each field maps to args passed to register_post_meta().
+ *
+ * @return array<string, array<string, array>> Post type → [ meta_key → args ].
+ */
+function get_meta_fields(): array {
+	$string_field = static fn( string $sanitize = 'sanitize_text_field' ): array => [
+		'show_in_rest'      => true,
+		'single'            => true,
+		'type'              => 'string',
+		'default'           => '',
+		'sanitize_callback' => $sanitize,
+		'auth_callback'     => fn() => current_user_can( 'edit_posts' ),
+	];
+
+	return [
+		'hk_fs_staff' => [
+			'_hk_fs_staff_position'      => $string_field(),
+			'_hk_fs_staff_qualification' => $string_field(),
+			'_hk_fs_staff_phone'         => $string_field(),
+			'_hk_fs_staff_email'         => $string_field( 'sanitize_email' ),
+		],
+
+		'hk_fs_package' => [
+			'_hk_fs_package_price' => $string_field(),
+			'_hk_fs_package_intro' => $string_field( 'sanitize_textarea_field' ),
+			'_hk_fs_package_order' => [
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'integer',
+				'default'           => 10,
+				'sanitize_callback' => 'absint',
+				'auth_callback'     => fn() => current_user_can( 'edit_posts' ),
+			],
+		],
+
+		'hk_fs_casket' => [
+			'_hk_fs_casket_price' => $string_field(),
+		],
+
+		'hk_fs_urn' => [
+			'_hk_fs_urn_price' => $string_field(),
+		],
+
+		'hk_fs_monument' => [
+			'_hk_fs_monument_price' => $string_field(),
+		],
+
+		'hk_fs_keepsake' => [
+			'_hk_fs_keepsake_price'        => $string_field(),
+			'_hk_fs_keepsake_product_code' => $string_field(),
+			'_hk_fs_keepsake_metal'        => $string_field(),
+			'_hk_fs_keepsake_stones'       => $string_field(),
+		],
+	];
+}
+
 // ─── Meta Registration ─────────────────────────────────────────────────────
 
 /**
  * Register all meta fields for enabled CPTs.
+ *
+ * Reads from get_meta_fields() so there's a single place to add/edit fields.
  */
 function register_all_meta(): void {
-	$settings = \HK_Funeral_Settings::get_instance();
+	$settings   = \HK_Funeral_Settings::get_instance();
+	$all_fields = get_meta_fields();
 
-	// Staff meta.
-	if ( $settings->is_cpt_enabled( 'staff' ) ) {
-		$staff_fields = [
-			'_hk_fs_staff_position'      => 'sanitize_text_field',
-			'_hk_fs_staff_qualification' => 'sanitize_text_field',
-			'_hk_fs_staff_phone'         => 'sanitize_text_field',
-			'_hk_fs_staff_email'         => 'sanitize_email',
-		];
+	// Build slug → settings key map: 'hk_fs_staff' → 'staff', etc.
+	$slug_to_key = [];
+	foreach ( get_cpt_definitions() as $key => $def ) {
+		$slug_to_key[ $def['slug'] ] = $key;
+	}
 
-		foreach ( $staff_fields as $meta_key => $sanitize ) {
-			register_post_meta( 'hk_fs_staff', $meta_key, [
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'string',
-				'sanitize_callback' => $sanitize,
-				'auth_callback'     => function () {
-					return current_user_can( 'edit_posts' );
-				},
-			] );
+	foreach ( $all_fields as $post_type => $fields ) {
+		$settings_key = $slug_to_key[ $post_type ] ?? null;
+
+		// Skip if CPT is disabled.
+		if ( $settings_key && ! $settings->is_cpt_enabled( $settings_key ) ) {
+			continue;
 		}
-	}
 
-	// Package meta.
-	if ( $settings->is_cpt_enabled( 'packages' ) ) {
-		register_post_meta( 'hk_fs_package', '_hk_fs_package_price', [
-			'show_in_rest'      => true,
-			'single'            => true,
-			'type'              => 'string',
-			'sanitize_callback' => 'sanitize_text_field',
-			'auth_callback'     => function () {
-				return current_user_can( 'edit_posts' );
-			},
-		] );
-
-		register_post_meta( 'hk_fs_package', '_hk_fs_package_intro', [
-			'show_in_rest'      => true,
-			'single'            => true,
-			'type'              => 'string',
-			'sanitize_callback' => 'sanitize_textarea_field',
-			'auth_callback'     => function () {
-				return current_user_can( 'edit_posts' );
-			},
-		] );
-
-		register_post_meta( 'hk_fs_package', '_hk_fs_package_order', [
-			'show_in_rest'      => true,
-			'single'            => true,
-			'type'              => 'integer',
-			'sanitize_callback' => 'absint',
-			'auth_callback'     => function () {
-				return current_user_can( 'edit_posts' );
-			},
-		] );
-	}
-
-	// Product CPT price meta.
-	$product_cpts = [
-		'caskets'   => 'casket',
-		'urns'      => 'urn',
-		'monuments' => 'monument',
-		'keepsakes' => 'keepsake',
-	];
-
-	foreach ( $product_cpts as $key => $type ) {
-		if ( $settings->is_cpt_enabled( $key ) ) {
-			register_post_meta( "hk_fs_{$type}", "_hk_fs_{$type}_price", [
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'string',
-				'sanitize_callback' => 'sanitize_text_field',
-				'auth_callback'     => function () {
-					return current_user_can( 'edit_posts' );
-				},
-			] );
-		}
-	}
-
-	// Keepsake-specific meta fields.
-	if ( $settings->is_cpt_enabled( 'keepsakes' ) ) {
-		$keepsake_fields = [
-			'_hk_fs_keepsake_product_code',
-			'_hk_fs_keepsake_metal',
-			'_hk_fs_keepsake_stones',
-		];
-
-		foreach ( $keepsake_fields as $meta_key ) {
-			register_post_meta( 'hk_fs_keepsake', $meta_key, [
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'string',
-				'sanitize_callback' => 'sanitize_text_field',
-				'auth_callback'     => function () {
-					return current_user_can( 'edit_posts' );
-				},
-			] );
+		foreach ( $fields as $meta_key => $args ) {
+			register_post_meta( $post_type, $meta_key, $args );
 		}
 	}
 }

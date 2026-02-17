@@ -84,6 +84,18 @@ function hk_fs_cleanup_plugin(): void {
 	delete_transient( 'hk_funeral_github_response' );
 }
 
+// ─── Backward-compat shims (removed in Phase 3 with old blocks) ─────────────
+
+/**
+ * Legacy cache purge function — old block init.php files call this.
+ *
+ * @param int|null $post_id Post ID.
+ * @param string   $context Context string.
+ */
+function hk_fs_optimized_cache_purge( ?int $post_id = null, string $context = 'unknown' ): void {
+	HKFuneralSuite\Hooks\optimised_cache_purge( $post_id, $context );
+}
+
 // ─── Legacy blocks (vanilla JS — will be replaced in Phase 3) ───────────────
 
 require_once HK_FS_PLUGIN_DIR . 'includes/blocks/block-styles.php';
