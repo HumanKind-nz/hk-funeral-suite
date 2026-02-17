@@ -49,3 +49,13 @@ wp-config.php
 .github/.DS_Store
 .DS_Store
 /.nova
+
+# Node / Build
+node_modules/
+build/
+
+# Development — local-only, not distributed
+CLAUDE.md
+MODERNISATION-PLAN.md
+phpcs.xml.dist
+webpack.scripts.config.js
