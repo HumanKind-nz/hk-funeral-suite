@@ -38,6 +38,7 @@ require_once HK_FS_PLUGIN_DIR . 'inc/hooks.php';
 require_once HK_FS_PLUGIN_DIR . 'inc/shortcodes.php';
 require_once HK_FS_PLUGIN_DIR . 'inc/github-updater.php';
 require_once HK_FS_PLUGIN_DIR . 'inc/import.php';
+require_once HK_FS_PLUGIN_DIR . 'inc/blocks.php';
 require_once HK_FS_PLUGIN_DIR . 'inc/settings-page.php';
 
 // ─── Bootstrap modules ─────────────────────────────────────────────────────
@@ -45,6 +46,7 @@ require_once HK_FS_PLUGIN_DIR . 'inc/settings-page.php';
 HKFuneralSuite\PostTypes\bootstrap();
 HKFuneralSuite\GoogleSheets\bootstrap();
 HKFuneralSuite\BlockEditor\bootstrap();
+HKFuneralSuite\Blocks\bootstrap();
 HKFuneralSuite\AdminColumns\bootstrap();
 HKFuneralSuite\Hooks\bootstrap();
 HKFuneralSuite\Shortcodes\bootstrap();
@@ -84,10 +86,14 @@ function hk_fs_cleanup_plugin(): void {
 	delete_transient( 'hk_funeral_github_response' );
 }
 
-// ─── Backward-compat shims (removed in Phase 3 with old blocks) ─────────────
+// ─── Backward-compat shim ────────────────────────────────────────────────────
 
 /**
- * Legacy cache purge function — old block init.php files call this.
+ * Legacy cache purge function.
+ *
+ * Old block init.php save handlers may still fire for existing posts
+ * that contain the legacy block markup. This shim ensures cache
+ * purging continues to work during the transition.
  *
  * @param int|null $post_id Post ID.
  * @param string   $context Context string.
@@ -95,35 +101,3 @@ function hk_fs_cleanup_plugin(): void {
 function hk_fs_optimized_cache_purge( ?int $post_id = null, string $context = 'unknown' ): void {
 	HKFuneralSuite\Hooks\optimised_cache_purge( $post_id, $context );
 }
-
-// ─── Legacy blocks (vanilla JS — will be replaced in Phase 3) ───────────────
-
-require_once HK_FS_PLUGIN_DIR . 'includes/blocks/block-styles.php';
-
-/**
- * Register existing vanilla JS blocks for enabled CPTs.
- *
- * These will be replaced with JSX blocks using block.json and
- * useEntityProp in Phase 3.
- */
-add_action( 'init', function (): void {
-	$settings = HK_Funeral_Settings::get_instance();
-
-	$block_map = [
-		'staff'     => 'team-member-block',
-		'packages'  => 'pricing-package-block',
-		'caskets'   => 'casket-block',
-		'urns'      => 'urn-block',
-		'monuments' => 'monument-block',
-		'keepsakes' => 'keepsake-block',
-	];
-
-	foreach ( $block_map as $cpt_key => $block_dir ) {
-		if ( $settings->is_cpt_enabled( $cpt_key ) ) {
-			$init_file = HK_FS_PLUGIN_DIR . "includes/blocks/{$block_dir}/init.php";
-			if ( file_exists( $init_file ) ) {
-				require_once $init_file;
-			}
-		}
-	}
-}, 15 );

@@ -48,14 +48,8 @@ function get_default_block( string $post_type ): string {
 
 	$block_name = $block_map[ $post_type ];
 
-	// Build default attributes per type.
-	$attrs = match ( $post_type ) {
-		'hk_fs_staff'   => '{"position":"","qualification":"","phone":"","email":"","selectedLocation":"","selectedRole":""}',
-		'hk_fs_package' => '{"price":"","order":"10"}',
-		default         => '{"price":"","selectedCategory":""}',
-	};
-
-	return "<!-- wp:{$block_name} {$attrs} /-->";
+	// Meta blocks store no attributes — data lives in post meta via useEntityProp.
+	return "<!-- wp:{$block_name} /-->";
 }
 
 /**

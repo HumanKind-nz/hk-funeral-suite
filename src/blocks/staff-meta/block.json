@@ -1,0 +1,17 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "hk-funeral-suite/team-member",
+	"title": "Team Member Details",
+	"category": "hk-funeral-suite",
+	"icon": "businesswoman",
+	"description": "Meta field entry block for the Team Member custom post type.",
+	"textdomain": "hk-funeral-suite",
+	"supports": {
+		"html": false,
+		"multiple": false,
+		"reusable": false
+	},
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css"
+}
