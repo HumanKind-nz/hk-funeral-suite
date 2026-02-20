@@ -271,14 +271,17 @@ function setup_staff_columns(): void {
 				$new[ $key ]           = $value;
 				$new['position']       = __( 'Position', 'hk-funeral-suite' );
 				$new['qualification']  = __( 'Qualification', 'hk-funeral-suite' );
-			} elseif ( $key === 'taxonomy-hk_fs_location' || $key === 'taxonomy-hk_fs_role' ) {
-				// Skip — we'll re-add at end.
+			} elseif ( $key === 'taxonomy-hk_fs_location' || $key === 'taxonomy-hk_fs_role' || $key === 'date' ) {
+				// Skip — we'll re-add at end in the correct order.
 			} else {
 				$new[ $key ] = $value;
 			}
 		}
 		$new['taxonomy-hk_fs_location'] = __( 'Location', 'hk-funeral-suite' );
 		$new['taxonomy-hk_fs_role']     = __( 'Job Role', 'hk-funeral-suite' );
+		if ( isset( $columns['date'] ) ) {
+			$new['date'] = $columns['date'];
+		}
 		return $new;
 	} );
 

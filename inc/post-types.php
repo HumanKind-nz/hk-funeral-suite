@@ -177,7 +177,7 @@ function register_staff_cpt(): void {
 		'show_in_nav_menus'   => $make_public,
 		'exclude_from_search' => ! $make_public,
 		'template'            => [
-			[ 'hk-funeral-suite/team-member' ],
+			[ 'hk-funeral-suite/team-member', [ 'lock' => [ 'move' => true, 'remove' => true ] ] ],
 			[ 'core/paragraph' ],
 		],
 		'template_lock'       => false,
@@ -270,7 +270,7 @@ function register_packages_cpt(): void {
 		'show_in_rest'        => true,
 		'exclude_from_search' => ! $make_public,
 		'template'            => [
-			[ 'hk-funeral-suite/pricing-package' ],
+			[ 'hk-funeral-suite/pricing-package', [ 'lock' => [ 'move' => true, 'remove' => true ] ] ],
 			[ 'core/paragraph' ],
 		],
 		'template_lock'       => false,
@@ -345,7 +345,7 @@ function register_product_cpt( string $key ): void {
 		'show_in_rest'        => true,
 		'exclude_from_search' => ! $make_public,
 		'template'            => [
-			[ "hk-funeral-suite/{$post_type}" ],
+			[ "hk-funeral-suite/{$post_type}", [ 'lock' => [ 'move' => true, 'remove' => true ] ] ],
 			[ 'core/paragraph' ],
 		],
 		'template_lock'       => false,
@@ -494,7 +494,7 @@ function register_block_templates(): void {
 		// Only set template if not already set during registration.
 		if ( empty( $post_type_object->template ) ) {
 			$post_type_object->template = [
-				[ $block_name ],
+				[ $block_name, [ 'lock' => [ 'move' => true, 'remove' => true ] ] ],
 				[ 'core/paragraph' ],
 			];
 			$post_type_object->template_lock = false;

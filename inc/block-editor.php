@@ -21,7 +21,6 @@ function bootstrap(): void {
 	add_filter( 'allowed_block_types_all', __NAMESPACE__ . '\\filter_allowed_block_types', 10, 2 );
 	add_filter( 'map_meta_cap', __NAMESPACE__ . '\\add_block_binding_caps', 10, 4 );
 	add_filter( 'block_editor_settings_all', __NAMESPACE__ . '\\add_template_lock_settings', 10, 2 );
-	add_action( 'enqueue_block_editor_assets', __NAMESPACE__ . '\\enqueue_block_locking_script' );
 }
 
 /**
@@ -95,38 +94,3 @@ function add_template_lock_settings( array $editor_settings, $editor_context ): 
 	return $editor_settings;
 }
 
-/**
- * Enqueue block locking script for our CPTs.
- */
-function enqueue_block_locking_script(): void {
-	$screen = get_current_screen();
-	if ( ! $screen || ! method_exists( $screen, 'is_block_editor' ) || ! $screen->is_block_editor() ) {
-		return;
-	}
-
-	$post_type = get_post_type();
-	$block_map = \HKFuneralSuite\PostTypes\get_post_type_block_map();
-
-	if ( ! array_key_exists( $post_type, $block_map ) ) {
-		return;
-	}
-
-	$script_path = HK_FS_PLUGIN_DIR . 'assets/js/block-locking.js';
-	if ( ! file_exists( $script_path ) ) {
-		return;
-	}
-
-	wp_register_script(
-		'hk-fs-block-locking',
-		HK_FS_PLUGIN_URL . 'assets/js/block-locking.js',
-		[ 'wp-blocks', 'wp-dom-ready', 'wp-edit-post', 'wp-data', 'wp-compose', 'wp-hooks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-notices' ],
-		HK_FS_VERSION . '.' . filemtime( $script_path ),
-		true
-	);
-
-	wp_localize_script( 'hk-fs-block-locking', 'hkFsBlockLocking', [
-		'requiredBlock' => $block_map[ $post_type ],
-	] );
-
-	wp_enqueue_script( 'hk-fs-block-locking' );
-}
