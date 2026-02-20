@@ -8,6 +8,8 @@
  * @package HKFuneralSuite
  */
 
+declare( strict_types=1 );
+
 defined( 'WP_UNINSTALL_PLUGIN' ) || exit;
 
 // Remove plugin settings.
@@ -25,13 +27,21 @@ foreach ( $product_keys as $product ) {
 	delete_option( "hk_fs_{$product}_price_google_sheets" );
 }
 
-// Remove rewrite flush flag.
+// Remove theme/plugin compatibility settings.
+delete_option( 'hk_fs_generatepress_compatibility' );
+delete_option( 'hk_fs_wpbf_compatibility' );
+delete_option( 'hk_fs_happyfiles_compatibility' );
+delete_option( 'hk_fs_seopress_metabox_compatibility' );
+
+// Remove migration and internal flags.
+delete_option( 'hk_fs_caps_migrated_v2' );
 delete_option( 'hk_fs_flush_rewrite_rules' );
+delete_option( 'hk_fs_roles_updated' );
 
 // Remove GitHub updater transient.
-delete_transient( 'hk_funeral_suite_github_response' );
+delete_transient( 'hk_funeral_github_response' );
 
-// Remove capabilities version transient.
+// Remove legacy transients.
 delete_transient( 'hk_fs_roles_version' );
 
 /*

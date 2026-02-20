@@ -41,6 +41,9 @@ function bootstrap(): void {
 
 	// Cache purging on REST meta updates.
 	add_action( 'updated_post_meta', __NAMESPACE__ . '\\maybe_clear_cache_on_rest_update', 10, 4 );
+
+	// Plugin action links (Settings link on Plugins screen).
+	add_filter( 'plugin_action_links_' . HK_FS_BASENAME, __NAMESPACE__ . '\\add_plugin_action_links' );
 }
 
 // ─── Activation / Deactivation ──────────────────────────────────────────────
@@ -172,6 +175,24 @@ function remove_admin_bar_view_link( $wp_admin_bar ): void {
 	if ( ! get_option( $cpt_settings[ $post_type ], false ) ) {
 		$wp_admin_bar->remove_node( 'view' );
 	}
+}
+
+// ─── Plugin Action Links ────────────────────────────────────────────────────
+
+/**
+ * Add a "Settings" link to the plugin's row on the Plugins screen.
+ *
+ * @param array $links Existing action links.
+ * @return array Modified action links.
+ */
+function add_plugin_action_links( array $links ): array {
+	$settings_link = sprintf(
+		'<a href="%s">%s</a>',
+		esc_url( admin_url( 'options-general.php?page=hk-funeral-suite-settings' ) ),
+		esc_html__( 'Settings', 'hk-funeral-suite' )
+	);
+	array_unshift( $links, $settings_link );
+	return $links;
 }
 
 // ─── Admin Footer / Styles ──────────────────────────────────────────────────
