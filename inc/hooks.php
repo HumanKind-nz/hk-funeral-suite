@@ -36,9 +36,6 @@ function bootstrap(): void {
 	// Admin footer text.
 	add_filter( 'admin_footer_text', __NAMESPACE__ . '\\admin_footer_text' );
 
-	// Admin styles.
-	add_action( 'admin_enqueue_scripts', __NAMESPACE__ . '\\enqueue_admin_styles' );
-
 	// Theme/plugin compatibility.
 	add_action( 'admin_init', __NAMESPACE__ . '\\load_compatibility_filters' );
 
@@ -204,31 +201,6 @@ function admin_footer_text( string $footer_text ): string {
 	}
 
 	return $footer_text;
-}
-
-/**
- * Enqueue admin styles for our CPT screens.
- *
- * @param string $hook Current admin page.
- */
-function enqueue_admin_styles( string $hook ): void {
-	$screen = get_current_screen();
-	if ( ! $screen ) {
-		return;
-	}
-
-	$cpt_slugs = \HKFuneralSuite\PostTypes\get_all_cpt_slugs();
-	if ( in_array( $screen->post_type, $cpt_slugs, true ) ) {
-		$css_path = HK_FS_PLUGIN_DIR . 'assets/css/admin-style.css';
-		if ( file_exists( $css_path ) ) {
-			wp_enqueue_style(
-				'hk-funeral-admin-style',
-				HK_FS_PLUGIN_URL . 'assets/css/admin-style.css',
-				[],
-				HK_FS_VERSION
-			);
-		}
-	}
 }
 
 // ─── Theme / Plugin Compatibility ───────────────────────────────────────────
