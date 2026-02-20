@@ -170,6 +170,85 @@ You can also use the casket category taxonomy in Beaver Themer:
 [wpbb term:hk_fs_casket_category]
 ```
 
+## Monuments Custom Post Type
+
+```
+hk_fs_monument
+```
+
+### Monument Beaver Builder Integration
+When using field connections in Beaver Builder Themer, you'll always use the original meta field names regardless of UI labels:
+
+| Field | Meta Key for Beaver Themer |
+|-------|----------------------------|
+| Price | `_hk_fs_monument_price` |
+
+### Monument Shortcodes
+For Beaver Themer layouts, you can display monument prices using the `[hk_formatted_price]` shortcode (recommended):
+```
+[hk_formatted_price key="_hk_fs_monument_price" prefix="Price:" suffix="inc GST"]
+```
+
+Or using the basic custom field shortcode:
+```
+[hk_custom_field key="_hk_fs_monument_price"]
+```
+
+### Monument Taxonomies
+You can also use the monument category taxonomy in Beaver Themer:
+```
+[wpbb term:hk_fs_monument_category]
+```
+
+## Keepsakes Custom Post Type
+
+```
+hk_fs_keepsake
+```
+
+### Keepsake Beaver Builder Integration
+When using field connections in Beaver Builder Themer, you'll always use the original meta field names regardless of UI labels:
+
+| Field | Meta Key for Beaver Themer |
+|-------|----------------------------|
+| Price | `_hk_fs_keepsake_price` |
+| Product Code | `_hk_fs_keepsake_product_code` |
+| Metal Type | `_hk_fs_keepsake_metal` |
+| Stones | `_hk_fs_keepsake_stones` |
+
+### Keepsake Shortcodes
+For Beaver Themer layouts, you can use these shortcodes to display keepsake fields:
+```
+[hk_formatted_price key="_hk_fs_keepsake_price" prefix="Price:" suffix="inc GST"]
+[hk_custom_field key="_hk_fs_keepsake_product_code"]
+[hk_custom_field key="_hk_fs_keepsake_metal"]
+[hk_custom_field key="_hk_fs_keepsake_stones"]
+```
+
+You can also add formatting around these fields:
+```
+<div class="keepsake-details">
+    <div class="keepsake-price">
+        [hk_formatted_price key="_hk_fs_keepsake_price" suffix="inc GST"]
+    </div>
+    <div class="keepsake-code">
+        <strong>Product Code:</strong> [hk_custom_field key="_hk_fs_keepsake_product_code" fallback="N/A"]
+    </div>
+    <div class="keepsake-metal">
+        <strong>Metal:</strong> [hk_custom_field key="_hk_fs_keepsake_metal" fallback="N/A"]
+    </div>
+    <div class="keepsake-stones">
+        <strong>Stones:</strong> [hk_custom_field key="_hk_fs_keepsake_stones" fallback="N/A"]
+    </div>
+</div>
+```
+
+### Keepsake Taxonomies
+You can also use the keepsake category taxonomy in Beaver Themer:
+```
+[wpbb term:hk_fs_keepsake_category]
+```
+
 ## Advanced Shortcode Examples
 
 ### Price Formatting with HK Shortcode (Recommended)
@@ -180,16 +259,16 @@ Format prices with proper currency and formatting options:
 </div>
 ```
 
-### Custom Field with Default Value
+### Custom Field with Fallback Value
 Display a field with a fallback value if empty:
 ```
-[hk_custom_field key="_hk_fs_package_intro" default="No description available"]
+[hk_custom_field key="_hk_fs_package_intro" fallback="No description available"]
 ```
 
 ### Custom Field with Raw Output
-Display a field without HTML formatting:
+Display a field without HTML wrappers:
 ```
-[hk_custom_field key="_hk_fs_package_intro" format="raw"]
+[hk_custom_field key="_hk_fs_package_intro" raw="true"]
 ```
 
 ### Conditional Display Example

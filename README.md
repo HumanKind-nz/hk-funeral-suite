@@ -1,358 +1,178 @@
 ![HumanKind Funeral Suite](https://weave-hk-github.b-cdn.net/humankind/plugin-header.png)
 
-#  ⚰️ HumanKind Funeral Suite 🎩💐
+# HumanKind Funeral Suite
 
-A powerful WordPress plugin to streamline funeral home websites adding custom post types, taxonomies and fields for Staff, Caskets, Urns, Monuments and Pricing Packages, along with specialised Gutenberg blocks for easy content management. Basic meta fields are included, no need for ACF.
-
-
-## 📝 Description  
-
-HumanKind Funeral Suite transforms WordPress sites for funeral homes, allowing them to manage essential services with ease. This plugin introduces specialised custom post types for:  
-
-- **Team Members & Staff** – Manage funeral home staff for the website, their roles, contact and multiple locations  
-- **Caskets** – Showcase available caskets and pricing in an organised catalog  
-- **Urns** – Display urn options and pricing for families to choose from  
-- **Monuments** – Display monument & Headstone options and pricing for families to choose from 
-- **Keepsakes** – Display keepsake options and pricing
-- **Pricing Packages** – Present funeral service packages with clear pricing  
-
-Each content type comes with tailor-made fields and taxonomies to fit the needs of the funeral industry.  
-
-## ✨ Features  
-
-- **Team Management** – Add and manage staff profiles with location & roles  
-- **Product Catalogs** – Create searchable listings for caskets, urns, monuments, keepsakes and headstones
-- **Pricing Packages** – Display service packages with clear pricing  
-- **Feature Flexibility** – Enable or disable specific features as needed  
-
----
-  
-- **Gutenberg Blocks for Post Entry**:
-  - Team Member block with metadata fields for qualifications, position, contact info, and taxonomies
-  - Casket, Urn, Monument & Keepsake blocks with price and category fields
-  - Pricing Package block with price and order fields
-  
-- **Admin Features**:
-  - Customisable settings page to enable/disable individual CPTs
-  - User roles and custom capabilities for role-based access control
-  - Automatic updates from GitHub repository
-  
-- **Developer Features**:
-  - Import compatibility with All Import Pro
-  - REST API integration for programmatic content creation
-  - Block template locking for consistent data entry
-  - Shortcodes for displaying custom fields and pricing in templates
-
-## 📈 Google Sheet Sync for Pricing
-
-The HumanKind Funeral Suite now includes a one way sync with Google Sheets for urn, casket and pricing package pricing management. 
-This was requested by a client who wanted their Manager/Finance team to be able to quickly adjust pricing without logging into the website.
-Also be able to see from a spreadsheet what all the price plans were.
-
-Once setup via a Google Apps Script this allows you to:
-
-- Manage pricing for packages, caskets, and urns from a central Google Sheet
-- Automatically sync updates to your WordPress site
-- Prevent accidental price edits in the WordPress admin that would be overwritten
-
-#### Features
-
-- **Admin Integration**: Clear visual indicators show when pricing is managed externally
-- **Content Protection**: Price fields are automatically disabled when Google Sheets integration is active
-- **Flexible Control**: Enable/disable integration independently for each product type
-- **Cache Management**: Automatic cache clearing ensures pricing updates appear immediately
-
-#### Configuration
-
-1. Navigate to Settings → HK Funeral Suite
-2. In the "Internal Use / Developer Options" section, find the Google Sheets Data Sync options
-3. Enable Google Sheets integration for your desired product types
-4. Contact Weave Digital Studio for help setting up the Google Sheet connection
-
-#### Developer Notes
-
-When Google Sheets integration is enabled, the plugin adds hooks to:
-- Prevent pricing fields from being edited in WordPress
-- Display visual indicators in the admin interface
-- Support the REST API for external updates
-- Clear caches automatically when prices are updatet. Tested for Internal use and used with the Weave Cache Purge Helper.
-  
-## 🍰 Shortcodes
-
-### `[hk_formatted_price]`
-Outputs a formatted price from a custom field with proper currency formatting.
-
-**Key features:**
-- Currency symbol customisation
-- Prefix and suffix support
-- Adjustable decimal precision
-- Graceful fallback for non-numeric values (e.g., "P.O.A.")
-
-### `[hk_custom_field]`
-Displays any custom field value with optional formatting and fallbacks.
-
-**Key features:**
-- Date formatting support
-- Before/after content wrappers
-- Fallback content for empty fields
-- Option for raw output without wrappers
-- HTML tag stripping option
-
-More info see [Shortcode Usage Examples](shortcode-usage.md)
-
----
-## 📥 Plugin Installation  
-
-### 📌 Manual Installation  
-1. Download the latest `.zip` file from the [Releases Page](https://github.com/HumanKind-nz/hk-funeral-suite/releases).  
-2. Go to **Plugins > Add New > Upload Plugin**.  
-3.  Upload the zip file, install, and activate!  
-
-### 📌 From GitHub (For Developers)  
-```sh
-git clone https://github.com/HumanKind-nz/hk-funeral-suite.git
-cd hk-funeral-suite
-composer install  # (if Composer is used)
-```
-💡 Then zip the directory contents and upload it via WordPress admin or copy it to the `wp-content/plugins/` directory manually.  
-
-### 🔄 Auto-Updater via GitHub  
-This plugin supports automatic updates directly from GitHub using a custom updater. To ensure updates work:  
-1. Keep the plugin installed in `wp-content/plugins/hk-funeral-suite`.  
-2. When a new release is available, the WordPress updater will notify you.  
-3. Click **Update Now** in the Plugins page to install the latest version.
-
----
+A WordPress plugin for funeral home websites. Custom post types, taxonomies, meta fields, and Gutenberg blocks for managing staff, caskets, urns, monuments, keepsakes, and pricing packages. No ACF required.
 
 ## Requirements
 
-- WordPress 5.8 or higher
-- PHP 7.4 or higher
-- A funeral website
+- WordPress 6.6+
+- PHP 8.1+
+- Block editor (Gutenberg) enabled
 
-> [!IMPORTANT]
-> **Block Editor Requirement:**
-> This plugin relies on the WordPress block editor (Gutenberg) to manage block meta entries for the custom post types (CPTs). If the block editor is disabled (for example, if the Disable Gutenberg plugin is active), the CPTs may not function as intended. Please ensure that Gutenberg is enabled for full plugin functionality.
+> **Note:** This plugin relies on the block editor for meta field entry. If Gutenberg is disabled, the CPTs will not function as intended.
 
+## Installation
 
-## 🚀 Usage 
+### From a release
 
-### 🎯 Getting Started  
-1. After activation, visit the **"HK Funeral Suite Settings"** menu in WordPress Admin.  
-2. Use the **Settings** page to enable or disable specific features.  
-3. Start adding your content under the newly created post types.  
+1. Download the latest `.zip` from the [Releases page](https://github.com/HumanKind-nz/hk-funeral-suite/releases)
+2. Go to **Plugins > Add New > Upload Plugin**
+3. Upload the zip, install, and activate
 
-### Adding Staff Members
+### From source
 
-1. Navigate to "Staff" in the admin menu
-2. Click "Add New"
-3. Enter the staff member's name as the title
-4. Add a featured image for the staff photo
-5. Use the Team Member block to enter position, qualifications, contact details, etc.
-6. Assign staff to locations and roles using the provided taxonomies
-7. Publish when ready
+```bash
+git clone https://github.com/HumanKind-nz/hk-funeral-suite.git
+cd hk-funeral-suite
+npm install && npm run build
+```
 
-### Managing Caskets, Urns, Monuments or Keepsakes
+Then copy to `wp-content/plugins/` or symlink for local development.
 
-1. Navigate to "Caskets", "Urns", "Monuments" or "Keepsakes" in the admin menu
-2. Click "Add New"
-3. Enter the product name as the title
-4. Add a featured image
-5. Use the corresponding block to enter pricing and select a category
-6. Add description and other content as needed
-7. Publish when ready
+### Auto-updates
 
-### Creating Pricing Packages
+The plugin includes a GitHub updater. When a new release is published, WordPress will show an update notification on the Plugins screen — click **Update Now** to install.
 
-1. Navigate to "Packages" in the admin menu
-2. Click "Add New"
-3. Enter the package name as the title
-4. Use the Pricing Package block to enter an intro, price and display order
-5. Add description and details of what's included in the package
-6. Publish when ready
+## What's Included
 
+### Custom Post Types
 
-## 🚀  🦫 When using with Beaver Themer
+- **Pricing Packages** — service packages with pricing, display order, and intro text
+- **Staff** — team member profiles with position, qualifications, contact details, location and role taxonomies
+- **Caskets** — product catalog with pricing and category taxonomy
+- **Urns** — product catalog with pricing and category taxonomy
+- **Monuments** — product catalog with pricing and category taxonomy
+- **Keepsakes** — product catalog with pricing, product code, metal type, stones, and category taxonomy
 
-- [ 🦫 Meta Fields & Beaver Builder Integration](beaver-themer-guide.md) - Guide for leveraging custom meta fields in Beaver Themer layouts
+Each CPT has a dedicated Gutenberg block for structured data entry using `useEntityProp`.
 
-## ⬆️ Importing Post Content
+### Settings Page
 
-The plugin is compatible with WP All Import Pro for bulk importing content. 
-When importing:
+React-powered settings at **Settings > HK Funeral Suite** with four tabs:
 
-1. Set up your import as usual, mapping fields to the appropriate columns
-2. The plugin should automatically add the required blocks to imported posts
-3. After import, review and update any missing metadata as needed
+- **General** — enable/disable CPTs and public visibility
+- **Integration** — Google Sheets price sync per product type
+- **Compatibility** — theme/plugin meta box cleanup (GeneratePress, Page Builder Framework, HappyFiles, SEOPress)
+- **About** — plugin info and links
 
-## Developers - UI Optimisation for Popular Themes/Plugins
+### Google Sheets Price Sync
 
-Streamline the editing interface by removing unnecessary meta boxes
- - Support for cleaning up UI elements individually in the "Developer Options" section of settings page
- - GeneratePress - removes layout options and sections meta boxes
- - Page Builder Framework - removes theme settings meta boxes
- - Happy Files - Removed Featured image column as not required
- - SEO Press - Removed extra un-needed Metaboxes and Content Analysis metaboxes
- **Note:** This is an opinionated list of themes and plugins we use at Weave Digital Studio and HumanKind Funeral websites, but can be extended for other tools
+One-way sync from Google Sheets to WordPress for managing pricing across multiple sites. When enabled:
 
----
+- Price fields are locked in the block editor
+- Visual indicators show externally managed pricing
+- REST API accepts updates from the Google Apps Script
+- Caches clear automatically on price changes
 
-## 📂 Plugin Structure  
+Enable per product type in **Settings > HK Funeral Suite > Integration**.
 
-🗂️ This plugin is designed for modularity and ease of maintenance:  
+### Shortcodes
+
+**`[hk_formatted_price]`** — formatted price output with currency symbol, decimal precision, and fallback for non-numeric values (e.g. "P.O.A.").
+
+**`[hk_custom_field]`** — display any custom field with date formatting, before/after wrappers, and fallback content.
+
+See [Shortcode Usage Examples](shortcode-usage.md) for full documentation and [Beaver Themer Integration](beaver-themer-guide.md) for using these with Beaver Builder layouts.
+
+### Compatibility
+
+The plugin can remove unnecessary meta boxes from the editing interface:
+
+- **GeneratePress** — layout options and sections meta boxes
+- **Page Builder Framework** — theme settings meta boxes
+- **HappyFiles** — featured image column (not needed)
+- **SEOPress** — metaboxes and content analysis on non-public CPTs
+
+Configure in **Settings > HK Funeral Suite > Compatibility**.
+
+## Usage
+
+### Getting started
+
+1. Activate the plugin
+2. Visit **Settings > HK Funeral Suite** to enable the CPTs you need
+3. Start adding content under the new admin menu items
+
+### Beaver Themer
+
+See [Meta Fields & Beaver Builder Integration](beaver-themer-guide.md) for using custom fields in Beaver Themer layouts.
+
+### Importing content
+
+Compatible with WP All Import Pro. The plugin automatically adds required blocks to imported posts. After import, review and update any missing metadata as needed.
+
+## Development
+
+```bash
+npm run start        # Watch all source files
+npm run build        # Production build
+npm run lint         # Lint JS and CSS
+```
+
+## Plugin Structure
 
 ```
 hk-funeral-suite/
-├── includes/
-│   ├── admin/
-│   │   ├── class-settings-page.php     # Plugin settings management
-│   │   ├── class-capabilities.php      # Custom capabilities for CPTs
-│   │   ├── class-github-updater.php    # GitHub automatic updates
-│   │   ├── class-block-editor.php      # Custom block defaults for CPTs
-│   │   ├── class-post-mods.php         # Post modifications/customizations
-│   │   ├── class-admin.php             # Admin-specific functionality
-│   │   ├── class-hk-funeral-cpt-admin-columns.php  # Adjust admin columns, remove SEO columns
-│   │   └── class-hk-funeral-cpt-compatibility.php  # Add theme/plugin compatibility optimisations
-│   ├── blocks/
-│   │   ├── assets/                     # Shared block assets
-│   │   │   └── block-editor-styles.css # Block editor specific styles
-│   │   ├── team-member-block/
-│   │   │   ├── init.php                # Team member block registration
-│   │   │   └── index.js                # Team member block script
-│   │   ├── casket-block/
-│   │   │   ├── init.php                # Casket block registration
-│   │   │   └── index.js                # Casket block script
-│   │   ├── urn-block/
-│   │   │   ├── init.php                # Urn block registration
-│   │   │   └── index.js                # Urn block script
-│   │   ├── pricing-package-block/
-│   │   │   ├── init.php                # Pricing package block registration
-│   │   │   └── index.js                # Pricing package block script
-|   |   ├── monument-block/
-│   │   │   ├── init.php                # Monument block registration
-│   │   │   └── index.js                # Monument block script
-|   |   ├── keepsake-block/
-│   │   │   ├── init.php                # Keepsake block registration
-│   │   │   └── index.js                # Keepsake block script
-│   │   └── block-styles.php            # Shared block styling
-│   ├── cpt/
-│   │   ├── class-product-cpt-factory.php   # Factory for product-type CPTs
-│   │   ├── cpt-registration.php            # Dynamic CPT registration system
-│   │   ├── cpt-shared-functions.php        # Shared functions across all CPTs
-│   │   ├── staff.php                       # Staff CPT registration
-│   │   ├── packages.php                    # Packages CPT registration
-│   │   └── keepsakes.php                   # Keepsakes CPT registration
-│   ├── import/
-│   │   └── class-default-blocks-importer.php  # Import integration
-│   └── class-shortcodes.php            # Shortcode registration ([hk_formatted_price], [hk_custom_field])
-├── assets/
-│   └── images/                        # Main plugin images
-│       └── hk-funeral-suite-banner.png                     
-│       └── icon-256x256.png                    
-├── README.md                          # Main documentation
-├── CHANGELOG.md                       # Version history
-├── beaver-themer-guide.md            # Beaver Themer integration guide
-├── shortcode-usage.md                # Shortcode usage examples
-├── LICENSE                           # License file
-└── hk-funeral-suite.php              # Main plugin file
+├── inc/                               # PHP modules (namespaced functions)
+│   ├── post-types.php                 # CPT and taxonomy registration
+│   ├── blocks.php                     # Block registration via block.json
+│   ├── block-editor.php               # Block editor customisation
+│   ├── admin-columns.php              # Admin list table columns
+│   ├── hooks.php                      # Activation, compatibility, admin tweaks
+│   ├── settings-page.php              # React settings page (HK_Funeral_Settings)
+│   ├── google-sheets.php              # Google Sheets price sync integration
+│   ├── shortcodes.php                 # Shortcode registration
+│   ├── import.php                     # All Import Pro compatibility
+│   └── github-updater.php             # GitHub automatic updates
+├── src/
+│   ├── blocks/                        # JSX block source (useEntityProp)
+│   │   ├── staff-meta/                # Team member block
+│   │   ├── casket-meta/               # Casket block
+│   │   ├── urn-meta/                  # Urn block
+│   │   ├── package-meta/              # Pricing package block
+│   │   ├── monument-meta/             # Monument block
+│   │   └── keepsake-meta/             # Keepsake block
+│   └── js/settings/                   # React settings app source
+├── build/                             # Compiled assets (npm run build)
+├── assets/images/                     # Plugin icons and banner
+├── uninstall.php                      # Clean uninstall handler
+└── hk-funeral-suite.php               # Main plugin file
 ```
 
-## 🔄 Changelog
-[ Full Changelog Here](CHANGELOG.md)
+## Changelog
 
-### 1.4.7 - 2024-04-22
-- **Added** new `[hk_custom_field]` shortcode for reliable custom field display in Page Builders, including examples.
-- **Changed** default for `[hk_formatted_price]` shortcode to show 0 decimal places (use decimals="2" to display cents)
+[Full changelog](CHANGELOG.md)
 
-### 1.4.6 - 2024-04-18 - Keepsakes
-- **Added** Support for the Keepsakes CPT in the Block Editor
-- **Added** Core button blocks (`core/button` and `core/buttons`) to all CPTs
-- **Fixed** issue with slow post saving due to inefficient cache purging. Overall NGINX page cache improvements
-- **Fixed** duplicate code in pricing package block save handler
+### [2.0.0] - 2026-02-21
+- Rewritten from class-based to namespaced function architecture
+- `@wordpress/scripts` dual build system, JSX blocks with `useEntityProp`, React settings page
+- Native block locking, Settings link on Plugins screen, improved admin menu ordering
+- Requires WordPress 6.6+ and PHP 8.1+
 
-### [1.4.5] - 2025-04-09
-- **Added** `decimals="0"` parameter to shortcodes in the package admin column
-
-### [1.4.4] - 2025-04-09
-- **Added** Shortcode added to the pricing packages admin for easier content embedding
-- **Fixed** useEffect hook issues in Gutenberg blocks to properly sync metadata
-- **Fixed** Google Sheets integration edge cases in price management system
-
-### [1.4.1] - 2025-04-08
-- **Added** Enhanced cache clearing for REST API meta updates
-- **Improved** Compatibility with external data sources and page builders
+### [1.4.17] - 2025-12-05
+- New `[hk_team_member_content]` shortcode for Beaver Builder and classic themes
 
 ### [1.4.0] - 2025-04-07
-- **Added** Keepsakes custom post type for showcasing memorial keepsakes
-- **Added** Custom meta fields for keepsakes including product code, metal type, and stones
-- **Added** Keepsake block with specialised fields for easy content management
-- **Improved** REST API support for keepsake meta fields
+- Keepsakes custom post type
 
 ### [1.3.0] - 2025-03-23
-- **Added** Monuments custom post type for showcasing monuments and headstones
-- **Added** Moved to shared CPT registration code for simplicity and easier extra CPTs
-- **Added** Custom user roles for Funeral Staff and Funeral Manager for permissions and management
-- **Improved** Centralised product registration with hooks for plugin extensibility
-
-### [1.2.4] - 2025-03-15
-- **Added** Support for hiding SEOPress metaboxes on CPTs and UI cleanup
-
-### [1.2.3] - 2025-03-14
-- **Added** Theme & Plugin UI optimisation settings to remove unnecessary meta boxes from funeral content types
-- **Added** Support for cleaning up UI elements from GeneratePress, Page Builder Framework and Happy Files
-- **Renamed** Admin classes for better consistency in the codebase
-
-### [1.2.0] - 2025-03-13
-- **Added** block protection to prevent accidental deletion of required data fields in all custom post types
-- **Fixed** synchronization between block editor and meta fields for intro paragraphs
-- **Removed** redundant intro meta box from editor screen
-- **Added** SEO column management to hide SEO columns when CPTs are set to non-public
-- Centralised featured image column handling across all custom post types
-- Renamed "Title" column to "Name" in admin lists for better clarity
-
-### [1.1.7] - 2025-03-12
-- **Performance:** Added autosave and revision checks to prevent unnecessary processing for cpt updates
-
-### [1.1.4] - 2025-03-09
-- **Added** New shortcode [hk_formatted_price] for outputting formatted prices.
-- Consolidated CPT admin modifications into class-post-mods.php
-- Updated Github auto plugin updater.
-- Ensured settings changes properly flush rewrite rules
-- Updated documentation
+- Monuments custom post type, shared CPT registration
 
 ### [1.1.0] - 2025-03-06
-- **Added:** Google Sheets integration for pricing management
-- **Added:** Enhanced UI for settings page
-- **Added:** Allowed additional core blocks in funeral content types
+- Google Sheets integration for pricing management
 
-### [1.0.2] - 2025-03-04
-- **Added:** New visibility settings for each CPT to control whether they have public-facing pages
-- **Added:** Admin setting page with checkboxes to enable/disable public visibility for each content type
-- **Added:** Filter hooks to allow themes to override CPT visibility settings
+### [1.0.0] - 2025-01-15
+- Initial release with Staff, Caskets, Urns, and Pricing Packages
 
-### 1.0.1 - 2025-03-02
-- **Added:** Default Blocks Importer functionality to automatically add necessary blocks to imported posts via WP All Import Pro
-- **Added:** Default blocks are now properly added to posts created via REST API
-- **Added:** GitHub Updates integration for seamless plugin updates directly through WordPress admin
-- **Fixed:** Template locking issues to ensure proper block rendering while still allowing block additions
+## Credits
 
-### 1.0.0 (Initial Release)
-- Four custom post types: Staff, Caskets, Urns, and Pricing Packages
-- Custom taxonomies for categorisation
-- Specialised Gutenberg blocks for each post type
-- Settings page for enabling/disabling features
-- Custom capabilities for admin control
-
-
-## 🎖️ Credits  
-
-👨‍💻 Developed with ❤️ by [HumanKind](https://weave.co.nz), Weave Digital Studio, and Gareth Bissland.  
-
+Developed by [HumanKind](https://humankindwebsites.com), [Weave Digital Studio](https://weave.co.nz), and Gareth Bissland.
 
 ## Support
 
-For support, feature requests or bug reports, please use the [GitHub issue tracker](https://github.com/HumanKind-nz/hk-funeral-suite/issues).
+For support, feature requests, or bug reports, use the [GitHub issue tracker](https://github.com/HumanKind-nz/hk-funeral-suite/issues).
 
-## 📜 License  
+## License
 
-🔓 This plugin is licensed under **GPL v2 or later** – feel free to modify and improve!  
+GPL v2 or later.
