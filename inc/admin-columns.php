@@ -353,6 +353,7 @@ function admin_column_styles(): void {
 	<style>
 		.column-featured_image { width: 150px !important; overflow: hidden; }
 		.column-featured_image img { border-radius: 3px; border: 1px solid #ddd; }
+		.column-price, .column-order { width: 100px; }
 		.column-shortcode { width: 350px !important; }
 		.hk-shortcode-container { display: flex; align-items: center; }
 		.hk-shortcode-display { cursor: pointer; border: 1px solid #ddd; }

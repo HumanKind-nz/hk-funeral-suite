@@ -1,7 +1,13 @@
 /**
- * Settings page app — placeholder for Phase 4.
+ * Settings page mount point.
  *
- * This will be replaced with a full React settings app using
- * @wordpress/components and the REST API.
+ * @package HKFuneralSuite
  */
-console.log( 'HK Funeral Suite settings: Phase 4 placeholder' );
+import { createRoot } from '@wordpress/element';
+import SettingsApp from './components/SettingsApp';
+
+const container = document.getElementById( 'hk-fs-settings' );
+if ( container ) {
+	const root = createRoot( container );
+	root.render( <SettingsApp /> );
+}
