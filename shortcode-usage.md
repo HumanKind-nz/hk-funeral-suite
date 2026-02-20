@@ -152,9 +152,9 @@ If the qualification field is empty, this will display "No qualifications listed
 
 ### Date Formatting
 
-Format date values stored in custom fields:
+Format date values stored in custom fields (works with any meta key containing a date string):
 ```html
-[hk_custom_field key="_hk_fs_event_date" format="F j, Y"]
+[hk_custom_field key="your_date_field" format="F j, Y"]
 ```
 If the field contains "2024-04-15", this would output "April 15, 2024".
 
@@ -170,7 +170,7 @@ This outputs just the email address without any wrapping spans.
 
 For security or display purposes, strip any HTML tags from the value:
 ```html
-[hk_custom_field key="_hk_fs_casket_description" strip_tags="true"]
+[hk_custom_field key="_hk_fs_package_intro" strip_tags="true"]
 ```
 
 ### Fetch Value from a Specific Post

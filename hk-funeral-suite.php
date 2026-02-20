@@ -3,7 +3,7 @@
  * Plugin Name: HumanKind Funeral Suite
  * Plugin URI: https://github.com/HumanKind-nz/hk-funeral-suite/
  * Description: Custom post types, taxonomies, fields and specialised Gutenberg blocks for funeral home websites.
- * Version: 2.0.0-alpha.1
+ * Version: 2.0.0
  * Author: HumanKind, Weave Digital Studio, Gareth Bissland
  * Author URI: https://weave.co.nz
  * License: GPL v2.0 or later
@@ -22,7 +22,7 @@ defined( 'WPINC' ) || exit;
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
-define( 'HK_FS_VERSION', '2.0.0-alpha.1' );
+define( 'HK_FS_VERSION', '2.0.0' );
 define( 'HK_FS_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'HK_FS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'HK_FS_BASENAME', plugin_basename( __FILE__ ) );

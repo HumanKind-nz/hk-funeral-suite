@@ -5,6 +5,36 @@ All notable changes to the HumanKind Funeral Suite plugin will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-02-21
+
+### Architecture
+- **Rewritten** entire plugin from class-based architecture to namespaced functions in `inc/`
+- **Added** `@wordpress/scripts` dual build system — separate builds for blocks and settings
+- **Added** JSX blocks with `useEntityProp` for all 6 CPTs — no more vanilla JS or PHP meta boxes
+- **Added** React settings page using `@wordpress/components` and the REST `/wp/v2/settings` endpoint
+- **Added** Native block `lock` attributes replacing the old MutationObserver hack
+- **Removed** all legacy class files from `includes/` directory
+- **Removed** jQuery dependency — the plugin is now fully vanilla JS/React
+
+### Changed
+- **Requires** WordPress 6.6+ and PHP 8.1+ (previously WP 5.8+ / PHP 7.4+)
+- **Simplified** capabilities to standard `manage_options` — removed custom `funeral_staff` and `funeral_manager` roles
+- **Modernised** GitHub updater: private constructor, constants, debug logging, better error handling
+- **Improved** admin menu ordering — all CPTs now group together below Posts regardless of enable/disable state
+- **Improved** uninstall cleanup — all options, transients, and compatibility settings properly removed
+- **Updated** settings page with tabbed interface: General, Integration, Compatibility, About
+
+### Added
+- **Settings link** on Plugins screen (next to Deactivate)
+- **Google Sheets lock indicator** in block editor when price sync is enabled
+- **Sortable columns** for price, order, position, and qualification in admin lists
+- **Shortcode copy button** in package admin columns
+
+### Fixed
+- Price data now saves correctly via block `useEntityProp` instead of conflicting sidebar meta boxes
+- Team admin columns date position now appears after taxonomies
+- Proper output escaping on price column formatting
+
 ## [1.4.17] - 2025-12-05
 - **Added** New `[hk_team_member_content]` shortcode to render paragraph blocks and other content blocks from team member posts
 - **Fixed** Team member biography content can now be displayed in Beaver Builder and classic themes using the new shortcode
