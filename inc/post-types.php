@@ -106,6 +106,48 @@ function bootstrap(): void {
 	add_action( 'init', __NAMESPACE__ . '\\register_enabled_cpts', 5 );
 	add_action( 'init', __NAMESPACE__ . '\\register_all_meta', 10 );
 	add_action( 'init', __NAMESPACE__ . '\\register_block_templates', 11 );
+	add_action( 'admin_menu', __NAMESPACE__ . '\\reorder_admin_menu', 999 );
+}
+
+/**
+ * Reorder admin menu to keep all CPTs grouped between Posts and Media.
+ *
+ * WordPress casts menu_position to int and resolves collisions by
+ * incrementing +1, so with 6 CPTs some cascade past Media (position 10).
+ * This hook runs late and manually repositions our CPTs.
+ */
+function reorder_admin_menu(): void {
+	global $menu;
+
+	$cpt_slugs = get_all_cpt_slugs();
+	$our_items = [];
+
+	// Extract our CPT menu items.
+	foreach ( $menu as $position => $item ) {
+		if ( isset( $item[2] ) ) {
+			$menu_slug = $item[2];
+			// CPT edit screens use "edit.php?post_type={slug}" as the menu slug.
+			foreach ( $cpt_slugs as $slug ) {
+				if ( $menu_slug === "edit.php?post_type={$slug}" ) {
+					$our_items[] = $item;
+					unset( $menu[ $position ] );
+					break;
+				}
+			}
+		}
+	}
+
+	if ( empty( $our_items ) ) {
+		return;
+	}
+
+	// Re-insert at sequential positions between Posts (5) and Media (10).
+	// Using string keys like '5.1', '5.2' avoids integer collision resolution.
+	$i = 1;
+	foreach ( $our_items as $item ) {
+		$menu[ '5.' . $i ] = $item;
+		$i++;
+	}
 }
 
 /**
@@ -335,7 +377,7 @@ function register_product_cpt( string $key ): void {
 		'publicly_queryable'  => $make_public,
 		'show_ui'             => true,
 		'show_in_menu'        => true,
-		'menu_position'       => 5,
+		'menu_position'       => 6,
 		'query_var'           => $make_public,
 		'rewrite'             => $make_public ? [ 'slug' => strtolower( $key ) ] : false,
 		'capability_type'     => 'post',
