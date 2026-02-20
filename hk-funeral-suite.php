@@ -62,30 +62,6 @@ add_action( 'plugins_loaded', function (): void {
 	load_plugin_textdomain( 'hk-funeral-suite', false, dirname( HK_FS_BASENAME ) . '/languages' );
 } );
 
-// ─── Uninstall ──────────────────────────────────────────────────────────────
-
-register_uninstall_hook( __FILE__, 'hk_fs_cleanup_plugin' );
-
-/**
- * Clean up plugin options on uninstall.
- */
-function hk_fs_cleanup_plugin(): void {
-	delete_option( 'hk_fs_enabled_cpts' );
-	delete_option( 'hk_fs_caps_migrated_v2' );
-	delete_option( 'hk_fs_flush_rewrite_rules' );
-	delete_option( 'hk_fs_happyfiles_compatibility' );
-	delete_option( 'hk_fs_seopress_metabox_compatibility' );
-	delete_option( 'hk_fs_generatepress_compatibility' );
-	delete_option( 'hk_fs_wpbf_compatibility' );
-	delete_option( 'hk_fs_enable_public_staff' );
-	delete_option( 'hk_fs_enable_public_caskets' );
-	delete_option( 'hk_fs_enable_public_urns' );
-	delete_option( 'hk_fs_enable_public_packages' );
-	delete_option( 'hk_fs_enable_public_monuments' );
-	delete_option( 'hk_fs_enable_public_keepsakes' );
-	delete_transient( 'hk_funeral_github_response' );
-}
-
 // ─── Backward-compat shim ────────────────────────────────────────────────────
 
 /**

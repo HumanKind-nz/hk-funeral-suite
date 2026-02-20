@@ -324,7 +324,7 @@ function setup_staff_columns(): void {
 function echo_price_column( string $price, bool $managed ): void {
 	if ( ! empty( $price ) ) {
 		if ( is_numeric( $price ) ) {
-			echo '$' . number_format( (float) $price, 2 );
+			echo '$' . esc_html( number_format( (float) $price, 2 ) );
 		} else {
 			echo esc_html( $price );
 		}
