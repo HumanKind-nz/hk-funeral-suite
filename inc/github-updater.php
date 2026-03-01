@@ -233,12 +233,15 @@ class HK_Funeral_GitHub_Updater {
 		$latest  = $this->normalize_version( $repo_info->tag_name );
 
 		$plugin_entry = [
-			'slug'        => dirname( $this->basename ),
-			'plugin'      => $this->basename,
-			'new_version' => $latest,
-			'tested'      => get_bloginfo( 'version' ),
-			'package'     => $repo_info->zipball_url,
-			'icons'       => [
+			'slug'         => dirname( $this->basename ),
+			'plugin'       => $this->basename,
+			'new_version'  => $latest,
+			'url'          => $plugin_data['PluginURI'] ?? '',
+			'tested'       => get_bloginfo( 'version' ),
+			'requires_php' => $plugin_data['RequiresPHP'] ?? '8.1',
+			'requires'     => $plugin_data['RequiresWP'] ?? '6.6',
+			'package'      => $repo_info->zipball_url,
+			'icons'        => [
 				'1x' => self::ICON_SMALL,
 				'2x' => self::ICON_LARGE,
 			],
@@ -315,6 +318,11 @@ class HK_Funeral_GitHub_Updater {
 	 * @return array Modified result.
 	 */
 	public function after_install( $response, $hook_extra, $result ) {
+		// Only act when *this* plugin is being updated.
+		if ( empty( $hook_extra['plugin'] ) || $hook_extra['plugin'] !== $this->basename ) {
+			return $result;
+		}
+
 		global $wp_filesystem;
 
 		$install_directory = plugin_dir_path( $this->file );
