@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Updated** settings page with tabbed interface: General, Integration, Compatibility, About
 
 ### Added
+- **Generic `[hk_content]` shortcode** renders any HK CPT's freeform content (casket, urn, monument, keepsake, package, staff) with the meta block stripped — for page builders that otherwise leak block markup. `[hk_team_member_content]` is retained as a back-compat alias
 - **Settings link** on Plugins screen (next to Deactivate)
 - **Google Sheets lock indicator** in block editor when price sync is enabled
 - **Sortable columns** for price, order, position, and qualification in admin lists
