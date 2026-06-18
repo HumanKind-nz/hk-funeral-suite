@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Shortcode copy button** in package admin columns
 
 ### Fixed
+- WP All Import block importer no longer escapes pre-formatted content. Content that is already block markup is kept intact, and plain text is wrapped with `wp_kses_post()` instead of `esc_html()`, so migrated descriptions stop rendering as literal `<!-- wp:paragraph -->` text
 - Price data now saves correctly via block `useEntityProp` instead of conflicting sidebar meta boxes
 - Team admin columns date position now appears after taxonomies
 - Proper output escaping on price column formatting

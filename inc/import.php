@@ -132,13 +132,21 @@ function maybe_add_block_to_post( int $post_id, string $block_html, string $post
 	}
 
 	$new_content = $block_html;
+	$content     = trim( $content );
 
-	if ( ! empty( trim( $content ) ) ) {
-		$paragraphs = array_filter( explode( "\n", trim( $content ) ) );
-		foreach ( $paragraphs as $paragraph ) {
-			$paragraph = trim( $paragraph );
-			if ( ! empty( $paragraph ) ) {
-				$new_content .= "\n\n<!-- wp:paragraph -->\n<p>" . esc_html( $paragraph ) . "</p>\n<!-- /wp:paragraph -->";
+	if ( '' !== $content ) {
+		if ( strpos( $content, '<!-- wp:' ) !== false ) {
+			// Content is already block markup (e.g. migrated from another site).
+			// Keep it intact — re-wrapping or escaping would store the block
+			// delimiters as literal text that never renders on the front end.
+			$new_content .= "\n\n" . $content;
+		} else {
+			// Plain text/HTML: wrap each line in a paragraph block. Use
+			// wp_kses_post (not esc_html) so safe inline HTML survives instead
+			// of being escaped into visible entities.
+			$paragraphs = array_filter( array_map( 'trim', explode( "\n", $content ) ) );
+			foreach ( $paragraphs as $paragraph ) {
+				$new_content .= "\n\n<!-- wp:paragraph -->\n<p>" . wp_kses_post( $paragraph ) . "</p>\n<!-- /wp:paragraph -->";
 			}
 		}
 	}
