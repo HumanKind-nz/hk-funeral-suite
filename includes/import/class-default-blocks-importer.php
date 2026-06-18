@@ -155,15 +155,22 @@ class HK_Default_Blocks_Importer {
 			// 2. Any existing content as paragraphs after
 			
 			$new_content = $block_html;
-			
-			// If there's existing content, add it as paragraphs after our block
-			if (!empty(trim($content))) {
-				// Split content into paragraphs and wrap each in paragraph blocks
-				$paragraphs = array_filter(explode("\n", trim($content)));
-				foreach ($paragraphs as $paragraph) {
-					$paragraph = trim($paragraph);
-					if (!empty($paragraph)) {
-						$new_content .= "\n\n<!-- wp:paragraph -->\n<p>" . esc_html($paragraph) . "</p>\n<!-- /wp:paragraph -->";
+
+			// If there's existing content, add it after our required block.
+			$content = trim($content);
+			if ($content !== '') {
+				if (strpos($content, '<!-- wp:') !== false) {
+					// Content is already block markup (e.g. migrated from another
+					// site). Keep it intact — re-wrapping or escaping would store
+					// the block delimiters as literal text that never renders.
+					$new_content .= "\n\n" . $content;
+				} else {
+					// Plain text/HTML: wrap each line in a paragraph block. Use
+					// wp_kses_post (not esc_html) so safe inline HTML survives
+					// instead of being escaped into visible entities.
+					$paragraphs = array_filter(array_map('trim', explode("\n", $content)));
+					foreach ($paragraphs as $paragraph) {
+						$new_content .= "\n\n<!-- wp:paragraph -->\n<p>" . wp_kses_post($paragraph) . "</p>\n<!-- /wp:paragraph -->";
 					}
 				}
 			}

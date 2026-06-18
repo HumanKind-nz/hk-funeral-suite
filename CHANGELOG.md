@@ -5,6 +5,9 @@ All notable changes to the HumanKind Funeral Suite plugin will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.20] - 2026-06-18
+- **Fixed** WP All Import block importer no longer escapes pre-formatted content. Content that is already block markup is kept intact, and plain text is wrapped with `wp_kses_post()` instead of `esc_html()` — so migrated descriptions stop rendering as literal `<!-- wp:paragraph -->` text on the front end
+
 ## [1.4.19] - 2026-06-18
 - **Fixed** GitHub updater no longer writes its per-request "Current version / Latest version" line to the PHP error log under `WP_DEBUG`. The line is now opt-in via the `WEAVE_UPDATER_DEBUG` constant, stopping a harmless debug line being recorded as an Nginx `[error]` flood on client sites. Genuine API-failure logs are unchanged
 
