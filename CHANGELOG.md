@@ -5,6 +5,10 @@ All notable changes to the HumanKind Funeral Suite plugin will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.18] - 2026-06-18
+- **Added** New `[hk_content]` shortcode renders any HK CPT's freeform content (casket, urn, monument, keepsake, package, staff) with the meta block stripped — for page builders that otherwise leak Gutenberg block markup
+- **Improved** Generalises `[hk_team_member_content]`, which is retained as a back-compat alias so existing staff layouts keep working
+
 ## [1.4.17] - 2025-12-05
 - **Added** New `[hk_team_member_content]` shortcode to render paragraph blocks and other content blocks from team member posts
 - **Fixed** Team member biography content can now be displayed in Beaver Builder and classic themes using the new shortcode

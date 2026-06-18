@@ -4,11 +4,12 @@
  *
  * Registers and handles front-end shortcodes for HK Funeral Suite.
  *
- * Version: 1.4.8
- * Changelog: 
+ * Version: 1.4.18
+ * Changelog:
  * - Added optional 'post_id' attribute to fetch meta values from a specific post instead of the current post.
  * - Added new 'hk_custom_field' shortcode for reliable custom field display in Beaver Builder
  * - Added new 'hk_team_member_content' shortcode to render paragraph blocks from team member posts
+ * - Added new 'hk_content' shortcode to render any CPT's content with the meta block stripped (generalises hk_team_member_content)
  *
  * @package HK_Funeral_Suite
  */
@@ -26,6 +27,7 @@ class HK_Shortcodes {
 	public static function init() {
 		add_shortcode( 'hk_formatted_price', array( __CLASS__, 'formatted_price_shortcode' ) );
 		add_shortcode( 'hk_custom_field', array( __CLASS__, 'custom_field_shortcode' ) );
+		add_shortcode( 'hk_content', array( __CLASS__, 'cpt_content_shortcode' ) );
 		add_shortcode( 'hk_team_member_content', array( __CLASS__, 'team_member_content_shortcode' ) );
 	}
 
@@ -184,7 +186,38 @@ class HK_Shortcodes {
 	}
 
 	/**
+	 * Render an HK Funeral Suite CPT's freeform content, stripping the meta block.
+	 *
+	 * Works on any HK CPT (casket, urn, monument, keepsake, package, staff).
+	 * Parses the post's blocks, drops the editor-only `hk-funeral-suite/*` meta
+	 * block, renders the remaining blocks, then runs the result through
+	 * `the_content`. Use in page builders (Beaver Themer/Builder) where the raw
+	 * post_content field otherwise leaks Gutenberg block markup. No attributes
+	 * are needed inside a loop — it picks up the current post automatically.
+	 *
+	 * Attributes:
+	 * - post_id: The post ID to fetch the content from (optional, defaults to current post).
+	 * - fallback: Content to display if no content blocks are found.
+	 *
+	 * @param array $atts Shortcode attributes.
+	 * @return string Rendered block content.
+	 */
+	public static function cpt_content_shortcode( $atts ) {
+		// Set default attributes
+		$atts = shortcode_atts( array(
+			'post_id'  => '',
+			'fallback' => '',
+		), $atts, 'hk_content' );
+
+		// Empty exclude list = strip any hk-funeral-suite/* meta block.
+		return self::render_cpt_content( $atts, array() );
+	}
+
+	/**
 	 * Display team member content blocks (paragraphs, headings, etc.) excluding the team-member block.
+	 *
+	 * Back-compat alias for {@see cpt_content_shortcode()}, scoped to the staff
+	 * meta block so existing `[hk_team_member_content]` layouts keep working.
 	 *
 	 * Attributes:
 	 * - post_id: The post ID to fetch the content from (optional, defaults to current post).
@@ -194,13 +227,25 @@ class HK_Shortcodes {
 	 * @return string Rendered block content.
 	 */
 	public static function team_member_content_shortcode( $atts ) {
-		global $post;
-
 		// Set default attributes
 		$atts = shortcode_atts( array(
 			'post_id'  => '',
 			'fallback' => '',
 		), $atts, 'hk_team_member_content' );
+
+		return self::render_cpt_content( $atts, array( 'hk-funeral-suite/team-member' ) );
+	}
+
+	/**
+	 * Shared renderer for the content shortcodes.
+	 *
+	 * @param array $atts           Parsed attributes (post_id, fallback).
+	 * @param array $exclude_blocks Block names to skip. Empty means skip any
+	 *                              `hk-funeral-suite/*` block.
+	 * @return string Rendered block content.
+	 */
+	private static function render_cpt_content( $atts, $exclude_blocks ) {
+		global $post;
 
 		// Determine which post ID to use (default to current post if not provided)
 		$post_id = ! empty( $atts['post_id'] ) ? intval( $atts['post_id'] ) : ( isset( $post->ID ) ? $post->ID : 0 );
@@ -229,11 +274,11 @@ class HK_Shortcodes {
 			return ! empty( $atts['fallback'] ) ? $atts['fallback'] : '';
 		}
 
-		// Filter out the team-member block and any null/empty blocks
+		// Filter out the HK meta block(s) and any null/empty blocks
 		$content_blocks = array();
 		foreach ( $blocks as $block ) {
-			// Skip the team-member block
-			if ( isset( $block['blockName'] ) && $block['blockName'] === 'hk-funeral-suite/team-member' ) {
+			// Skip the HK meta block(s)
+			if ( ! is_null( $block['blockName'] ) && self::is_excluded_block( $block['blockName'], $exclude_blocks ) ) {
 				continue;
 			}
 
@@ -276,6 +321,23 @@ class HK_Shortcodes {
 		}
 
 		return ! empty( $output ) ? $output : ( ! empty( $atts['fallback'] ) ? $atts['fallback'] : '' );
+	}
+
+	/**
+	 * Whether a block should be excluded from rendered output.
+	 *
+	 * @param string $name           Block name.
+	 * @param array  $exclude_blocks Explicit names to exclude. Empty means
+	 *                               "any hk-funeral-suite/* block".
+	 * @return bool
+	 */
+	private static function is_excluded_block( $name, $exclude_blocks ) {
+		if ( ! empty( $exclude_blocks ) ) {
+			return in_array( $name, $exclude_blocks, true );
+		}
+
+		// PHP 7.4 compatible prefix check (str_starts_with is PHP 8.0+).
+		return strpos( $name, 'hk-funeral-suite/' ) === 0;
 	}
 }
 
