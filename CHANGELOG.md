@@ -5,6 +5,9 @@ All notable changes to the HumanKind Funeral Suite plugin will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.19] - 2026-06-18
+- **Fixed** GitHub updater no longer writes its per-request "Current version / Latest version" line to the PHP error log under `WP_DEBUG`. The line is now opt-in via the `WEAVE_UPDATER_DEBUG` constant, stopping a harmless debug line being recorded as an Nginx `[error]` flood on client sites. Genuine API-failure logs are unchanged
+
 ## [1.4.18] - 2026-06-18
 - **Added** New `[hk_content]` shortcode renders any HK CPT's freeform content (casket, urn, monument, keepsake, package, staff) with the meta block stripped — for page builders that otherwise leak Gutenberg block markup
 - **Improved** Generalises `[hk_team_member_content]`, which is retained as a back-compat alias so existing staff layouts keep working
