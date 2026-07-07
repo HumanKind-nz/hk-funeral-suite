@@ -303,6 +303,12 @@ function register_routes(): void {
 			],
 		],
 	] );
+
+	register_rest_route( REST_NAMESPACE, '/stamp', [
+		'methods'             => \WP_REST_Server::CREATABLE,
+		'callback'            => __NAMESPACE__ . '\\rest_stamp',
+		'permission_callback' => __NAMESPACE__ . '\\authenticate',
+	] );
 }
 
 // ─── GET /state ─────────────────────────────────────────────────────────────
@@ -433,4 +439,127 @@ function export_product( \WP_Post $post, string $type ): array {
 		],
 		'modified_at'    => mysql2date( 'c', $post->post_modified_gmt, false ),
 	];
+}
+
+// ─── POST /stamp ────────────────────────────────────────────────────────────
+
+/**
+ * Whether a string looks like a UUID (the master ID format).
+ *
+ * @param string $value Candidate value.
+ * @return bool
+ */
+function is_uuid( string $value ): bool {
+	return (bool) preg_match( '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value );
+}
+
+/**
+ * Find the post carrying a master ID, if any.
+ *
+ * Matching is only ever on this meta, never name or slug. Trash is
+ * included so a trashed synced post can't cause a duplicate.
+ *
+ * @param string $master_id Master catalogue UUID.
+ * @param string $post_type Post type slug.
+ * @return int Post ID, or 0 when not found.
+ */
+function find_post_by_master_id( string $master_id, string $post_type ): int {
+	$found = get_posts( [
+		'post_type'      => $post_type,
+		'post_status'    => [ 'publish', 'future', 'draft', 'pending', 'private', 'trash' ],
+		'posts_per_page' => 1,
+		'fields'         => 'ids',
+		'meta_key'       => '_hk_fs_master_id',
+		'meta_value'     => $master_id,
+		'no_found_rows'  => true,
+	] );
+
+	return $found ? (int) $found[0] : 0;
+}
+
+/**
+ * Adopt existing posts into the catalogue by stamping master IDs.
+ *
+ * Body: { "stamp": [ { "post_id": 123, "master_id": "uuid" }, … ] }
+ *
+ * Used once per site during import so the first publish updates
+ * existing posts (and keeps their media) instead of duplicating them.
+ *
+ * @param \WP_REST_Request $request The request.
+ * @return \WP_REST_Response|\WP_Error
+ */
+function rest_stamp( \WP_REST_Request $request ) {
+	$body  = $request->get_json_params();
+	$pairs = $body['stamp'] ?? null;
+
+	if ( ! is_array( $pairs ) || empty( $pairs ) ) {
+		return new \WP_Error(
+			'hk_fs_catalogue_bad_request',
+			__( 'Expected a non-empty "stamp" array of { post_id, master_id } pairs.', 'hk-funeral-suite' ),
+			[ 'status' => 400 ]
+		);
+	}
+
+	$managed_post_types = array_map( __NAMESPACE__ . '\\post_type_for', get_managed_capable_types() );
+
+	$results = [];
+	$counts  = [ 'stamped' => 0, 'unchanged' => 0, 'error' => 0 ];
+
+	foreach ( $pairs as $pair ) {
+		$post_id   = isset( $pair['post_id'] ) ? (int) $pair['post_id'] : 0;
+		$master_id = isset( $pair['master_id'] ) ? strtolower( trim( (string) $pair['master_id'] ) ) : '';
+
+		$result = [
+			'post_id'   => $post_id,
+			'master_id' => $master_id,
+		];
+
+		if ( $post_id < 1 || ! is_uuid( $master_id ) ) {
+			$result['result'] = 'error';
+			$result['error']  = 'invalid_pair';
+			$counts['error']++;
+			$results[] = $result;
+			continue;
+		}
+
+		$post = get_post( $post_id );
+		if ( ! $post || ! in_array( $post->post_type, $managed_post_types, true ) ) {
+			$result['result'] = 'error';
+			$result['error']  = 'post_not_found_or_not_managed_type';
+			$counts['error']++;
+			$results[] = $result;
+			continue;
+		}
+
+		$existing = (string) get_post_meta( $post_id, '_hk_fs_master_id', true );
+		if ( $existing === $master_id ) {
+			$result['result'] = 'unchanged';
+			$counts['unchanged']++;
+			$results[] = $result;
+			continue;
+		}
+
+		// One master ID maps to exactly one post per site.
+		$holder = find_post_by_master_id( $master_id, $post->post_type );
+		if ( $holder && $holder !== $post_id ) {
+			$result['result'] = 'error';
+			$result['error']  = 'master_id_already_stamped';
+			$result['holder'] = $holder;
+			$counts['error']++;
+			$results[] = $result;
+			continue;
+		}
+
+		update_post_meta( $post_id, '_hk_fs_master_id', $master_id );
+		$result['result'] = $existing ? 'restamped' : 'stamped';
+		$counts['stamped']++;
+		$results[] = $result;
+	}
+
+	return rest_ensure_response( [
+		'schema_version' => SCHEMA_VERSION,
+		'plugin_version' => HK_FS_VERSION,
+		'counts'         => $counts,
+		'results'        => $results,
+	] );
 }
