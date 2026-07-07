@@ -5,6 +5,16 @@ All notable changes to the HumanKind Funeral Suite plugin will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Catalogue sync module** (`inc/catalogue-sync.php`) — connects a site to an external master product catalogue. Disabled by default; enabled per site by provisioning a shared secret via the `HK_FS_CATALOGUE_SECRET` wp-config constant (option fallback: `hk_fs_catalogue_secret`)
+  - REST namespace `hk-fs-catalogue/v1` with HMAC-signed requests (`X-HKFS-Timestamp` + `X-HKFS-Signature`, ±5 minute replay window, constant-time compare)
+  - `GET /state` exports current products per type (posts, meta, terms, images, master IDs) for import, package visibility, and drift detection
+  - `POST /stamp` adopts existing posts by writing stable master IDs, so the first publish updates in place instead of duplicating
+  - `POST /sync` full-state reconcile: upserts matched only on master ID (slugs kept on rename), price stored as numeric string or literal `POA`, categories matched on stable master term IDs, images sideloaded only when their version hash changes, stamped posts absent from the payload drafted (soft, reversible), unstamped posts reported as strays and never touched. Idempotent — replaying a payload is a no-op
+  - Editor lock via the `hk_fs_catalogue_managed_types` option: server-side capability denial (edit, delete, create) for catalogue-managed types, with a "Managed by HumanKind Catalogue" badge and notice in list tables. Flipping the option per site is the switchover to central management
+
 ## [2.0.0] - 2026-02-21
 
 ### Architecture
