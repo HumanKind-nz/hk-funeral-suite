@@ -46,6 +46,13 @@ function bootstrap(): void {
 	add_action( 'init', __NAMESPACE__ . '\\register_settings', 12 );
 	add_action( 'rest_api_init', __NAMESPACE__ . '\\register_routes' );
 
+	// Responses on this namespace must never be page-cached: a cached
+	// /state body gets served to unsigned requests, bypassing the HMAC
+	// wall entirely (observed live on GridPane's srcache, which ignores
+	// Cache-Control — srcache_response_cache_control off — but skips the
+	// store when upstream sends Do-Not-Cache).
+	add_filter( 'rest_post_dispatch', __NAMESPACE__ . '\\no_store_headers', 10, 3 );
+
 	// Editor lock for catalogue-managed types (hk_fs_catalogue_managed_types
 	// option — flipping it is the per-site switchover). Server-side
 	// capability denial: nothing can save around it. The sync itself writes
@@ -238,6 +245,25 @@ function register_meta_fields(): void {
 			register_term_meta( $taxonomy, '_hk_fs_master_category_id', $hidden_string );
 		}
 	}
+}
+
+/**
+ * Mark every response on our namespace uncacheable, including auth errors.
+ *
+ * Cache-Control covers standards-respecting layers (CDNs, other hosts);
+ * Do-Not-Cache is the GridPane srcache store-skip signal.
+ *
+ * @param \WP_REST_Response $response The response.
+ * @param \WP_REST_Server   $server   The REST server.
+ * @param \WP_REST_Request  $request  The request.
+ * @return \WP_REST_Response
+ */
+function no_store_headers( \WP_REST_Response $response, \WP_REST_Server $server, \WP_REST_Request $request ): \WP_REST_Response {
+	if ( str_starts_with( $request->get_route(), '/' . REST_NAMESPACE . '/' ) ) {
+		$response->header( 'Cache-Control', 'no-store, private' );
+		$response->header( 'Do-Not-Cache', '1' );
+	}
+	return $response;
 }
 
 // ─── Authentication ─────────────────────────────────────────────────────────
