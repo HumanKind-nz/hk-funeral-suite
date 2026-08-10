@@ -45,6 +45,13 @@ function bootstrap(): void {
  * @return bool
  */
 function is_managed_by_sheets( string $type ): bool {
+	// Catalogue-managed types have exactly one write path — the external
+	// catalogue sync — so Sheets management is off for them regardless of
+	// the per-type toggle.
+	if ( function_exists( 'HKFuneralSuite\\CatalogueSync\\get_locked_types' )
+		&& in_array( $type, \HKFuneralSuite\CatalogueSync\get_locked_types(), true ) ) {
+		return false;
+	}
 	return (bool) get_option( "hk_fs_{$type}_price_google_sheets", false );
 }
 
