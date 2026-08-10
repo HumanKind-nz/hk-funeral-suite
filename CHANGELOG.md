@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `POST /sync` full-state reconcile: upserts matched only on master ID (slugs kept on rename), price stored as numeric string or literal `POA`, categories matched on stable master term IDs, images sideloaded only when their version hash changes, stamped posts absent from the payload drafted (soft, reversible), unstamped posts reported as strays and never touched. Idempotent — replaying a payload is a no-op
   - Editor lock via the `hk_fs_catalogue_managed_types` option: server-side capability denial (edit, delete, create) for catalogue-managed types, with a "Managed by HumanKind Catalogue" badge and notice in list tables. Flipping the option per site is the switchover to central management
 
+### Changed
+- **Google Sheets price sync is ignored for catalogue-managed types** — a type in `hk_fs_catalogue_managed_types` has exactly one write path (the catalogue), so `is_managed_by_sheets()` returns false for it even if the per-type Sheets toggle is on. Packages are unaffected: they are never catalogue-managed, so Sheets sync remains available for them
+
 ## [2.0.0] - 2026-02-21
 
 ### Architecture
