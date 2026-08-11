@@ -199,12 +199,17 @@ class HK_Funeral_GitHub_Updater {
 	}
 
 	/**
-	 * Log a debug message when WP_DEBUG is enabled.
+	 * Log a debug message when updater debugging is explicitly enabled.
+	 *
+	 * Gated on the dedicated WEAVE_UPDATER_DEBUG constant rather than WP_DEBUG so
+	 * the updater stays silent on client sites (where WP_DEBUG is enabled and
+	 * PHP-FPM forwards notices to the Nginx error log). Matches the
+	 * hk-funeral-suite 1.4.19 / Weave Training 1.0.1 fix.
 	 *
 	 * @param string $message Message to log.
 	 */
 	private static function debug_log( string $message ): void {
-		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+		if ( defined( 'WEAVE_UPDATER_DEBUG' ) && WEAVE_UPDATER_DEBUG ) {
 			error_log( '[HK Funeral Suite Updater] ' . $message ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 		}
 	}
