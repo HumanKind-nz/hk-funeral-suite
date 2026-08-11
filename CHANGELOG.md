@@ -5,6 +5,22 @@ All notable changes to the HumanKind Funeral Suite plugin will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Catalogue sync module** (`inc/catalogue-sync.php`) — connects a site to an external master product catalogue. Disabled by default; enabled per site by provisioning a shared secret via the `HK_FS_CATALOGUE_SECRET` wp-config constant (option fallback: `hk_fs_catalogue_secret`)
+  - REST namespace `hk-fs-catalogue/v1` with HMAC-signed requests (`X-HKFS-Timestamp` + `X-HKFS-Signature`, ±5 minute replay window, constant-time compare)
+  - `GET /state` exports current products per type (posts, meta, terms, images, master IDs) for import, package visibility, and drift detection
+  - `POST /stamp` adopts existing posts by writing stable master IDs, so the first publish updates in place instead of duplicating
+  - `POST /sync` full-state reconcile: upserts matched only on master ID (slugs kept on rename), price stored as numeric string or literal `POA`, categories matched on stable master term IDs, images sideloaded only when their version hash changes, stamped posts absent from the payload drafted (soft, reversible), unstamped posts reported as strays and never touched. Idempotent — replaying a payload is a no-op
+  - Editor lock via the `hk_fs_catalogue_managed_types` option: server-side capability denial (edit, delete, create) for catalogue-managed types, with a "Managed by HumanKind Catalogue" badge and notice in list tables. Flipping the option per site is the switchover to central management
+
+### Fixed
+- **Catalogue endpoints are now explicitly uncacheable** (`Cache-Control: no-store` + `Do-Not-Cache` headers on every `hk-fs-catalogue/v1` response, including auth errors). Found live on GridPane hosting: the NGINX Redis page cache stored a signed `GET /state` response and served the full product export to unsigned requests, bypassing HMAC auth. GridPane's srcache ignores `Cache-Control` but honours the upstream `Do-Not-Cache` header
+
+### Changed
+- **Google Sheets price sync is ignored for catalogue-managed types** — a type in `hk_fs_catalogue_managed_types` has exactly one write path (the catalogue), so `is_managed_by_sheets()` returns false for it even if the per-type Sheets toggle is on. Packages are unaffected: they are never catalogue-managed, so Sheets sync remains available for them
+
 ## [2.0.0] - 2026-02-21
 
 ### Architecture
