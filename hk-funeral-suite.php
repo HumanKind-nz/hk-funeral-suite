@@ -38,6 +38,7 @@ require_once HK_FS_PLUGIN_DIR . 'inc/hooks.php';
 require_once HK_FS_PLUGIN_DIR . 'inc/shortcodes.php';
 require_once HK_FS_PLUGIN_DIR . 'inc/github-updater.php';
 require_once HK_FS_PLUGIN_DIR . 'inc/import.php';
+require_once HK_FS_PLUGIN_DIR . 'inc/catalogue-sync.php';
 require_once HK_FS_PLUGIN_DIR . 'inc/blocks.php';
 require_once HK_FS_PLUGIN_DIR . 'inc/settings-page.php';
 
@@ -52,6 +53,7 @@ HKFuneralSuite\Hooks\bootstrap();
 HKFuneralSuite\Shortcodes\bootstrap();
 HKFuneralSuite\GitHubUpdater\bootstrap();
 HKFuneralSuite\Import\bootstrap();
+HKFuneralSuite\CatalogueSync\bootstrap();
 
 // Settings page — class-based, initialised via hooks.
 add_action( 'plugins_loaded', [ 'HK_Funeral_Settings', 'init' ], 5 );
