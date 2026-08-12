@@ -998,8 +998,15 @@ function sync_images( int $post_id, array $images, string $title ): array {
 		$image           = $by_role[ $role ] ?? null;
 
 		if ( ! $image ) {
-			// Desired state has no image in this role.
-			if ( $current_version || $current_id ) {
+			// Desired state has no image in this role. Only remove an image
+			// the sync itself set, marked by its version meta. An adopted
+			// post's pre-existing featured image is site presentation, and
+			// a master that has no image yet must never strip it. (The
+			// secondary id meta is sync-owned, so it counts as a marker.)
+			$sync_owned = 'primary' === $role
+				? '' !== $current_version
+				: ( '' !== $current_version || $current_id );
+			if ( $sync_owned ) {
 				delete_post_meta( $post_id, $meta_keys['version_meta'] );
 				if ( 'primary' === $role ) {
 					delete_post_thumbnail( $post_id );
