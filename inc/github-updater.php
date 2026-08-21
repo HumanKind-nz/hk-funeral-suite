@@ -257,10 +257,15 @@ class HK_Funeral_GitHub_Updater {
 		} else {
 			unset( $transient->response[ $this->basename ] );
 
-			if ( ! isset( $transient->no_update[ $this->basename ] ) ) {
-				$plugin_entry['package'] = '';
-				$transient->no_update[ $this->basename ] = (object) $plugin_entry;
-			}
+			/*
+			 * Always write our own no_update entry, never only when one is
+			 * missing. WordPress core populates no_update for every plugin it
+			 * checked, and a core entry for a plugin it does not host carries
+			 * none of our metadata, so a guarded write meant the icons, url,
+			 * requires and requires_php never reached the Plugins screen.
+			 */
+			$plugin_entry['package'] = '';
+			$transient->no_update[ $this->basename ] = (object) $plugin_entry;
 		}
 
 		return $transient;
