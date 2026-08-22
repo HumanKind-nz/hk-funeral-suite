@@ -9,16 +9,16 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Get the version
         id: get_version
         run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: "20"
+          node-version: "22"
           cache: "npm"
 
       - name: Install dependencies
@@ -59,8 +59,10 @@ jobs:
         run: cd dist && zip -r hk-funeral-suite-${{ env.VERSION }}.zip hk-funeral-suite
 
       - name: Create GitHub release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: dist/hk-funeral-suite-${{ env.VERSION }}.zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.ORG_GITHUB_PAT }}
+          # Passed as an input, not GITHUB_TOKEN. From v2 the action prefers
+          # the token input, whose default is github.token, so the env var is
+          # never read and the org PAT would be silently dropped.
+          token: ${{ secrets.ORG_GITHUB_PAT }}
