@@ -62,7 +62,3 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           files: dist/hk-funeral-suite-${{ env.VERSION }}.zip
-          # Passed as an input, not GITHUB_TOKEN. From v2 the action prefers
-          # the token input, whose default is github.token, so the env var is
-          # never read and the org PAT would be silently dropped.
-          token: ${{ secrets.ORG_GITHUB_PAT }}
