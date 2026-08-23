@@ -9,7 +9,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
       
       - name: Get the version
         id: get_version
@@ -51,8 +51,6 @@ jobs:
         run: cd build && zip -r hk-funeral-suite-${{ env.VERSION }}.zip hk-funeral-suite
       
       - name: Create GitHub release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         with:
           files: build/hk-funeral-suite-${{ env.VERSION }}.zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.ORG_GITHUB_PAT }}
