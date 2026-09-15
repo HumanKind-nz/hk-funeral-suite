@@ -152,11 +152,11 @@ function schedule_flush( $old_value, $value ): void {
  * @param \WP_Admin_Bar $wp_admin_bar Admin bar instance.
  */
 function remove_admin_bar_view_link( $wp_admin_bar ): void {
-	if ( ! is_admin() || ! isset( $_GET['post'] ) ) {
+	if ( ! is_admin() || ! isset( $_GET['post'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Admin screen detection, read only.
 		return;
 	}
 
-	$post_id   = absint( $_GET['post'] );
+	$post_id   = absint( $_GET['post'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Admin screen detection, read only.
 	$post_type = get_post_type( $post_id );
 
 	$cpt_settings = [
@@ -211,7 +211,7 @@ function admin_footer_text( string $footer_text ): string {
 
 	$cpt_slugs = \HKFuneralSuite\PostTypes\get_all_cpt_slugs();
 	$is_our_screen = in_array( $screen->post_type, $cpt_slugs, true )
-		|| ( isset( $_GET['page'] ) && $_GET['page'] === 'hk-funeral-suite-settings' );
+		|| ( isset( $_GET['page'] ) && sanitize_key( wp_unslash( $_GET['page'] ) ) === 'hk-funeral-suite-settings' ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Admin screen detection, read only.
 
 	if ( $is_our_screen ) {
 		return sprintf(
