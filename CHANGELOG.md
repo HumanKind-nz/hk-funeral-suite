@@ -5,6 +5,11 @@ All notable changes to the HumanKind Funeral Suite plugin will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.21] - 2026-09-15
+
+### Security
+- Every value printed by the admin screens (post type slugs in ids and inline CSS, field labels and types, admin links, the settings section titles, the thumbnail column) is escaped for its context, and translated admin strings print through `esc_html_e()`. The capability redirect uses `wp_safe_redirect()`. No change to what renders.
+
 ## [1.4.20] - 2026-06-18
 - **Fixed** WP All Import block importer no longer escapes pre-formatted content. Content that is already block markup is kept intact, and plain text is wrapped with `wp_kses_post()` instead of `esc_html()` — so migrated descriptions stop rendering as literal `<!-- wp:paragraph -->` text on the front end
 

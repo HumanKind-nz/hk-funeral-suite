@@ -258,7 +258,7 @@ class HK_Funeral_Admin_Columns {
         if ($column === 'featured_image') {
             // Display featured image with minimum size of 150px
             if (has_post_thumbnail($post_id)) {
-                echo '<img src="' . get_the_post_thumbnail_url($post_id, 'full') . '" style="width:150px; height:auto; max-height:150px; object-fit:cover;">';
+                echo '<img src="' . esc_url(get_the_post_thumbnail_url($post_id, 'full')) . '" style="width:150px; height:auto; max-height:150px; object-fit:cover;">';
             } else {
                 echo '<div style="width:150px; height:100px; background:#f0f0f0; display:flex; align-items:center; justify-content:center; border:1px solid #ddd; border-radius:3px;"><span class="dashicons dashicons-format-image" style="font-size:30px; color:#bbb;"></span></div>';
             }

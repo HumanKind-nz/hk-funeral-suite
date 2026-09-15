@@ -236,9 +236,9 @@ class HK_Funeral_Product_CPT_Factory {
             ?>
             <style>
                 /* Custom Icon */
-                #adminmenu .menu-icon-hk_fs_<?php echo $post_type; ?> div.wp-menu-image::before {
+                #adminmenu .menu-icon-hk_fs_<?php echo esc_attr( $post_type ); ?> div.wp-menu-image::before {
                     content: '';
-                    background-image: url('data:image/svg+xml;utf8,<?php echo $svg_icon; ?>');
+                    background-image: url('data:image/svg+xml;utf8,<?php echo $svg_icon; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rawurlencode()d SVG written in this file. ?>');
                     background-repeat: no-repeat;
                     background-position: center;
                     background-size: 20px;
@@ -246,9 +246,9 @@ class HK_Funeral_Product_CPT_Factory {
                 }
                 
                 /* Hover state */
-                #adminmenu .menu-icon-hk_fs_<?php echo $post_type; ?>:hover div.wp-menu-image::before,
-                #adminmenu .menu-icon-hk_fs_<?php echo $post_type; ?>.current div.wp-menu-image::before {
-                    background-image: url('data:image/svg+xml;utf8,<?php echo str_replace('%23a7aaad', '%23ffffff', $svg_icon); ?>');
+                #adminmenu .menu-icon-hk_fs_<?php echo esc_attr( $post_type ); ?>:hover div.wp-menu-image::before,
+                #adminmenu .menu-icon-hk_fs_<?php echo esc_attr( $post_type ); ?>.current div.wp-menu-image::before {
+                    background-image: url('data:image/svg+xml;utf8,<?php echo str_replace('%23a7aaad', '%23ffffff', $svg_icon); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rawurlencode()d SVG written in this file. ?>');
                     opacity: 1;
                 }
             </style>

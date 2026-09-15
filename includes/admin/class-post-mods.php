@@ -29,11 +29,11 @@ class HK_Post_Mods {
 	 */
 	public static function remove_admin_bar_view_link_for_cpts( $wp_admin_bar ) {
 		// Only run on admin post editing screens.
-		if ( ! is_admin() || ! isset( $_GET['post'] ) ) {
+		if ( ! is_admin() || ! isset( $_GET['post'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Admin screen detection, read only.
 			return;
 		}
 
-		$post_id   = absint( $_GET['post'] );
+		$post_id   = absint( $_GET['post'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Admin screen detection, read only.
 		$post_type = get_post_type( $post_id );
 
 		// Map CPTs to their public setting option names.

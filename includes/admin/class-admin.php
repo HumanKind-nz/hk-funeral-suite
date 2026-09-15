@@ -86,7 +86,7 @@ class HK_Funeral_Admin {
         );
         
         if (in_array($screen->post_type, $hk_post_types) || 
-            (isset($_GET['page']) && $_GET['page'] === 'hk-funeral-suite-settings')) {
+            (isset($_GET['page']) && sanitize_key(wp_unslash($_GET['page'])) === 'hk-funeral-suite-settings')) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Admin screen detection, read only.
             $footer_text = sprintf(
                 __('Thank you for using <a href="%s" target="_blank">HK Funeral Suite</a>.', 'hk-funeral-cpt'),
                 'https://github.com/HumanKind-nz/hk-funeral-suite/'

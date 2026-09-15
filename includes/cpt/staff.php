@@ -352,10 +352,10 @@ function hk_fs_staff_contact_callback($post) {
         $value = get_post_meta($post->ID, '_hk_fs_staff_' . $field, true);
         ?>
         <p>
-            <label for="hk_fs_staff_<?php echo $field; ?>"><?php echo $config['label']; ?></label>
-            <input type="<?php echo $config['type']; ?>" 
-                  id="hk_fs_staff_<?php echo $field; ?>" 
-                  name="hk_fs_staff_<?php echo $field; ?>" 
+            <label for="hk_fs_staff_<?php echo esc_attr( $field ); ?>"><?php echo esc_html( $config['label'] ); ?></label>
+            <input type="<?php echo esc_attr( $config['type'] ); ?>" 
+                  id="hk_fs_staff_<?php echo esc_attr( $field ); ?>" 
+                  name="hk_fs_staff_<?php echo esc_attr( $field ); ?>" 
                   value="<?php echo esc_attr($value); ?>" 
                   style="width: 100%;">
         </p>

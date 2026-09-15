@@ -101,24 +101,24 @@ function hk_fs_render_keepsake_meta_box($post) {
     </style>
 
     <div class="hk-meta-field">
-        <label for="hk_fs_keepsake_product_code"><?php _e('Product Code', 'hk-funeral-suite'); ?></label>
+        <label for="hk_fs_keepsake_product_code"><?php esc_html_e('Product Code', 'hk-funeral-suite'); ?></label>
         <input type="text" id="hk_fs_keepsake_product_code" name="hk_fs_keepsake_product_code" value="<?php echo esc_attr($product_code); ?>">
-        <p class="description"><?php _e('Enter the product code for this keepsake', 'hk-funeral-suite'); ?></p>
+        <p class="description"><?php esc_html_e('Enter the product code for this keepsake', 'hk-funeral-suite'); ?></p>
     </div>
 
     <div class="hk-meta-field">
-        <label for="hk_fs_keepsake_metal"><?php _e('Metal Type', 'hk-funeral-suite'); ?></label>
+        <label for="hk_fs_keepsake_metal"><?php esc_html_e('Metal Type', 'hk-funeral-suite'); ?></label>
         <select id="hk_fs_keepsake_metal" name="hk_fs_keepsake_metal">
             <option value="" <?php selected($metal, ''); ?>>Select Metal</option>
             <option value="gold" <?php selected($metal, 'gold'); ?>>Gold</option>
             <option value="silver" <?php selected($metal, 'silver'); ?>>Silver</option>
             <option value="other" <?php selected($metal, 'other'); ?>>Other</option>
         </select>
-        <p class="description"><?php _e('Select the metal type (if applicable)', 'hk-funeral-suite'); ?></p>
+        <p class="description"><?php esc_html_e('Select the metal type (if applicable)', 'hk-funeral-suite'); ?></p>
     </div>
 
     <div class="hk-meta-field">
-        <label for="hk_fs_keepsake_stones"><?php _e('Stones', 'hk-funeral-suite'); ?></label>
+        <label for="hk_fs_keepsake_stones"><?php esc_html_e('Stones', 'hk-funeral-suite'); ?></label>
         <select id="hk_fs_keepsake_stones" name="hk_fs_keepsake_stones">
             <option value="" <?php selected($stones, ''); ?>>Select Stone Type</option>
             <option value="diamond" <?php selected($stones, 'diamond'); ?>>Diamond</option>
@@ -126,7 +126,7 @@ function hk_fs_render_keepsake_meta_box($post) {
             <option value="none" <?php selected($stones, 'none'); ?>>None</option>
             <option value="other" <?php selected($stones, 'other'); ?>>Other</option>
         </select>
-        <p class="description"><?php _e('Select the stone type (if applicable)', 'hk-funeral-suite'); ?></p>
+        <p class="description"><?php esc_html_e('Select the stone type (if applicable)', 'hk-funeral-suite'); ?></p>
     </div>
     <?php
 }

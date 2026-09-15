@@ -163,8 +163,8 @@ function hk_fs_register_title_placeholder($post_type, $singular) {
                  ?>
                  <div class="price-field-container <?php echo $managed_by_sheets ? 'sheet-managed' : ''; ?>">
                      <p>
-                         <label for="hk_fs_<?php echo $post_type; ?>_price"><?php _e('Price ($):', 'hk-funeral-cpt'); ?></label>
-                         <input type="number" id="hk_fs_<?php echo $post_type; ?>_price" name="hk_fs_<?php echo $post_type; ?>_price" 
+                         <label for="hk_fs_<?php echo esc_attr( $post_type ); ?>_price"><?php esc_html_e('Price ($):', 'hk-funeral-cpt'); ?></label>
+                         <input type="number" id="hk_fs_<?php echo esc_attr( $post_type ); ?>_price" name="hk_fs_<?php echo esc_attr( $post_type ); ?>_price" 
                                 value="<?php echo esc_attr($price); ?>" step="0.01" min="0" style="width: 100%;"
                                 <?php echo $managed_by_sheets ? 'disabled="disabled"' : ''; ?>>
                      </p>
@@ -173,10 +173,10 @@ function hk_fs_register_title_placeholder($post_type, $singular) {
                      <div class="sheet-integration-notice">
                          <p style="color: #d63638; margin-top: 8px; display: flex; align-items: center;">
                              <span class="dashicons dashicons-cloud" style="margin-right: 5px;"></span>
-                             <strong><?php _e('Managed via Google Sheets', 'hk-funeral-cpt'); ?></strong>
+                             <strong><?php esc_html_e('Managed via Google Sheets', 'hk-funeral-cpt'); ?></strong>
                          </p>
                          <p class="description" style="margin-top: 5px;">
-                             <?php _e('Price is managed through Google Sheets integration and cannot be modified here.', 'hk-funeral-cpt'); ?>
+                             <?php esc_html_e('Price is managed through Google Sheets integration and cannot be modified here.', 'hk-funeral-cpt'); ?>
                          </p>
                      </div>
                      <?php endif; ?>
@@ -245,13 +245,14 @@ function hk_fs_register_title_placeholder($post_type, $singular) {
              <div class="notice notice-info">
                  <p>
                      <span class="dashicons dashicons-cloud" style="color:#0073aa; font-size:18px; vertical-align:middle;"></span>
-                     <strong><?php _e('Google Sheets Integration Active:', 'hk-funeral-cpt'); ?></strong>
+                     <strong><?php esc_html_e('Google Sheets Integration Active:', 'hk-funeral-cpt'); ?></strong>
                      <?php printf(
-                         __('%s pricing is currently managed via Google Sheets. Price fields are disabled in the admin interface.', 'hk-funeral-cpt'),
-                         $singular
+                         /* translators: %s: product type name */
+                         esc_html__('%s pricing is currently managed via Google Sheets. Price fields are disabled in the admin interface.', 'hk-funeral-cpt'),
+                         esc_html($singular)
                      ); ?>
-                     <a href="<?php echo admin_url('options-general.php?page=hk-funeral-suite-settings'); ?>">
-                         <?php _e('Change this setting', 'hk-funeral-cpt'); ?>
+                     <a href="<?php echo esc_url( admin_url('options-general.php?page=hk-funeral-suite-settings') ); ?>">
+                         <?php esc_html_e('Change this setting', 'hk-funeral-cpt'); ?>
                      </a>
                  </p>
              </div>
@@ -383,10 +384,10 @@ function hk_fs_register_order_meta($post_type) {
              
              ?>
              <p>
-                 <label for="hk_fs_<?php echo $post_type; ?>_order"><?php _e('Display Order:', 'hk-funeral-cpt'); ?></label>
-                 <input type="number" id="hk_fs_<?php echo $post_type; ?>_order" name="hk_fs_<?php echo $post_type; ?>_order" 
+                 <label for="hk_fs_<?php echo esc_attr( $post_type ); ?>_order"><?php esc_html_e('Display Order:', 'hk-funeral-cpt'); ?></label>
+                 <input type="number" id="hk_fs_<?php echo esc_attr( $post_type ); ?>_order" name="hk_fs_<?php echo esc_attr( $post_type ); ?>_order" 
                        value="<?php echo esc_attr($order); ?>" step="1" min="0" style="width: 100%;">
-                 <span class="description"><?php _e('Lower numbers will be displayed first.', 'hk-funeral-cpt'); ?></span>
+                 <span class="description"><?php esc_html_e('Lower numbers will be displayed first.', 'hk-funeral-cpt'); ?></span>
              </p>
              <?php
          };
@@ -536,7 +537,7 @@ function hk_fs_register_admin_styles($post_type) {
         ?>
         <style type="text/css">
             <?php if ($managed_by_sheets): ?>
-            #hk_fs_<?php echo $post_type; ?>_price[disabled] {
+            #hk_fs_<?php echo esc_attr( $post_type ); ?>_price[disabled] {
                 background-color: #f0f0f1;
                 border-color: #dcdcde;
                 color: #8c8f94;
@@ -653,7 +654,7 @@ function hk_fs_restrict_admin_screen_access($post_type) {
         
         // Check if this is our CPT's screen
         if ($screen->post_type === "hk_fs_{$post_type}" && !current_user_can('manage_funeral_content')) {
-            wp_redirect(admin_url());
+            wp_safe_redirect(admin_url());
             exit;
         }
     });

@@ -285,7 +285,7 @@ class HK_Funeral_Settings {
 	public function render_visibility_section() {
 		echo '<p>Enable a publicly accessible single pages and archives for each:</p>';
 		echo '<p class="description">Enabling public pages will make "View" buttons appear in the editor and allow visitors to access individual pages for these items. Not needed if creating your own loops.</p>';
-		echo '<p class="description"><strong>Note:</strong> After changing these settings, please visit the <a href="' . admin_url('options-permalink.php') . '">Permalinks page</a> to refresh URL structures.</p>';
+		echo '<p class="description"><strong>Note:</strong> After changing these settings, please visit the <a href="' . esc_url(admin_url('options-permalink.php')) . '">Permalinks page</a> to refresh URL structures.</p>';
 	}
 	
 	/**
@@ -360,7 +360,7 @@ class HK_Funeral_Settings {
 				?>
 				<label>
 					<input type="checkbox" name="<?php echo esc_attr($option_name); ?>" value="1" 
-						<?php checked($is_public, true); ?> <?php echo $disabled; ?>>
+						<?php checked($is_public, true); ?> <?php echo $disabled; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Literal 'disabled' or empty, set above. ?>>
 					<?php echo esc_html($display_name); ?>
 				</label>
 				<?php if (!$is_enabled) : ?>
@@ -401,7 +401,7 @@ class HK_Funeral_Settings {
 				<div style="margin-bottom: 10px;">
 					<label>
 						<input type="checkbox" name="<?php echo esc_attr($option_name); ?>" value="1" 
-							<?php checked($is_managed, true); ?> <?php echo $disabled; ?>>
+							<?php checked($is_managed, true); ?> <?php echo $disabled; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Literal 'disabled' or empty, set above. ?>>
 						<?php echo esc_html($display_name); ?> pricing is currently managed via Google Sheets
 					</label>
 					<?php if (!$is_enabled) : ?>
@@ -493,7 +493,7 @@ class HK_Funeral_Settings {
 	 */
 	public function render_settings_page() {
 		if (!HK_Funeral_Capabilities::can('manage_funeral_settings')) {
-			wp_die(__('You do not have sufficient permissions to access this page.', 'hk-funeral-suite'));
+			wp_die(esc_html__('You do not have sufficient permissions to access this page.', 'hk-funeral-suite'));
 		}
 		?>
 		<div class="wrap">
@@ -659,7 +659,7 @@ class HK_Funeral_Settings {
 		$section = $wp_settings_sections[$page][$section_id];
 		
 		if ($section['title']) {
-			echo "<h2>{$section['title']}</h2>\n";
+			echo "<h2>" . esc_html($section['title']) . "</h2>\n";
 		}
 		
 		if ($section['callback']) {
