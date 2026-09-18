@@ -5,7 +5,11 @@ All notable changes to the HumanKind Funeral Suite plugin will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.4.21] - 2026-09-15
+## [1.4.21] - 2026-09-18
+
+### Fixed
+- **Fatal error after every save of a package, casket, urn or other suite post type on Beaver Builder sites.** The shared cache purge called `FLBuilderModel::delete_asset_cache_for_post()`, which Beaver Builder does not have (2.11.1 checked). The post saved, then the request died on shutdown, so editors saw the critical error screen instead of the edit screen. Found on forrests.co.nz, 14 times on 18 Sep 2026. It now calls `delete_all_asset_cache( $post_id )`, behind a `method_exists()` check.
+- **The follow-up page cache purge never ran.** It called `wcph_purge()`, but Weave Cache Purge Helper's function is `wcph_direct_purge()`, so a price change could sit behind a cached page until it expired. Fixed in the shared purge and in the REST meta fallback.
 
 ### Security
 - Every value printed by the admin screens (post type slugs in ids and inline CSS, field labels and types, admin links, the settings section titles, the thumbnail column) is escaped for its context, and translated admin strings print through `esc_html_e()`. The capability redirect uses `wp_safe_redirect()`. No change to what renders.

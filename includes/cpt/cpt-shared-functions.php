@@ -772,16 +772,21 @@ function hk_fs_optimized_cache_purge($post_id = null, $context = 'unknown') {
             }
             
             // First handle specific post caches (faster)
-            if (class_exists('FLBuilderModel')) {
+            // delete_all_asset_cache() is Beaver Builder's per-post call. The
+            // delete_asset_cache_for_post() used here before does not exist, so every
+            // save ended in a fatal on shutdown after the post had saved.
+            if (class_exists('FLBuilderModel') && method_exists('FLBuilderModel', 'delete_all_asset_cache')) {
                 foreach (array_keys($posts_to_purge) as $post_id) {
                     // Targeted asset cache clearing for specific post
-                    FLBuilderModel::delete_asset_cache_for_post($post_id);
+                    FLBuilderModel::delete_all_asset_cache($post_id);
                 }
             }
-            
+
             // Then do a single full cache purge at the end
-            if (function_exists('wcph_purge')) {
-                wcph_purge();
+            // Weave Cache Purge Helper's function is wcph_direct_purge(). There is no
+            // wcph_purge(), so this purge never ran before.
+            if (function_exists('wcph_direct_purge')) {
+                wcph_direct_purge();
             }
             
         }, 999);

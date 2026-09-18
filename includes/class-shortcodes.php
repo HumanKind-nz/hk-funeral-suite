@@ -407,8 +407,8 @@ add_action('updated_post_meta', function($meta_id, $post_id, $meta_key, $meta_va
     } else {
         // Fall back to old method if the function isn't available
         // Clear caches if Weave Cache Purge Helper is active
-        if (function_exists('wcph_purge')) {
-            wcph_purge();
+        if (function_exists('wcph_direct_purge')) {
+            wcph_direct_purge();
         }
 
         // Clear Beaver Builder caches if available
