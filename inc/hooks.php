@@ -376,16 +376,17 @@ function optimised_cache_purge( ?int $post_id = null, string $context = 'unknown
 		$purge_requested = true;
 
 		add_action( 'shutdown', function () use ( &$posts_to_purge ) {
-			// Beaver Builder per-post cache.
-			if ( class_exists( 'FLBuilderModel' ) ) {
+			// Beaver Builder per-post cache. delete_all_asset_cache() is the per-post
+			// call; delete_asset_cache_for_post() does not exist and was a fatal on shutdown.
+			if ( class_exists( 'FLBuilderModel' ) && method_exists( 'FLBuilderModel', 'delete_all_asset_cache' ) ) {
 				foreach ( array_keys( $posts_to_purge ) as $pid ) {
-					\FLBuilderModel::delete_asset_cache_for_post( $pid );
+					\FLBuilderModel::delete_all_asset_cache( $pid );
 				}
 			}
 
-			// Weave Cache Purge Helper.
-			if ( function_exists( 'wcph_purge' ) ) {
-				wcph_purge();
+			// Weave Cache Purge Helper. Its function is wcph_direct_purge(); there is no wcph_purge().
+			if ( function_exists( 'wcph_direct_purge' ) ) {
+				wcph_direct_purge();
 			}
 		}, 999 );
 	}
