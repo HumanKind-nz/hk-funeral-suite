@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Editor lock via the `hk_fs_catalogue_managed_types` option: server-side capability denial (edit, delete, create) for catalogue-managed types, with a "Managed by HumanKind Catalogue" badge and notice in list tables. Flipping the option per site is the switchover to central management
 
 ### Fixed
+- **Fatal error after every save of a suite post type on Beaver Builder sites, and a cache purge that never ran.** The shutdown purge in `inc/hooks.php` called `FLBuilderModel::delete_asset_cache_for_post()`, which Beaver Builder does not have, and `wcph_purge()`, which Weave Cache Purge Helper does not have. Now `delete_all_asset_cache( $pid )` and `wcph_direct_purge()`. Same fix as 1.4.21 on the 1.x line, found on forrests.co.nz on 18 Sep 2026.
 - **Catalogue endpoints are now explicitly uncacheable** (`Cache-Control: no-store` + `Do-Not-Cache` headers on every `hk-fs-catalogue/v1` response, including auth errors). Found live on GridPane hosting: the NGINX Redis page cache stored a signed `GET /state` response and served the full product export to unsigned requests, bypassing HMAC auth. GridPane's srcache ignores `Cache-Control` but honours the upstream `Do-Not-Cache` header
 
 ### Changed
