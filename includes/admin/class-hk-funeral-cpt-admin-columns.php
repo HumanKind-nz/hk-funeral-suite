@@ -154,8 +154,8 @@ class HK_Funeral_Admin_Columns {
                 add_action("manage_{$cpt_slug}_posts_custom_column", array(__CLASS__, 'display_featured_image'), 10, 2);
             }
             
-            // For the package CPT, we'll handle title renaming separately
-            if (isset($config['title_label']) && $cpt_slug !== 'hk_fs_package') {
+            // Rename title column
+            if (isset($config['title_label'])) {
                 add_filter("manage_{$cpt_slug}_posts_columns", array(__CLASS__, 'rename_title_column'));
             }
             
@@ -178,8 +178,8 @@ class HK_Funeral_Admin_Columns {
                 add_action("manage_{$cpt_slug}_posts_custom_column", array(__CLASS__, 'display_featured_image'), 10, 2);
             }
             
-            // Rename title column for all except packages
-            if (isset($config['title_label']) && $cpt_slug !== 'hk_fs_package') {
+            // Rename title column
+            if (isset($config['title_label'])) {
                 add_filter("manage_{$cpt_slug}_posts_columns", array(__CLASS__, 'rename_title_column'));
             }
             
@@ -328,39 +328,6 @@ class HK_Funeral_Admin_Columns {
         </style>
         
         <?php
-        // JavaScript approach for package title - this is the only method we'll use
-        $screen = get_current_screen();
-        if ($screen && $screen->post_type === 'hk_fs_package') {
-            ?>
-            <script type="text/javascript">
-            jQuery(document).ready(function($) {
-                // Change the package title column text to 'Name'
-                // Only do this once to avoid multiple replacements
-                var $titleColumn = $('.wp-list-table th.column-title');
-                if ($titleColumn.length > 0 && $titleColumn.text().indexOf('Name Name') === -1) {
-                    $titleColumn.html('<a href="#">Name</a>');
-                }
-            });
-            </script>
-            <?php
-        }
-        
-        // Apply the same JS approach to dynamically registered CPTs that need special handling
-        foreach (self::$registered_cpt_config as $cpt_slug => $config) {
-            if ($screen && $screen->post_type === $cpt_slug && isset($config['js_title_fix']) && $config['js_title_fix']) {
-                ?>
-                <script type="text/javascript">
-                jQuery(document).ready(function($) {
-                    // Change the title column text
-                    var $titleColumn = $('.wp-list-table th.column-title');
-                    if ($titleColumn.length > 0) {
-                        $titleColumn.html('<a href="#"><?php echo esc_js($config['title_label']); ?></a>');
-                    }
-                });
-                </script>
-                <?php
-            }
-        }
     }
 }
 

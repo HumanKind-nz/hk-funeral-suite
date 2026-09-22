@@ -5,6 +5,17 @@ All notable changes to the HumanKind Funeral Suite plugin will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.23] - 2026-09-22
+
+### Fixed
+- Pricing Packages admin list no longer shows the word "Name" in place of every package name. A jQuery hack rewrote the contents of everything matching `th.column-title`. On sites running Admin Columns Pro that selector also matches each row's primary cell, because ACP renders it as a `th` rather than core's `td`, so all six package names were replaced with a dead link. The hack is gone and packages now rename their title column through the same `manage_{cpt}_posts_columns` filter used by every other CPT.
+
+## [1.4.22] - 2026-09-22 [WITHDRAWN]
+
+Tagged from a commit that predated the 1.4.21 fatal-error fix, so it reintroduced the
+critical error screen after saving a suite post on Beaver Builder sites. Do not install.
+Superseded by 1.4.23, which carries the same Pricing Packages fix on top of 1.4.21.
+
 ## [1.4.21] - 2026-09-18
 
 ### Fixed
