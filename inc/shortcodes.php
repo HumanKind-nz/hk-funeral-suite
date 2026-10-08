@@ -21,6 +21,9 @@ function bootstrap(): void {
 	add_shortcode( 'hk_custom_field', __NAMESPACE__ . '\\custom_field' );
 	add_shortcode( 'hk_content', __NAMESPACE__ . '\\cpt_content' );
 	add_shortcode( 'hk_team_member_content', __NAMESPACE__ . '\\team_member_content' );
+
+	// Same renderer as the product grid block (inc/product-grid.php).
+	add_shortcode( 'hk_product_grid', '\\HKFuneralSuite\\ProductGrid\\shortcode' );
 }
 
 /**
