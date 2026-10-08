@@ -53,6 +53,7 @@ jobs:
             --exclude='webpack.scripts.config.js' \
             --exclude='package.json' \
             --exclude='package-lock.json' \
+            --exclude='tests' \
             . dist/hk-funeral-suite/
 
       - name: Create zip file
