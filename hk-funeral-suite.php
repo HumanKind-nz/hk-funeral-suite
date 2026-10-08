@@ -34,6 +34,7 @@ require_once HK_FS_PLUGIN_DIR . 'inc/post-types.php';
 require_once HK_FS_PLUGIN_DIR . 'inc/google-sheets.php';
 require_once HK_FS_PLUGIN_DIR . 'inc/block-editor.php';
 require_once HK_FS_PLUGIN_DIR . 'inc/admin-columns.php';
+require_once HK_FS_PLUGIN_DIR . 'inc/legacy-roles.php';
 require_once HK_FS_PLUGIN_DIR . 'inc/hooks.php';
 require_once HK_FS_PLUGIN_DIR . 'inc/shortcodes.php';
 require_once HK_FS_PLUGIN_DIR . 'inc/github-updater.php';
@@ -41,6 +42,10 @@ require_once HK_FS_PLUGIN_DIR . 'inc/import.php';
 require_once HK_FS_PLUGIN_DIR . 'inc/catalogue-sync.php';
 require_once HK_FS_PLUGIN_DIR . 'inc/blocks.php';
 require_once HK_FS_PLUGIN_DIR . 'inc/settings-page.php';
+
+if ( defined( 'WP_CLI' ) && WP_CLI ) {
+	require_once HK_FS_PLUGIN_DIR . 'inc/cli.php';
+}
 
 // ─── Bootstrap modules ─────────────────────────────────────────────────────
 

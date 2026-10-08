@@ -35,6 +35,7 @@ delete_option( 'hk_fs_seopress_metabox_compatibility' );
 
 // Remove migration and internal flags.
 delete_option( 'hk_fs_caps_migrated_v2' );
+delete_option( 'hk_fs_legacy_roles_version' );
 delete_option( 'hk_fs_flush_rewrite_rules' );
 delete_option( 'hk_fs_roles_updated' );
 
@@ -63,6 +64,9 @@ delete_transient( 'hk_funeral_github_response' );
 
 // Remove legacy transients.
 delete_transient( 'hk_fs_roles_version' );
+
+// The 1.x funeral_staff / funeral_manager roles are deliberately left in
+// place: other plugins grant capabilities to them and users still hold them.
 
 /*
  * Optionally remove all CPT posts and their meta data.
