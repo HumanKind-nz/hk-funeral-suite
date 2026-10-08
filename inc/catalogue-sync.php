@@ -78,12 +78,34 @@ const IMAGE_DOWNLOAD_TIMEOUT_DEFAULT = 15;
 const IMAGE_FAILURE_TTL = HOUR_IN_SECONDS;
 
 /**
+ * Give the catalogue's own queries back the post statuses they asked for.
+ *
+ * Some plugins narrow post_status on every query during a REST request
+ * (one in the wild forces publish/private site-wide). That hides the
+ * drafts the sync deactivated, so re-adding a product created a second
+ * post instead of reactivating the first. Queries built in this module
+ * carry hk_fs_catalogue_status, and that list wins after everyone else.
+ *
+ * @param \WP_Query $query The query.
+ */
+function protect_query_status( \WP_Query $query ): void {
+	$status = $query->get( 'hk_fs_catalogue_status' );
+	if ( ! empty( $status ) ) {
+		$query->set( 'post_status', $status );
+	}
+}
+
+/**
  * Bootstrap — hook everything.
  */
 function bootstrap(): void {
 	add_action( 'init', __NAMESPACE__ . '\\register_meta_fields', 12 );
 	add_action( 'init', __NAMESPACE__ . '\\register_settings', 12 );
 	add_action( 'rest_api_init', __NAMESPACE__ . '\\register_routes' );
+
+	// Runs last, so no other plugin can narrow the statuses our own
+	// lookups ask for (see protect_query_status()).
+	add_action( 'pre_get_posts', __NAMESPACE__ . '\\protect_query_status', PHP_INT_MAX );
 
 	// The lock is readable through /wp/v2/settings but never writable
 	// there: switching a site to central management is a provisioning
@@ -478,6 +500,7 @@ function export_type( string $type ): array {
 	$query = new \WP_Query( [
 		'post_type'              => $post_type,
 		'post_status'            => [ 'publish', 'future', 'draft', 'pending', 'private' ],
+		'hk_fs_catalogue_status' => [ 'publish', 'future', 'draft', 'pending', 'private' ], // Restored after other plugins' pre_get_posts.
 		'posts_per_page'         => -1,
 		'orderby'                => 'menu_order title',
 		'order'                  => 'ASC',
@@ -577,6 +600,7 @@ function find_post_by_master_id( string $master_id, string $post_type ): int {
 	$found = get_posts( [
 		'post_type'      => $post_type,
 		'post_status'    => [ 'publish', 'future', 'draft', 'pending', 'private', 'trash' ],
+		'hk_fs_catalogue_status' => [ 'publish', 'future', 'draft', 'pending', 'private', 'trash' ], // Restored after other plugins' pre_get_posts.
 		'posts_per_page' => 1,
 		'fields'         => 'ids',
 		'meta_key'       => '_hk_fs_master_id',
@@ -1639,6 +1663,7 @@ function deactivate_absent( array $scope_types, array $payload_ids ): array {
 		$absent = get_posts( [
 			'post_type'      => post_type_for( $type ),
 			'post_status'    => [ 'publish', 'future', 'pending', 'private' ],
+			'hk_fs_catalogue_status' => [ 'publish', 'future', 'pending', 'private' ], // Restored after other plugins' pre_get_posts.
 			'posts_per_page' => -1,
 			'fields'         => 'ids',
 			'no_found_rows'  => true,
@@ -1683,6 +1708,7 @@ function report_strays( array $scope_types ): array {
 		$posts = get_posts( [
 			'post_type'      => post_type_for( $type ),
 			'post_status'    => [ 'publish', 'future', 'draft', 'pending', 'private' ],
+			'hk_fs_catalogue_status' => [ 'publish', 'future', 'draft', 'pending', 'private' ], // Restored after other plugins' pre_get_posts.
 			'posts_per_page' => -1,
 			'no_found_rows'  => true,
 			'meta_query'     => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query

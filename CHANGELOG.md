@@ -59,6 +59,7 @@ A rewrite of the plugin, plus the new catalogue sync module and opt-in block the
 - **Google Sheets price sync is ignored for catalogue-managed types** — a type in `hk_fs_catalogue_managed_types` has exactly one write path (the catalogue), so `is_managed_by_sheets()` returns false for it even if the per-type Sheets toggle is on. Packages are unaffected: they are never catalogue-managed, so Sheets sync remains available for them
 
 ### Fixed
+- Catalogue sync: re-adding a product to a range republishes its drafted post instead of creating a duplicate, even when another plugin narrows post statuses during REST requests.
 - **Catalogue sync: names containing `&` were rewritten on every publish.** The sync runs as user 0, so kses stores `Harper & Lowe` as `Harper &amp; Lowe`. Titles, content and category names are now compared the way WordPress stores them, so a replay reports `unchanged` with no post update, revision or purge. `GET /state` returns decoded titles and term names
 - **Catalogue sync: image failures were invisible.** They are now counted in `counts.image_errors` and flagged per product. An image error never fails the product's data
 - **Catalogue sync: HTML descriptions were split into broken paragraphs** (`<p><ul></p>`). Descriptions with block-level HTML (lists, headings, tables and their rows, `details`, `article`, `section`, `header`, `footer`, `nav`, `aside`, `figure`, `pre`, `hr` and the like) now go into one Custom HTML block (loose text lines still get paragraphs); plain multi-line text keeps one paragraph block per line
