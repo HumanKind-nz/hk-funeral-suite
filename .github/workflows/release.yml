@@ -3,6 +3,10 @@ on:
   push:
     tags:
       - "*"
+
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -37,7 +41,33 @@ jobs:
       - name: Create zip file
         run: bin/build-zip.sh --no-build --label "$VERSION" dist
 
+      # The release body is the matching CHANGELOG.md section as HTML: the
+      # updater copies the body into the WordPress "View details" changelog
+      # tab, which prints it without converting Markdown. With no matching
+      # section, GitHub generates the notes instead.
+      - name: Release notes
+        id: notes
+        run: |
+          notes="$RUNNER_TEMP/release-notes.html"
+          if node bin/release-notes.js "$VERSION" > "$notes"; then
+            echo "body_path=$notes" >> "$GITHUB_OUTPUT"
+            echo "generate=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::No CHANGELOG.md section for $VERSION, so GitHub generates the release notes"
+            echo "body_path=" >> "$GITHUB_OUTPUT"
+            echo "generate=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # A tag with a hyphen (v2.0.0-rc.1) is published as a prerelease and is
+      # never marked latest. Sites update from releases/latest, so they never
+      # see it. Any other tag is a full release and becomes latest, as before.
       - name: Create GitHub release
         uses: softprops/action-gh-release@v3
         with:
+          name: ${{ github.ref_name }}
           files: dist/hk-funeral-suite-${{ env.VERSION }}.zip
+          fail_on_unmatched_files: true
+          body_path: ${{ steps.notes.outputs.body_path }}
+          generate_release_notes: ${{ steps.notes.outputs.generate }}
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          make_latest: ${{ contains(github.ref_name, '-') && 'false' || 'true' }}
