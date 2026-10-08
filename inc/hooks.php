@@ -24,6 +24,7 @@ function bootstrap(): void {
 
 	// Capabilities — standard post caps; the 1.x roles are kept working.
 	add_action( 'admin_init', __NAMESPACE__ . '\\maybe_migrate_capabilities' );
+	add_filter( 'map_meta_cap', 'HKFuneralSuite\\LegacyRoles\\map_suite_meta_caps', 9, 4 );
 
 	// Rewrite rule flushing.
 	add_action( 'admin_init', __NAMESPACE__ . '\\maybe_flush_rules' );

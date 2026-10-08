@@ -24,11 +24,11 @@
  *   capabilities that cleanup took. 2.x does not check them; this keeps a
  *   repaired site the same as one updated straight from 1.x.
  *
- * funeral_staff's 1.4.23 definition has no edit_others_posts or
- * edit_published_posts. Where no other plugin grants them, a staff-only
- * user can edit only their own drafts of suite posts in 2.x.
- * `wp hk-fs roles-audit` shows what each role and user can edit after the
- * update.
+ * 1.x gave anyone with manage_funeral_content (both legacy roles) edit and
+ * delete rights on every suite post. map_suite_meta_caps() keeps that rule
+ * for suite post types only; see there for why it is not done with role
+ * capabilities. `wp hk-fs roles-audit` shows what each role and user can
+ * edit after the update.
  *
  * This file depends on nothing else in the plugin so the read-only audit in
  * inc/cli.php can be loaded with `wp --require` against a site still on 1.x.
@@ -322,8 +322,51 @@ function user_after( \WP_User $user, array $role_caps ): array {
 }
 
 /**
- * Which suite posts a set of capabilities can edit, given that the suite
- * post types use capability_type 'post'.
+ * Let 1.x role holders edit and delete every suite post, as they could in 1.x.
+ *
+ * 1.x registered the suite post types with custom capabilities, which turns
+ * off meta capability mapping, so edit_post, delete_post and read_post on
+ * any suite post (anyone's, published or not) needed only
+ * manage_funeral_content. Both legacy roles have it. 2.x uses the standard
+ * post capabilities, where someone else's post needs edit_others_posts and
+ * a published one edit_published_posts. funeral_staff's 1.4.23 definition
+ * has neither, so without this a staff-only user on a site where no other
+ * plugin grants them could edit only their own drafts. Adding those two
+ * capabilities to the role instead would open every blog post too, so the
+ * 1.x rule is kept for suite post types only.
+ *
+ * Hooked at priority 9, before the catalogue lock (10), which still denies
+ * edits to catalogue-managed types. A check core has already denied is left
+ * alone.
+ *
+ * @param string[]   $caps    Primitive capabilities required.
+ * @param string     $cap     Meta capability being checked.
+ * @param int|string $user_id User ID (untyped: callers vary under strict_types).
+ * @param array      $args    Additional args — [0] is the post or its ID.
+ * @return string[]
+ */
+function map_suite_meta_caps( array $caps, string $cap, $user_id, array $args ): array {
+	if ( ! in_array( $cap, [ 'edit_post', 'delete_post', 'read_post' ], true ) || empty( $args[0] ) || in_array( 'do_not_allow', $caps, true ) ) {
+		return $caps;
+	}
+
+	$post = get_post( $args[0] );
+	if ( ! $post || 0 !== strpos( $post->post_type, 'hk_fs_' ) ) {
+		return $caps;
+	}
+
+	// phpcs:ignore WordPress.WP.Capabilities.Unknown -- The 1.x capability, granted to the legacy roles in get_definitions().
+	if ( ! user_can( (int) $user_id, 'manage_funeral_content' ) ) {
+		return $caps;
+	}
+
+	return [ 'manage_funeral_content' ];
+}
+
+/**
+ * Which suite posts a set of capabilities can edit: the standard post
+ * capabilities (capability_type 'post'), or manage_funeral_content through
+ * map_suite_meta_caps().
  *
  * @param array<string, bool> $caps Capabilities.
  * @return string 'all', 'own drafts' or 'none'.
@@ -332,7 +375,7 @@ function suite_access( array $caps ): string {
 	if ( empty( $caps['edit_posts'] ) ) {
 		return 'none';
 	}
-	if ( ! empty( $caps['edit_others_posts'] ) && ! empty( $caps['edit_published_posts'] ) ) {
+	if ( ! empty( $caps['manage_funeral_content'] ) || ( ! empty( $caps['edit_others_posts'] ) && ! empty( $caps['edit_published_posts'] ) ) ) {
 		return 'all';
 	}
 	return 'own drafts';
