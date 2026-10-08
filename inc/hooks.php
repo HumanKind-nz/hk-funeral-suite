@@ -39,7 +39,9 @@ function bootstrap(): void {
 	// Theme/plugin compatibility.
 	add_action( 'admin_init', __NAMESPACE__ . '\\load_compatibility_filters' );
 
-	// Cache purging on REST meta updates.
+	// Cache purging on suite post saves and REST meta updates. Both feed
+	// one queue that is purged once, at shutdown.
+	add_action( 'save_post', __NAMESPACE__ . '\\maybe_clear_cache_on_save', 10, 2 );
 	add_action( 'updated_post_meta', __NAMESPACE__ . '\\maybe_clear_cache_on_rest_update', 10, 4 );
 
 	// Plugin action links (Settings link on Plugins screen).
@@ -333,6 +335,38 @@ function remove_cpt_from_seopress( $enabled_post_types, array $cpt_slugs ): arra
 // ─── Cache Purging ──────────────────────────────────────────────────────────
 
 /**
+ * Clear caches when a suite post is saved.
+ *
+ * Covers the editor, quick edit, REST and import saves, so title,
+ * content, status and featured image changes reach the page cache (v1
+ * purged here too). Revisions, autosaves and auto-drafts are skipped.
+ * A catalogue sync saving many posts still purges once: every save adds
+ * to the same queue.
+ *
+ * @param int|string $post_id Post ID.
+ * @param mixed      $post    Post object.
+ */
+function maybe_clear_cache_on_save( $post_id, $post = null ): void {
+	$post_id = (int) $post_id;
+	if ( ! $post_id || wp_is_post_revision( $post_id ) || wp_is_post_autosave( $post_id ) ) {
+		return;
+	}
+
+	if ( ! $post instanceof \WP_Post ) {
+		$post = get_post( $post_id );
+	}
+	if ( ! $post || 'auto-draft' === $post->post_status ) {
+		return;
+	}
+
+	if ( ! in_array( $post->post_type, \HKFuneralSuite\PostTypes\get_all_cpt_slugs(), true ) ) {
+		return;
+	}
+
+	optimised_cache_purge( $post_id, 'save_post' );
+}
+
+/**
  * Clear caches when specific meta fields are updated via REST API.
  *
  * @param int    $meta_id    Meta ID.
@@ -361,33 +395,77 @@ function maybe_clear_cache_on_rest_update( $meta_id, $post_id, $meta_key, $meta_
 /**
  * Optimised cache purging — debounced, runs once at shutdown.
  *
+ * Every call in a request (post saves, REST meta updates, a catalogue
+ * sync touching dozens of products) adds to one queue. The shutdown
+ * callback is a named function, so registering it again is a no-op and
+ * the purge runs once per request.
+ *
  * @param int|null $post_id Post ID.
  * @param string   $context Context for logging.
  */
 function optimised_cache_purge( ?int $post_id = null, string $context = 'unknown' ): void {
-	static $purge_requested = false;
-	static $posts_to_purge  = [];
+	$queue = &purge_queue();
 
+	$queue['requested']            = true;
+	$queue['contexts'][ $context ] = true;
 	if ( $post_id ) {
-		$posts_to_purge[ $post_id ] = true;
+		$queue['posts'][ $post_id ] = true;
 	}
 
-	if ( ! $purge_requested ) {
-		$purge_requested = true;
+	add_action( 'shutdown', __NAMESPACE__ . '\\run_cache_purge', 999 );
+}
 
-		add_action( 'shutdown', function () use ( &$posts_to_purge ) {
-			// Beaver Builder per-post cache. delete_all_asset_cache() is the per-post
-			// call; delete_asset_cache_for_post() does not exist and was a fatal on shutdown.
-			if ( class_exists( 'FLBuilderModel' ) && method_exists( 'FLBuilderModel', 'delete_all_asset_cache' ) ) {
-				foreach ( array_keys( $posts_to_purge ) as $pid ) {
-					\FLBuilderModel::delete_all_asset_cache( $pid );
-				}
-			}
+/**
+ * The request's pending cache purge.
+ *
+ * @return array{requested: bool, posts: array<int, true>, contexts: array<string, true>}
+ */
+function &purge_queue(): array {
+	static $queue = [
+		'requested' => false,
+		'posts'     => [],
+		'contexts'  => [],
+	];
+	return $queue;
+}
 
-			// Weave Cache Purge Helper. Its function is wcph_direct_purge(); there is no wcph_purge().
-			if ( function_exists( 'wcph_direct_purge' ) ) {
-				wcph_direct_purge();
-			}
-		}, 999 );
+/**
+ * Run the queued purge (shutdown callback), then empty the queue.
+ *
+ * Does nothing when nothing was queued, so calling it twice never
+ * purges twice.
+ */
+function run_cache_purge(): void {
+	$queue = &purge_queue();
+	if ( ! $queue['requested'] ) {
+		return;
 	}
+
+	$post_ids = array_keys( $queue['posts'] );
+	$contexts = array_keys( $queue['contexts'] );
+
+	$queue['requested'] = false;
+	$queue['posts']     = [];
+	$queue['contexts']  = [];
+
+	// Beaver Builder per-post cache. delete_all_asset_cache() is the per-post
+	// call; delete_asset_cache_for_post() does not exist and was a fatal on shutdown.
+	if ( class_exists( 'FLBuilderModel' ) && method_exists( 'FLBuilderModel', 'delete_all_asset_cache' ) ) {
+		foreach ( $post_ids as $pid ) {
+			\FLBuilderModel::delete_all_asset_cache( $pid );
+		}
+	}
+
+	// Weave Cache Purge Helper. Its function is wcph_direct_purge(); there is no wcph_purge().
+	if ( function_exists( 'wcph_direct_purge' ) ) {
+		wcph_direct_purge();
+	}
+
+	/**
+	 * Fires after the plugin's once-per-request cache purge.
+	 *
+	 * @param int[]    $post_ids Posts whose caches were purged.
+	 * @param string[] $contexts What asked for the purge (save_post, catalogue-sync, …).
+	 */
+	do_action( 'hk_fs_cache_purged', $post_ids, $contexts );
 }
