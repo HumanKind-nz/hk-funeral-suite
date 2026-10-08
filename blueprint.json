@@ -28,6 +28,15 @@
 			"step": "login",
 			"username": "admin",
 			"password": "password"
+		},
+		{
+			"step": "activateTheme",
+			"themeFolderName": "twentytwentyfive"
+		},
+		{
+			"step": "writeFile",
+			"path": "/wordpress/wp-content/mu-plugins/hk-fs-demo-content.php",
+			"data": "<?php\n/**\n * Playground demo content: sample caskets and a page with the Product Grid\n * block and the Query Loop cards. Runs once, on the first request after the\n * plugin is active, so it does not depend on when the plugin is activated.\n */\nadd_action(\n\t'init',\n\tfunction () {\n\t\t// add_option() fails when the option exists, so this runs once.\n\t\tif ( ! post_type_exists( 'hk_fs_casket' ) || ! add_option( 'hk_fs_demo_seeded', 1 ) ) {\n\t\t\treturn;\n\t\t}\n\t\t$terms = [];\n\t\tforeach ( [ 'Solid Timber', 'Veneer', 'Eco' ] as $name ) {\n\t\t\t$term           = wp_insert_term( $name, 'hk_fs_casket_category' );\n\t\t\t$terms[ $name ] = $term['term_id'];\n\t\t}\n\t\t$products = [\n\t\t\t[ 'Rimu Heritage', 'Solid Timber', '2950', 10 ],\n\t\t\t[ 'Kauri Classic', 'Solid Timber', '3595', 20 ],\n\t\t\t[ 'Matai Premier', 'Solid Timber', 'POA', 30 ],\n\t\t\t[ 'Oak Veneer', 'Veneer', '1800', 40 ],\n\t\t\t[ 'Walnut Veneer', 'Veneer', '2100', 50 ],\n\t\t\t[ 'Willow Weave', 'Eco', '995', 60 ],\n\t\t\t[ 'Bamboo Natural', 'Eco', '1250', 70 ],\n\t\t\t[ 'Seagrass Natural', 'Eco', '', 80 ],\n\t\t];\n\t\tforeach ( $products as [ $title, $category, $price, $order ] ) {\n\t\t\t$id = wp_insert_post( [\n\t\t\t\t'post_type'    => 'hk_fs_casket',\n\t\t\t\t'post_status'  => 'publish',\n\t\t\t\t'post_title'   => $title,\n\t\t\t\t'menu_order'   => $order,\n\t\t\t\t'post_content' => \"<!-- wp:hk-funeral-suite/casket /-->\\n\\n<!-- wp:paragraph -->\\n<p>A sample casket description.</p>\\n<!-- /wp:paragraph -->\",\n\t\t\t] );\n\t\t\tupdate_post_meta( $id, '_hk_fs_casket_price', $price );\n\t\t\twp_set_object_terms( $id, [ $terms[ $category ] ], 'hk_fs_casket_category' );\n\t\t}\n\t\twp_insert_post( wp_slash( [\n\t\t\t'post_type'    => 'page',\n\t\t\t'post_status'  => 'publish',\n\t\t\t'post_title'   => 'Caskets',\n\t\t\t'post_name'    => 'caskets-demo',\n\t\t\t'post_content' => \"<!-- wp:hk-funeral-suite/product-grid {\\\"type\\\":\\\"casket\\\",\\\"align\\\":\\\"wide\\\"} /-->\\n\\n<!-- wp:heading -->\\n<h2 class=\\\"wp-block-heading\\\">Query Loop cards</h2>\\n<!-- /wp:heading -->\\n\\n\" . ( WP_Block_Patterns_Registry::get_instance()->get_registered( 'hk-funeral-suite/casket-cards-query' )['content'] ?? '' ),\n\t\t] ) );\n\t},\n\t99\n);\n"
 		}
 	]
 }

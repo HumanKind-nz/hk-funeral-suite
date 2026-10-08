@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Block theme support**, all opt-in. See `block-theme-guide.md`
+  - **Product Grid block** (`hk-funeral-suite/product-grid`) and the matching `[hk_product_grid]` shortcode, one server-side renderer behind both. Products grouped by category in catalogue order (`menu_order`, then name), or by price or name; formatted prices with a configurable POA label, legacy price text shown verbatim, empty prices hidden; semantic `section`/`ul`/`li` markup with configurable heading levels; responsive images with an alt fallback. Its stylesheet loads only on pages that show a grid. The editor previews it with ServerSideRender
+  - **Block bindings sources** `hk-funeral-suite/price` and `hk-funeral-suite/field`, so core blocks can show HK prices and fields to visitors. `core/post-meta` cannot: every HK key is protected and the post types are not publicly viewable. The field source serves only the fields the plugin registers for the post type and never the catalogue's internal keys. A paragraph or heading bound to an empty value is removed. Values preview in the editor
+  - **Query Loop support**: a `query_loop_block_query_vars` filter restores HK post types that core replaces with blog posts, with catalogue order for loops sorted by menu order (the REST API gets the same tie-break, so the editor preview matches). Query Loop variations per enabled product type ("Caskets (HK)", "Urns (HK)" and so on) with unlinked image and title and a bound price. No post type is made public
+  - **Block patterns** in an "HK Funeral Suite" category: a product grid and Query Loop cards per enabled product type
+  - Filters: `hk_fs_poa_label`, `hk_fs_product_grid_uncategorised_label`, `hk_fs_product_grid_excerpt_length`, `hk_fs_enable_block_bindings`, `hk_fs_enable_query_loop_support`
+  - The four existing shortcodes are unchanged
 - **Catalogue sync module** (`inc/catalogue-sync.php`) — connects a site to an external master product catalogue. Disabled by default; enabled per site by provisioning a shared secret via the `HK_FS_CATALOGUE_SECRET` wp-config constant (option fallback: `hk_fs_catalogue_secret`)
   - REST namespace `hk-fs-catalogue/v1` with HMAC-signed requests (`X-HKFS-Timestamp` + `X-HKFS-Signature`, ±5 minute replay window, constant-time compare)
   - `GET /state` exports current products per type (posts, meta, terms, images, master IDs) for import, package visibility, and drift detection
