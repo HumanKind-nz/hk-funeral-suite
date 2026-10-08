@@ -58,4 +58,3 @@ build/
 CLAUDE.md
 MODERNISATION-PLAN.md
 phpcs.xml.dist
-webpack.scripts.config.js
