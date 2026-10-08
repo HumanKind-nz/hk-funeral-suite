@@ -63,6 +63,7 @@ Category groups appear in the order their first product appears in catalogue ord
 | Stored value | Shown as |
 |--------------|----------|
 | `3595` | `$3,595 incl. GST` (with the prefix and suffix) |
+| `2499.5` | `$2,499.50 incl. GST`. Prices with cents show two decimals, whole prices none |
 | `POA` | The POA label, without prefix or suffix |
 | Any other text, such as `P.O.A.` | The text, unchanged |
 | Empty | No price line |
@@ -85,6 +86,7 @@ Category groups appear in the order their first product appears in catalogue ord
 </section>
 ```
 
+- The product name keeps basic inline formatting (`b`, `strong`, `i`, `em`, `sup`, `sub`, `br`), as the Post Title block in a Query Loop would show it. Any other tag, and every attribute, is stripped.
 - The price uses the same `hk-item-price` classes as `[hk_formatted_price]`, so existing price CSS carries over.
 - The price paragraph also carries its state: `--numeric`, `--poa` or `--text`.
 - Each card has a stable `hk-product-{ID}` anchor, given once per page.
@@ -142,7 +144,7 @@ Bind a paragraph or heading (or any bindable core attribute) inside a Query Loop
 | `prefix` | none | Numeric prices only |
 | `suffix` | none | Numeric prices only |
 | `poa` | "Price on application" | Label for a `POA` price |
-| `decimals` | `0` | Decimal places for numeric prices |
+| `decimals` | `0` | Minimum decimal places for numeric prices. A price with cents always shows two, so `2499.5` is `$2,499.50` |
 
 Works for caskets, urns, monuments, keepsakes and packages.
 

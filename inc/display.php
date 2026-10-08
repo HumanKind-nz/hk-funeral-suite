@@ -213,7 +213,8 @@ function sort_by_price( array $posts, string $type ): array {
 /**
  * A product's price, split into its display state.
  *
- * - numeric: "$" plus the amount with thousands separators, e.g. "$3,595".
+ * - numeric: "$" plus the amount with thousands separators, e.g. "$3,595",
+ *   or "$2,499.50" for an amount with cents ({@see format_amount()}).
  * - poa: the stored literal "POA" (any case), shown as the POA label.
  * - text: any other stored text, shown verbatim (legacy "P.O.A." values).
  * - empty: no price; callers hide the price line.
@@ -224,7 +225,8 @@ function sort_by_price( array $posts, string $type ): array {
  *     Optional.
  *
  *     @type string $poa_label Label for POA. Default {@see default_poa_label()}.
- *     @type int    $decimals  Decimal places for numeric prices. Default 0.
+ *     @type int    $decimals  Minimum decimal places for numeric prices. Default 0.
+ *                              An amount with cents always shows two.
  *     @type string $symbol    Currency symbol. Default '$'.
  * }
  * @return array{state: string, text: string, amount: ?float}
@@ -252,7 +254,7 @@ function price_parts( int $post_id, string $type, array $opts = [] ): array {
 		$amount = (float) $raw;
 		return [
 			'state'  => 'numeric',
-			'text'   => (string) $opts['symbol'] . number_format( $amount, max( 0, (int) $opts['decimals'] ) ),
+			'text'   => (string) $opts['symbol'] . format_amount( $amount, (int) $opts['decimals'] ),
 			'amount' => $amount,
 		];
 	}
@@ -270,6 +272,28 @@ function price_parts( int $post_id, string $type, array $opts = [] ): array {
 		'text'   => $raw,
 		'amount' => null,
 	];
+}
+
+/**
+ * An amount with thousands separators: no decimals for whole dollars and
+ * two for an amount with cents, so "3,595" but "2,499.50". A price is never
+ * rounded to whole dollars for display.
+ *
+ * The editor's bindings preview mirrors this in
+ * src/blocks/product-grid/bindings.js (formatAmount); keep the two in step.
+ *
+ * @param float $amount   Amount.
+ * @param int   $decimals Minimum decimal places. Default 0.
+ * @return string
+ */
+function format_amount( float $amount, int $decimals = 0 ): string {
+	$decimals = max( 0, $decimals );
+
+	if ( $decimals < 2 && ! str_ends_with( number_format( $amount, 2, '.', '' ), '.00' ) ) {
+		$decimals = 2;
+	}
+
+	return number_format( $amount, $decimals );
 }
 
 /**

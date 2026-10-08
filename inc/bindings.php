@@ -149,7 +149,9 @@ function is_internal_key( string $key ): bool {
  *
  * Args (all optional): prefix and suffix (numeric prices only, e.g.
  * "From" and "incl. GST"), poa (label for POA, default "Price on
- * application"), decimals (default 0). Other text is shown verbatim.
+ * application"), decimals (minimum decimal places, default 0; an amount
+ * with cents always shows two, e.g. "$2,499.50"). Other text is shown
+ * verbatim.
  * Returns null when there is no price, and the bound block is removed.
  *
  * @param array     $args  Source args.

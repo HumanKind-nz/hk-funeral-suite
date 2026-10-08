@@ -21,11 +21,18 @@ import {
 import { store as coreStore } from '@wordpress/core-data';
 import { __ } from '@wordpress/i18n';
 
-// Same thousands separators as PHP number_format().
-function formatAmount( amount, decimals ) {
-	const [ whole, fraction ] = Number( amount )
-		.toFixed( decimals )
-		.split( '.' );
+// Mirrors HKFuneralSuite\Display\format_amount(): no decimals for whole
+// dollars and two for an amount with cents ("3,595" but "2,499.50"), with
+// the same thousands separators as PHP number_format(). `decimals` is a
+// minimum.
+function formatAmount( amount, decimals = 0 ) {
+	let places = Math.max( 0, decimals );
+
+	if ( places < 2 && ! Number( amount ).toFixed( 2 ).endsWith( '.00' ) ) {
+		places = 2;
+	}
+
+	const [ whole, fraction ] = Number( amount ).toFixed( places ).split( '.' );
 	const grouped = whole.replace( /\B(?=(\d{3})+(?!\d))/g, ',' );
 
 	return fraction ? `${ grouped }.${ fraction }` : grouped;

@@ -28,6 +28,21 @@ defined( 'WPINC' ) || exit;
 const STYLE_HANDLE = 'hk-fs-product-grid';
 
 /**
+ * Inline tags a product name may keep in a card title, without attributes.
+ * Core's Post Title block prints a title's HTML as is; the grid keeps only
+ * basic formatting and strips every other tag (links, images, scripts).
+ */
+const TITLE_ALLOWED_HTML = [
+	'b'      => [],
+	'strong' => [],
+	'i'      => [],
+	'em'     => [],
+	'sup'    => [],
+	'sub'    => [],
+	'br'     => [],
+];
+
+/**
  * Bootstrap — hook everything.
  */
 function bootstrap(): void {
@@ -355,7 +370,7 @@ function render_card( \WP_Post $post, array $args, int $level, bool $eager ): st
 	$html .= sprintf(
 		'<h%1$d class="hk-product-card__title">%2$s</h%1$d>',
 		$level,
-		esc_html( $title )
+		wp_kses( $title, TITLE_ALLOWED_HTML )
 	);
 
 	if ( $args['showPrice'] ) {
