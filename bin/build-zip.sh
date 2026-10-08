@@ -30,9 +30,12 @@ EXCLUDES=(
 	.editorconfig
 	.nova
 	.claude
+	.playwright-cli
+	.wordpress-org
 	.DS_Store
 	dist
 	bin
+	tests
 	node_modules
 	src
 	screenshots
