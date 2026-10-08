@@ -35,6 +35,7 @@ delete_option( 'hk_fs_seopress_metabox_compatibility' );
 
 // Remove migration and internal flags.
 delete_option( 'hk_fs_caps_migrated_v2' );
+delete_option( 'hk_fs_roles_migration_version' );
 delete_option( 'hk_fs_flush_rewrite_rules' );
 delete_option( 'hk_fs_roles_updated' );
 

@@ -65,8 +65,8 @@ function activate(): void {
 		update_option( 'hk_fs_enabled_cpts', $defaults );
 	}
 
-	// Ensure admin has manage_options (standard WP cap).
-	// Clean up old custom roles if present.
+	// Move 1.x custom-role users onto a standard role, then remove the
+	// custom roles if present.
 	cleanup_legacy_roles();
 
 	flush_rewrite_rules();
@@ -82,24 +82,49 @@ function deactivate(): void {
 // ─── Capabilities Migration ─────────────────────────────────────────────────
 
 /**
- * One-time migration: remove custom roles and caps, simplify to standard WP caps.
+ * One-time migration: move legacy-role users, remove custom roles and caps,
+ * simplify to standard WP caps.
+ *
+ * Gated on a version option rather than the 2.0.0 boolean flag
+ * (hk_fs_caps_migrated_v2), so sites that already ran the old cleanup, which
+ * removed the roles without moving their users, run once more and get any
+ * user left without a role fixed.
  */
 function maybe_migrate_capabilities(): void {
-	if ( get_option( 'hk_fs_caps_migrated_v2' ) ) {
+	$version = \HKFuneralSuite\LegacyRoles\MIGRATION_VERSION;
+	if ( (int) get_option( \HKFuneralSuite\LegacyRoles\MIGRATION_OPTION, 0 ) >= $version ) {
 		return;
 	}
 
-	cleanup_legacy_roles();
-	update_option( 'hk_fs_caps_migrated_v2', true );
+	// Not marked done while any user is blocked, so it retries next time.
+	if ( cleanup_legacy_roles() ) {
+		update_option( \HKFuneralSuite\LegacyRoles\MIGRATION_OPTION, $version );
+		delete_option( 'hk_fs_caps_migrated_v2' );
+	}
 }
 
 /**
  * Remove legacy custom roles and capabilities.
+ *
+ * Users holding funeral_staff or funeral_manager are moved onto a standard
+ * role first (see inc/legacy-roles.php for the mapping), so nobody is left
+ * without a role. Safe to run more than once.
+ *
+ * @return bool False when a user could not be moved; the legacy roles are
+ *              then left registered so that user keeps access.
  */
-function cleanup_legacy_roles(): void {
+function cleanup_legacy_roles(): bool {
+	$complete = \HKFuneralSuite\LegacyRoles\reassign_users();
+
 	// Remove custom roles.
-	remove_role( 'funeral_staff' );
-	remove_role( 'funeral_manager' );
+	if ( $complete ) {
+		foreach ( \HKFuneralSuite\LegacyRoles\get_legacy_roles() as $legacy ) {
+			if ( wp_roles()->is_role( $legacy ) ) {
+				remove_role( $legacy );
+				\HKFuneralSuite\LegacyRoles\debug_log( "removed the {$legacy} role." );
+			}
+		}
+	}
 
 	// Remove custom caps from administrator.
 	$admin = get_role( 'administrator' );
@@ -118,6 +143,8 @@ function cleanup_legacy_roles(): void {
 	// Clean up transients.
 	delete_transient( 'hk_fs_roles_version' );
 	delete_option( 'hk_fs_roles_updated' );
+
+	return $complete;
 }
 
 // ─── Rewrite Rules ──────────────────────────────────────────────────────────
