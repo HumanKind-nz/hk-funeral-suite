@@ -5,24 +5,9 @@ All notable changes to the HumanKind Funeral Suite plugin will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.0.0] - Unreleased
 
-### Added
-- **Catalogue sync module** (`inc/catalogue-sync.php`) — connects a site to an external master product catalogue. Disabled by default; enabled per site by provisioning a shared secret via the `HK_FS_CATALOGUE_SECRET` wp-config constant (option fallback: `hk_fs_catalogue_secret`)
-  - REST namespace `hk-fs-catalogue/v1` with HMAC-signed requests (`X-HKFS-Timestamp` + `X-HKFS-Signature`, ±5 minute replay window, constant-time compare)
-  - `GET /state` exports current products per type (posts, meta, terms, images, master IDs) for import, package visibility, and drift detection
-  - `POST /stamp` adopts existing posts by writing stable master IDs, so the first publish updates in place instead of duplicating
-  - `POST /sync` full-state reconcile: upserts matched only on master ID (slugs kept on rename), price stored as numeric string or literal `POA`, categories matched on stable master term IDs, images sideloaded only when their version hash changes, stamped posts absent from the payload drafted (soft, reversible), unstamped posts reported as strays and never touched. Idempotent — replaying a payload is a no-op
-  - Editor lock via the `hk_fs_catalogue_managed_types` option: server-side capability denial (edit, delete, create) for catalogue-managed types, with a "Managed by HumanKind Catalogue" badge and notice in list tables. Flipping the option per site is the switchover to central management
-
-### Fixed
-- **Fatal error after every save of a suite post type on Beaver Builder sites, and a cache purge that never ran.** The shutdown purge in `inc/hooks.php` called `FLBuilderModel::delete_asset_cache_for_post()`, which Beaver Builder does not have, and `wcph_purge()`, which Weave Cache Purge Helper does not have. Now `delete_all_asset_cache( $pid )` and `wcph_direct_purge()`. Same fix as 1.4.21 on the 1.x line, found on forrests.co.nz on 18 Sep 2026.
-- **Catalogue endpoints are now explicitly uncacheable** (`Cache-Control: no-store` + `Do-Not-Cache` headers on every `hk-fs-catalogue/v1` response, including auth errors). Found live on GridPane hosting: the NGINX Redis page cache stored a signed `GET /state` response and served the full product export to unsigned requests, bypassing HMAC auth. GridPane's srcache ignores `Cache-Control` but honours the upstream `Do-Not-Cache` header
-
-### Changed
-- **Google Sheets price sync is ignored for catalogue-managed types** — a type in `hk_fs_catalogue_managed_types` has exactly one write path (the catalogue), so `is_managed_by_sheets()` returns false for it even if the per-type Sheets toggle is on. Packages are unaffected: they are never catalogue-managed, so Sheets sync remains available for them
-
-## [2.0.0] - 2026-02-21
+A rewrite of the plugin, plus the new catalogue sync module. 2.0.0 also includes every fix released on the 1.4.x line after 1.4.17 (1.4.18 to 1.4.23), so a site on any 1.4.x release can update straight to it. See "Included from 1.4.18 to 1.4.23" below.
 
 ### Architecture
 - **Rewritten** entire plugin from class-based architecture to namespaced functions in `inc/`
@@ -33,6 +18,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Removed** all legacy class files from `includes/` directory
 - **Removed** jQuery dependency — the plugin is now fully vanilla JS/React
 
+### Added
+- **Catalogue sync module** (`inc/catalogue-sync.php`) — connects a site to an external master product catalogue. Disabled by default; enabled per site by provisioning a shared secret via the `HK_FS_CATALOGUE_SECRET` wp-config constant (option fallback: `hk_fs_catalogue_secret`)
+  - REST namespace `hk-fs-catalogue/v1` with HMAC-signed requests (`X-HKFS-Timestamp` + `X-HKFS-Signature`, ±5 minute replay window, constant-time compare)
+  - `GET /state` exports current products per type (posts, meta, terms, images, master IDs) for import, package visibility, and drift detection
+  - `POST /stamp` adopts existing posts by writing stable master IDs, so the first publish updates in place instead of duplicating
+  - `POST /sync` full-state reconcile: upserts matched only on master ID (slugs kept on rename), price stored as numeric string or literal `POA`, categories matched on stable master term IDs, images sideloaded only when their version hash changes, stamped posts absent from the payload drafted (soft, reversible), unstamped posts reported as strays and never touched. Idempotent — replaying a payload is a no-op
+  - Editor lock via the `hk_fs_catalogue_managed_types` option: server-side capability denial (edit, delete, create) for catalogue-managed types, with a "Managed by HumanKind Catalogue" badge and notice in list tables. Flipping the option per site is the switchover to central management
+  - Every `hk-fs-catalogue/v1` response, including auth errors, is sent with `Cache-Control: no-store` and `Do-Not-Cache` headers. Found live on GridPane hosting: the NGINX Redis page cache stored a signed `GET /state` response and served the full product export to unsigned requests, bypassing HMAC auth. GridPane's srcache ignores `Cache-Control` but honours the upstream `Do-Not-Cache` header
+- **Generic `[hk_content]` shortcode** renders any HK CPT's freeform content (casket, urn, monument, keepsake, package, staff) with the meta block stripped — for page builders that otherwise leak block markup. `[hk_team_member_content]` is retained as a back-compat alias
+- **Settings link** on Plugins screen (next to Deactivate)
+- **Google Sheets lock indicator** in block editor when price sync is enabled
+- **Sortable columns** for price, order, position, and qualification in admin lists
+- **Shortcode copy button** in package admin columns
+
 ### Changed
 - **Requires** WordPress 6.6+ and PHP 8.1+ (previously WP 5.8+ / PHP 7.4+)
 - **Simplified** capabilities to standard `manage_options` — removed custom `funeral_staff` and `funeral_manager` roles
@@ -40,19 +39,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Improved** admin menu ordering — all CPTs now group together below Posts regardless of enable/disable state
 - **Improved** uninstall cleanup — all options, transients, and compatibility settings properly removed
 - **Updated** settings page with tabbed interface: General, Integration, Compatibility, About
-
-### Added
-- **Generic `[hk_content]` shortcode** renders any HK CPT's freeform content (casket, urn, monument, keepsake, package, staff) with the meta block stripped — for page builders that otherwise leak block markup. `[hk_team_member_content]` is retained as a back-compat alias
-- **Settings link** on Plugins screen (next to Deactivate)
-- **Google Sheets lock indicator** in block editor when price sync is enabled
-- **Sortable columns** for price, order, position, and qualification in admin lists
-- **Shortcode copy button** in package admin columns
+- **Google Sheets price sync is ignored for catalogue-managed types** — a type in `hk_fs_catalogue_managed_types` has exactly one write path (the catalogue), so `is_managed_by_sheets()` returns false for it even if the per-type Sheets toggle is on. Packages are unaffected: they are never catalogue-managed, so Sheets sync remains available for them
 
 ### Fixed
+- **Fatal error after every save of a suite post type on Beaver Builder sites, and a cache purge that never ran.** The shutdown purge in `inc/hooks.php` called `FLBuilderModel::delete_asset_cache_for_post()`, which Beaver Builder does not have, and `wcph_purge()`, which Weave Cache Purge Helper does not have. Now `delete_all_asset_cache( $pid )` and `wcph_direct_purge()`. Same fix as 1.4.21 on the 1.x line
 - WP All Import block importer no longer escapes pre-formatted content. Content that is already block markup is kept intact, and plain text is wrapped with `wp_kses_post()` instead of `esc_html()`, so migrated descriptions stop rendering as literal `<!-- wp:paragraph -->` text
 - Price data now saves correctly via block `useEntityProp` instead of conflicting sidebar meta boxes
 - Team admin columns date position now appears after taxonomies
 - Proper output escaping on price column formatting
+
+### Included from 1.4.18 to 1.4.23
+Every 1.4.x fix released after 1.4.17 is in 2.0.0. Each release keeps its own entry further down.
+- **1.4.18** The `[hk_content]` shortcode, with `[hk_team_member_content]` kept as an alias (see Added)
+- **1.4.19** The GitHub updater stays quiet under `WP_DEBUG`. In 2.0.0 every updater log line is opt-in via the `WEAVE_UPDATER_DEBUG` constant, not just the version line
+- **1.4.20** The WP All Import block importer keeps pre-formatted block markup intact (see Fixed)
+- **1.4.21** The Beaver Builder fatal after saving a suite post, and the page cache purge that never ran (see Fixed). The admin output escaping is covered by the rewrite: the settings page is React, and the admin output left in `inc/` is escaped for its context
+- **1.4.22** Withdrawn, so there is nothing to carry over
+- **1.4.23** The Pricing Packages admin list shows package names again. 2.0.0 never had the jQuery hack that caused it: packages rename their title column through the `manage_{cpt}_posts_columns` filter, like every other CPT
+
+## [1.4.23] - 2026-09-22
+
+### Fixed
+- Pricing Packages admin list no longer shows the word "Name" in place of every package name. A jQuery hack rewrote the contents of everything matching `th.column-title`. On sites running Admin Columns Pro that selector also matches each row's primary cell, because ACP renders it as a `th` rather than core's `td`, so all six package names were replaced with a dead link. The hack is gone and packages now rename their title column through the same `manage_{cpt}_posts_columns` filter used by every other CPT.
+
+## [1.4.22] - 2026-09-22 [WITHDRAWN]
+
+Tagged from a commit that predated the 1.4.21 fatal-error fix, so it reintroduced the
+critical error screen after saving a suite post on Beaver Builder sites. Do not install.
+Superseded by 1.4.23, which carries the same Pricing Packages fix on top of 1.4.21.
+
+## [1.4.21] - 2026-09-18
+
+### Fixed
+- **Fatal error after every save of a package, casket, urn or other suite post type on Beaver Builder sites.** The shared cache purge called `FLBuilderModel::delete_asset_cache_for_post()`, which Beaver Builder does not have (2.11.1 checked). The post saved, then the request died on shutdown, so editors saw the critical error screen instead of the edit screen. Found on a production site, 14 times on 18 Sep 2026. It now calls `delete_all_asset_cache( $post_id )`, behind a `method_exists()` check.
+- **The follow-up page cache purge never ran.** It called `wcph_purge()`, but Weave Cache Purge Helper's function is `wcph_direct_purge()`, so a price change could sit behind a cached page until it expired. Fixed in the shared purge and in the REST meta fallback.
+
+### Security
+- Every value printed by the admin screens (post type slugs in ids and inline CSS, field labels and types, admin links, the settings section titles, the thumbnail column) is escaped for its context, and translated admin strings print through `esc_html_e()`. The capability redirect uses `wp_safe_redirect()`. No change to what renders.
+
+## [1.4.20] - 2026-06-18
+- **Fixed** WP All Import block importer no longer escapes pre-formatted content. Content that is already block markup is kept intact, and plain text is wrapped with `wp_kses_post()` instead of `esc_html()` — so migrated descriptions stop rendering as literal `<!-- wp:paragraph -->` text on the front end
+
+## [1.4.19] - 2026-06-18
+- **Fixed** GitHub updater no longer writes its per-request "Current version / Latest version" line to the PHP error log under `WP_DEBUG`. The line is now opt-in via the `WEAVE_UPDATER_DEBUG` constant, stopping a harmless debug line being recorded as an Nginx `[error]` flood on client sites. Genuine API-failure logs are unchanged
+
+## [1.4.18] - 2026-06-18
+- **Added** New `[hk_content]` shortcode renders any HK CPT's freeform content (casket, urn, monument, keepsake, package, staff) with the meta block stripped — for page builders that otherwise leak Gutenberg block markup
+- **Improved** Generalises `[hk_team_member_content]`, which is retained as a back-compat alias so existing staff layouts keep working
 
 ## [1.4.17] - 2025-12-05
 - **Added** New `[hk_team_member_content]` shortcode to render paragraph blocks and other content blocks from team member posts

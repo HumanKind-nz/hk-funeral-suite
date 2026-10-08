@@ -144,10 +144,12 @@ hk-funeral-suite/
 
 [Full changelog](CHANGELOG.md)
 
-### [2.0.0] - 2026-02-21
+### [2.0.0] - Unreleased
 - Rewritten from class-based to namespaced function architecture
 - `@wordpress/scripts` dual build system, JSX blocks with `useEntityProp`, React settings page
 - Native block locking, Settings link on Plugins screen, improved admin menu ordering
+- Catalogue sync module for an external master product catalogue (off until a site secret is set)
+- Includes every 1.4.x fix from 1.4.18 to 1.4.23
 - Requires WordPress 6.6+ and PHP 8.1+
 
 ### [1.4.17] - 2025-12-05

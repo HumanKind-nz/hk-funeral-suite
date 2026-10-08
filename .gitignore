@@ -53,9 +53,9 @@ wp-config.php
 # Node / Build
 node_modules/
 build/
+dist/
 
 # Development — local-only, not distributed
 CLAUDE.md
 MODERNISATION-PLAN.md
 phpcs.xml.dist
-webpack.scripts.config.js
