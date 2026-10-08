@@ -43,6 +43,10 @@ require_once HK_FS_PLUGIN_DIR . 'inc/catalogue-sync.php';
 require_once HK_FS_PLUGIN_DIR . 'inc/blocks.php';
 require_once HK_FS_PLUGIN_DIR . 'inc/settings-page.php';
 
+if ( defined( 'WP_CLI' ) && WP_CLI ) {
+	require_once HK_FS_PLUGIN_DIR . 'inc/cli.php';
+}
+
 // ─── Bootstrap modules ─────────────────────────────────────────────────────
 
 HKFuneralSuite\PostTypes\bootstrap();
