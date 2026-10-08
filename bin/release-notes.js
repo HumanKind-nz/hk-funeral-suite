@@ -29,7 +29,9 @@ const markdown = args.includes( '--markdown' );
 const tag = args.find( ( arg ) => ! arg.startsWith( '--' ) );
 
 if ( ! tag ) {
-	process.stderr.write( 'Usage: node bin/release-notes.js <version-or-tag> [--markdown]\n' );
+	process.stderr.write(
+		'Usage: node bin/release-notes.js <version-or-tag> [--markdown]\n'
+	);
 	process.exit( 2 );
 }
 
@@ -39,7 +41,10 @@ if ( version.includes( '-' ) ) {
 	candidates.push( version.split( '-' )[ 0 ] );
 }
 
-const changelog = fs.readFileSync( path.join( __dirname, '..', 'CHANGELOG.md' ), 'utf8' );
+const changelog = fs.readFileSync(
+	path.join( __dirname, '..', 'CHANGELOG.md' ),
+	'utf8'
+);
 const lines = changelog.split( /\r?\n/ );
 
 /**
@@ -50,13 +55,16 @@ const lines = changelog.split( /\r?\n/ );
  */
 function findSection( wanted ) {
 	const start = lines.findIndex(
-		( line ) => line.startsWith( `## [${ wanted }]` ) &&
+		( line ) =>
+			line.startsWith( `## [${ wanted }]` ) &&
 			/^($|\s)/.test( line.slice( `## [${ wanted }]`.length ) )
 	);
 	if ( -1 === start ) {
 		return null;
 	}
-	let end = lines.findIndex( ( line, i ) => i > start && line.startsWith( '## ' ) );
+	let end = lines.findIndex(
+		( line, i ) => i > start && line.startsWith( '## ' )
+	);
 	if ( -1 === end ) {
 		end = lines.length;
 	}
@@ -101,7 +109,10 @@ function inline( text ) {
 	html = escapeHtml( html )
 		.replace( /\*\*(.+?)\*\*/g, '<strong>$1</strong>' )
 		.replace( /\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2">$1</a>' );
-	return html.replace( /\u0000(\d+)\u0000/g, ( match, i ) => codes[ Number( i ) ] );
+	return html.replace(
+		/\u0000(\d+)\u0000/g,
+		( match, i ) => codes[ Number( i ) ]
+	);
 }
 
 /**
@@ -139,7 +150,9 @@ function toHtml( body ) {
 			closeParagraph();
 			closeLists();
 			const level = heading[ 1 ].length;
-			out.push( `<h${ level }>${ inline( heading[ 2 ].trim() ) }</h${ level }>` );
+			out.push(
+				`<h${ level }>${ inline( heading[ 2 ].trim() ) }</h${ level }>`
+			);
 		} else if ( item ) {
 			closeParagraph();
 			const indent = item[ 1 ].length;
@@ -161,7 +174,9 @@ function toHtml( body ) {
 	closeParagraph();
 	closeLists();
 
-	return out.join( '\n' ).replace( /\n(<\/li>|<\/li><\/ul>| )/g, '$1' ) + '\n';
+	return (
+		out.join( '\n' ).replace( /\n(<\/li>|<\/li><\/ul>| )/g, '$1' ) + '\n'
+	);
 }
 
 let section = null;
@@ -173,10 +188,16 @@ for ( const candidate of candidates ) {
 }
 
 if ( ! section ) {
-	process.stderr.write( `No CHANGELOG.md section for ${ candidates.join( ' or ' ) }\n` );
+	process.stderr.write(
+		`No CHANGELOG.md section for ${ candidates.join( ' or ' ) }\n`
+	);
 	process.exit( 1 );
 }
 
-process.stderr.write( `Release notes from CHANGELOG.md "${ section.heading }"\n` );
+process.stderr.write(
+	`Release notes from CHANGELOG.md "${ section.heading }"\n`
+);
 
-process.stdout.write( markdown ? section.body.join( '\n' ) + '\n' : toHtml( section.body ) );
+process.stdout.write(
+	markdown ? section.body.join( '\n' ) + '\n' : toHtml( section.body )
+);
