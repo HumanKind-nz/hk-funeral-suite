@@ -13,7 +13,7 @@ jobs:
 
       - name: Get the version
         id: get_version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> "$GITHUB_ENV"
 
       - name: Set up Node
         uses: actions/setup-node@v7
@@ -32,31 +32,10 @@ jobs:
           test -f build/settings/index.js || { echo "::error::Settings bundle missing — build failed"; exit 1; }
           test -d build/blocks || { echo "::error::Blocks build missing — build failed"; exit 1; }
 
-      - name: Stage plugin files
-        run: |
-          mkdir -p dist/hk-funeral-suite
-          rsync -av \
-            --exclude='.git' \
-            --exclude='.github' \
-            --exclude='.gitignore' \
-            --exclude='.editorconfig' \
-            --exclude='.nova' \
-            --exclude='.claude' \
-            --exclude='.DS_Store' \
-            --exclude='dist' \
-            --exclude='node_modules' \
-            --exclude='src' \
-            --exclude='screenshots' \
-            --exclude='CLAUDE.md' \
-            --exclude='MODERNISATION-PLAN.md' \
-            --exclude='phpcs.xml.dist' \
-            --exclude='webpack.scripts.config.js' \
-            --exclude='package.json' \
-            --exclude='package-lock.json' \
-            . dist/hk-funeral-suite/
-
+      # bin/build-zip.sh holds the file list and exclusions, so a local test
+      # build and the release asset are the same zip.
       - name: Create zip file
-        run: cd dist && zip -r hk-funeral-suite-${{ env.VERSION }}.zip hk-funeral-suite
+        run: bin/build-zip.sh --no-build --label "$VERSION" dist
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v3
