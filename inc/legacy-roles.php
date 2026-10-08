@@ -1,33 +1,34 @@
 <?php
 /**
- * Legacy Roles — move 1.x custom-role users onto a 2.x role before the
- * custom roles are removed.
+ * Legacy Roles — keep the 1.x funeral_staff / funeral_manager roles working.
  *
- * Versions 1.x registered two roles, funeral_staff and funeral_manager, and
- * gated the suite post types on a custom manage_funeral_content capability.
- * 2.x has no custom roles: the suite post types use capability_type 'post'
- * (inc/post-types.php), so access is the standard post capabilities, and the
- * settings screen needs manage_options. remove_role() does not touch user
- * meta, so removing the roles on their own left anyone whose only role was a
- * legacy one with no role at all.
+ * 1.x registered two roles, funeral_staff and funeral_manager. They are not
+ * this plugin's alone: other plugins grant their own capabilities to them
+ * when they exist (a notices plugin adds its post and taxonomy capabilities,
+ * for example), and live sites have users who hold one as their only role,
+ * or next to a site role. So 2.x never removes these roles, never moves
+ * their users to another role, and never takes a capability off them.
  *
- * Default mapping (filter: hk_fs_legacy_role_map):
+ * 2.x suite post types use capability_type 'post' (inc/post-types.php), so
+ * what the roles need is the standard post capabilities. Once per VERSION
+ * (admin_init, and on activation) the routine below:
  *
- * - funeral_manager → editor. The manager role was editor-level for posts
- *   (others', published, private, categories, comments) plus the suite
- *   settings screen. Settings are admin-only in 2.x and are deliberately not
- *   carried over: nobody is promoted to administrator.
- * - funeral_staff → editor. The staff role existed to manage every suite
- *   post. In 2.x that needs edit_others_posts and edit_published_posts, which
- *   only editor has among the core roles; author could only edit their own
- *   posts. Editor is broader than the old staff role (pages,
- *   unfiltered_html), which is why the mapping is filterable and the
- *   `wp hk-fs roles-audit` pre-flight shows every planned change.
+ * - Tops up each legacy role that exists with any capability from its 1.4.23
+ *   definition that it lacks. Nothing beyond the 1.4.23 definitions is ever
+ *   added: no unfiltered_html, no page capabilities.
+ * - Re-creates a legacy role that is missing when users still hold it in
+ *   their capabilities meta, or when the 2.0.0 cleanup flag
+ *   (hk_fs_caps_migrated_v2) shows that build removed it. Those users get
+ *   their access back. A role is not created on a site that never had it.
+ * - Where the 2.0.0 cleanup ran, gives administrator back the two 1.x suite
+ *   capabilities that cleanup took. 2.x does not check them; this keeps a
+ *   repaired site the same as one updated straight from 1.x.
  *
- * A user whose other roles already grant the suite content capabilities
- * (for example an administrator, or editor + funeral_staff) only loses the
- * legacy role; nothing is added. Other roles are always kept, and a user
- * with no other role always gets the mapped one.
+ * funeral_staff's 1.4.23 definition has no edit_others_posts or
+ * edit_published_posts. Where no other plugin grants them, a staff-only
+ * user can edit only their own drafts of suite posts in 2.x.
+ * `wp hk-fs roles-audit` shows what each role and user can edit after the
+ * update.
  *
  * This file depends on nothing else in the plugin so the read-only audit in
  * inc/cli.php can be loaded with `wp --require` against a site still on 1.x.
@@ -44,47 +45,62 @@ namespace HKFuneralSuite\LegacyRoles;
 defined( 'ABSPATH' ) || defined( 'WP_CLI' ) || exit;
 
 /**
- * Role used when a mapped role is not registered on the site.
+ * Option recording which version of the legacy role routine has run.
  */
-const FALLBACK_ROLE = 'editor';
+const OPTION  = 'hk_fs_legacy_roles_version';
+const VERSION = 1;
 
 /**
- * Option recording which version of the role migration has run, and the
- * current version. 2 = users are moved before the roles are removed.
+ * Set by the 2.0.0 cleanup, which removed both legacy roles.
  */
-const MIGRATION_OPTION  = 'hk_fs_roles_migration_version';
-const MIGRATION_VERSION = 2;
+const OLD_CLEANUP_FLAG = 'hk_fs_caps_migrated_v2';
 
 /**
- * Legacy role → 2.x role.
- *
- * Manager is listed first so a user holding both legacy roles gets the
- * manager mapping.
- *
- * @return array<string, string>
+ * Capabilities 1.4.23 granted administrator, which the 2.0.0 cleanup removed.
  */
-function get_role_map(): array {
-	$defaults = [
-		'funeral_manager' => FALLBACK_ROLE,
-		'funeral_staff'   => FALLBACK_ROLE,
+const ADMIN_CAPS = [ 'manage_funeral_content', 'manage_funeral_settings' ];
+
+/**
+ * The legacy roles as 1.4.23 defined them
+ * (includes/admin/class-capabilities.php, register_custom_roles()).
+ *
+ * @return array<string, array{name: string, caps: string[]}>
+ */
+function get_definitions(): array {
+	return [
+		'funeral_staff'   => [
+			'name' => 'Funeral Staff',
+			'caps' => [
+				'read',
+				'edit_posts',
+				'delete_posts',
+				'publish_posts',
+				'upload_files',
+				'manage_funeral_content',
+			],
+		],
+		'funeral_manager' => [
+			'name' => 'Funeral Manager',
+			'caps' => [
+				'read',
+				'read_private_posts',
+				'edit_posts',
+				'edit_others_posts',
+				'edit_published_posts',
+				'publish_posts',
+				'delete_posts',
+				'delete_others_posts',
+				'delete_published_posts',
+				'delete_private_posts',
+				'edit_private_posts',
+				'manage_categories',
+				'moderate_comments',
+				'upload_files',
+				'manage_funeral_content',
+				'manage_funeral_settings',
+			],
+		],
 	];
-
-	/**
-	 * Filters the role each 1.x legacy role is migrated to.
-	 *
-	 * Only the funeral_manager and funeral_staff keys are read. A role that
-	 * is not registered on the site falls back to editor.
-	 *
-	 * @param array<string, string> $map Legacy role slug → target role slug.
-	 */
-	$filtered = apply_filters( 'hk_fs_legacy_role_map', $defaults );
-
-	$map = [];
-	foreach ( $defaults as $legacy => $default ) {
-		$target         = is_array( $filtered ) && isset( $filtered[ $legacy ] ) && is_string( $filtered[ $legacy ] ) ? $filtered[ $legacy ] : $default;
-		$map[ $legacy ] = sanitize_key( $target );
-	}
-	return $map;
 }
 
 /**
@@ -93,174 +109,100 @@ function get_role_map(): array {
  * @return string[]
  */
 function get_legacy_roles(): array {
-	return array_keys( get_role_map() );
+	return array_keys( get_definitions() );
 }
 
 /**
- * Capabilities needed to manage every suite post in 2.x.
+ * Whether the routine has run at the current version.
  *
- * The suite post types use capability_type 'post', so these are the
- * standard post capabilities, plus uploads for images.
- *
- * @return string[]
- */
-function get_suite_caps(): array {
-	return [
-		'edit_posts',
-		'edit_others_posts',
-		'edit_published_posts',
-		'publish_posts',
-		'delete_posts',
-		'delete_others_posts',
-		'delete_published_posts',
-		'upload_files',
-	];
-}
-
-/**
- * Resolve the role a legacy role migrates to on this site.
- *
- * @param string $legacy Legacy role slug.
- * @return string Registered role slug, or '' when none is available.
- */
-function resolve_target( string $legacy ): string {
-	$map    = get_role_map();
-	$target = $map[ $legacy ] ?? FALLBACK_ROLE;
-
-	if ( '' !== $target && ! in_array( $target, get_legacy_roles(), true ) && wp_roles()->is_role( $target ) ) {
-		return $target;
-	}
-	return wp_roles()->is_role( FALLBACK_ROLE ) ? FALLBACK_ROLE : '';
-}
-
-/**
- * Whether a set of roles and individual caps can manage every suite post.
- *
- * Mirrors WP_User::get_role_caps(): role capabilities first, then the
- * user's individual capabilities on top.
- *
- * @param string[]            $roles      Registered role slugs.
- * @param array<string, bool> $individual Individual (non-role) capabilities.
  * @return bool
  */
-function covers_suite_caps( array $roles, array $individual = [] ): bool {
-	$caps = [];
-	foreach ( $roles as $slug ) {
-		$role = wp_roles()->get_role( $slug );
-		if ( $role ) {
-			$caps = array_merge( $caps, $role->capabilities );
-		}
-	}
-	$caps = array_merge( $caps, $individual );
-
-	foreach ( get_suite_caps() as $cap ) {
-		if ( empty( $caps[ $cap ] ) ) {
-			return false;
-		}
-	}
-	return true;
+function is_done(): bool {
+	return (int) get_option( OPTION, 0 ) >= VERSION;
 }
 
 /**
- * Split a user's raw capabilities meta into roles and individual caps.
+ * Whether the 2.0.0 cleanup (which removed the legacy roles) ran here.
  *
- * Legacy role keys are left out of both. They are found whether or not the
- * legacy role is still registered: a 2.0.0 build removed the roles without
- * touching user meta, so orphaned keys can still be there.
- *
- * @param \WP_User $user User.
- * @return array{legacy: string[], roles: string[], individual: array<string, bool>}
+ * @return bool
  */
-function split_user_caps( \WP_User $user ): array {
-	$legacy_roles = get_legacy_roles();
-	$legacy       = [];
-	$roles        = [];
-	$individual   = [];
-
-	foreach ( (array) $user->caps as $key => $granted ) {
-		$key = (string) $key;
-		if ( in_array( $key, $legacy_roles, true ) ) {
-			$legacy[] = $key;
-		} elseif ( wp_roles()->is_role( $key ) ) {
-			$roles[] = $key;
-		} else {
-			$individual[ $key ] = (bool) $granted;
-		}
-	}
-
-	// Keep map order (manager first) for the legacy roles.
-	$legacy = array_values( array_intersect( $legacy_roles, $legacy ) );
-
-	return [
-		'legacy'     => $legacy,
-		'roles'      => $roles,
-		'individual' => $individual,
-	];
+function old_cleanup_ran(): bool {
+	return (bool) get_option( OLD_CLEANUP_FLAG );
 }
 
 /**
- * Plan the change for every user holding a legacy role. Read only.
+ * IDs of users who hold a legacy role in their capabilities meta, whether or
+ * not the role is registered. The 2.0.0 cleanup removed the roles without
+ * touching user meta, so the keys can outlive the role.
  *
- * Each item:
- * - ID, user_login
- * - legacy:      legacy role keys the user holds
- * - roles:       the user's other registered roles (always kept)
- * - add_role:    role to add, or '' when nothing is added
- * - action:      'add' (add_role, then drop legacy), 'remove' (other roles
- *                already cover suite content, drop legacy only) or
- *                'blocked' (no target role registered, nothing changes)
- * - roles_after: roles the user ends with
- *
- * @return array<int, array<string, mixed>>
+ * @param string $role Legacy role slug.
+ * @return int[]
  */
-function plan(): array {
+function get_holders( string $role ): array {
 	$users = get_users(
 		[
-			'role__in' => get_legacy_roles(),
+			'role__in' => [ $role ],
 			'orderby'  => 'ID',
 			'order'    => 'ASC',
 		]
 	);
 
-	$plan = [];
+	$ids = [];
 	foreach ( $users as $user ) {
-		$split = split_user_caps( $user );
-		if ( empty( $split['legacy'] ) ) {
-			// role__in is a LIKE match on the serialised meta; confirm the key.
-			continue;
+		// role__in is a LIKE match on the serialised meta; confirm the key.
+		if ( ! empty( $user->caps[ $role ] ) ) {
+			$ids[] = (int) $user->ID;
 		}
+	}
+	return $ids;
+}
 
-		// Someone with no other role always gets one, even if individual
-		// caps happen to cover suite content: no role is the bug this fixes.
-		$add_role = '';
-		if ( ! empty( $split['roles'] ) && covers_suite_caps( $split['roles'], $split['individual'] ) ) {
-			$action = 'remove';
+/**
+ * Plan the routine for each legacy role. Read only.
+ *
+ * Each item:
+ * - registered:  the role exists now
+ * - holders:     IDs of users holding it (see get_holders())
+ * - missing:     1.4.23 capabilities the role lacks (all of them when the
+ *                role is missing)
+ * - extra:       capabilities on the role beyond its 1.4.23 definition,
+ *                added by other plugins or by hand; always kept
+ * - action:      'none', 'add_caps' (role exists, top up the missing caps)
+ *                or 'recreate' (role missing but still in use)
+ * - caps_after:  the role's capabilities after the routine ([] when the
+ *                role is missing and stays missing)
+ *
+ * @return array<string, array<string, mixed>>
+ */
+function plan(): array {
+	$cleanup_ran = old_cleanup_ran();
+	$plan        = [];
+
+	foreach ( get_definitions() as $slug => $definition ) {
+		$role    = wp_roles()->get_role( $slug );
+		$holders = get_holders( $slug );
+
+		if ( $role ) {
+			$caps    = (array) $role->capabilities;
+			$missing = array_values( array_filter( $definition['caps'], static fn( string $cap ): bool => empty( $caps[ $cap ] ) ) );
+			$extra   = array_values( array_diff( array_keys( array_filter( $caps ) ), $definition['caps'] ) );
+			$action  = empty( $missing ) ? 'none' : 'add_caps';
+			$after   = array_merge( $caps, array_fill_keys( $missing, true ) );
 		} else {
-			$target = resolve_target( $split['legacy'][0] );
-			if ( '' === $target ) {
-				$action = 'blocked';
-			} elseif ( in_array( $target, $split['roles'], true ) ) {
-				$action = 'remove';
-			} else {
-				$action   = 'add';
-				$add_role = $target;
-			}
+			$missing = $definition['caps'];
+			$extra   = [];
+			$action  = ( ! empty( $holders ) || $cleanup_ran ) ? 'recreate' : 'none';
+			$after   = 'recreate' === $action ? array_fill_keys( $definition['caps'], true ) : [];
 		}
 
-		if ( 'blocked' === $action ) {
-			$roles_after = array_merge( $split['roles'], $split['legacy'] );
-		} else {
-			$roles_after = '' === $add_role ? $split['roles'] : array_merge( $split['roles'], [ $add_role ] );
-		}
-
-		$plan[] = [
-			'ID'          => (int) $user->ID,
-			'user_login'  => (string) $user->user_login,
-			'legacy'      => $split['legacy'],
-			'roles'       => $split['roles'],
-			'add_role'    => $add_role,
-			'action'      => $action,
-			'roles_after' => $roles_after,
+		$plan[ $slug ] = [
+			'role'       => $slug,
+			'registered' => (bool) $role,
+			'holders'    => $holders,
+			'missing'    => $missing,
+			'extra'      => $extra,
+			'action'     => $action,
+			'caps_after' => $after,
 		];
 	}
 
@@ -268,64 +210,132 @@ function plan(): array {
 }
 
 /**
- * Apply the plan: add the 2.x role, then drop the legacy role keys.
+ * Administrator capabilities to give back where the 2.0.0 cleanup ran.
  *
- * Safe to run more than once. A user already moved no longer holds a legacy
- * key, so a second run finds nobody and changes nothing.
- *
- * @return bool True when every legacy-role user was handled, false when at
- *              least one was blocked (the caller then keeps the legacy roles
- *              registered so nobody loses access).
+ * @return string[]
  */
-function reassign_users(): bool {
-	$complete = true;
+function admin_caps_to_restore(): array {
+	if ( ! old_cleanup_ran() ) {
+		return [];
+	}
+	$admin = wp_roles()->get_role( 'administrator' );
+	if ( ! $admin ) {
+		return [];
+	}
+	return array_values( array_filter( ADMIN_CAPS, static fn( string $cap ): bool => empty( $admin->capabilities[ $cap ] ) ) );
+}
 
-	foreach ( plan() as $item ) {
-		if ( 'blocked' === $item['action'] ) {
-			$complete = false;
-			debug_log(
-				sprintf(
-					'user #%d keeps %s: no role to move them to (%s is not registered).',
-					$item['ID'],
-					implode( ', ', $item['legacy'] ),
-					FALLBACK_ROLE
-				)
-			);
-			continue;
-		}
+/**
+ * Apply the plan. Only ever adds roles and capabilities.
+ *
+ * Safe to run more than once: a second run finds nothing missing.
+ */
+function run(): void {
+	$definitions = get_definitions();
 
-		$user = get_userdata( $item['ID'] );
-		if ( ! $user ) {
-			continue;
-		}
-
-		// Add first, so the user is never without a role.
-		if ( '' !== $item['add_role'] ) {
-			$user->add_role( $item['add_role'] );
-		}
-
-		foreach ( $item['legacy'] as $legacy ) {
-			if ( in_array( $legacy, $user->roles, true ) ) {
-				$user->remove_role( $legacy );
-			} else {
-				// Orphaned key from a role that is no longer registered.
-				// remove_role() ignores those, remove_cap() clears the key.
-				$user->remove_cap( $legacy );
+	foreach ( plan() as $slug => $item ) {
+		if ( 'recreate' === $item['action'] ) {
+			add_role( $slug, $definitions[ $slug ]['name'], $item['caps_after'] );
+			debug_log( sprintf( 're-created the %s role with its 1.4.23 capabilities (%d user(s) hold it).', $slug, count( $item['holders'] ) ) );
+		} elseif ( 'add_caps' === $item['action'] ) {
+			$role = get_role( $slug );
+			if ( $role ) {
+				foreach ( $item['missing'] as $cap ) {
+					$role->add_cap( $cap );
+				}
+				debug_log( sprintf( 'added %s to the %s role.', implode( ', ', $item['missing'] ), $slug ) );
 			}
 		}
-
-		debug_log(
-			sprintf(
-				'user #%d: removed %s%s; roles now: %s.',
-				$item['ID'],
-				implode( ', ', $item['legacy'] ),
-				'' !== $item['add_role'] ? ', added ' . $item['add_role'] : ' (other roles already cover suite content)',
-				implode( ', ', $item['roles_after'] )
-			)
-		);
 	}
 
-	return $complete;
+	$restore = admin_caps_to_restore();
+	if ( ! empty( $restore ) ) {
+		$admin = get_role( 'administrator' );
+		if ( $admin ) {
+			foreach ( $restore as $cap ) {
+				$admin->add_cap( $cap );
+			}
+			debug_log( sprintf( 'gave administrator back %s.', implode( ', ', $restore ) ) );
+		}
+	}
+
+	// 1.x role-sync flags. Clearing them means a rollback to 1.x re-syncs
+	// its roles on the first request.
+	delete_transient( 'hk_fs_roles_version' );
+	delete_option( 'hk_fs_roles_updated' );
+
+	update_option( OPTION, VERSION );
+	delete_option( OLD_CLEANUP_FLAG );
+}
+
+/**
+ * Every role's capabilities after run(), keyed by role slug. Read only.
+ *
+ * @param array<string, array<string, mixed>> $plan From plan().
+ * @return array<string, array<string, bool>>
+ */
+function role_caps_after( array $plan ): array {
+	$roles = [];
+	foreach ( wp_roles()->role_objects as $slug => $role ) {
+		$roles[ (string) $slug ] = (array) $role->capabilities;
+	}
+
+	foreach ( $plan as $slug => $item ) {
+		if ( 'none' === $item['action'] && ! $item['registered'] ) {
+			continue;
+		}
+		$roles[ $slug ] = $item['caps_after'];
+	}
+
+	$restore = admin_caps_to_restore();
+	if ( ! empty( $restore ) && isset( $roles['administrator'] ) ) {
+		$roles['administrator'] = array_merge( $roles['administrator'], array_fill_keys( $restore, true ) );
+	}
+
+	return $roles;
+}
+
+/**
+ * A user's roles and capabilities after run(), built the way
+ * WP_User::get_role_caps() builds them: role capabilities first, then the
+ * user's own capabilities meta on top. Read only.
+ *
+ * @param \WP_User                           $user       User.
+ * @param array<string, array<string, bool>> $role_caps  From role_caps_after().
+ * @return array{roles: string[], caps: array<string, bool>}
+ */
+function user_after( \WP_User $user, array $role_caps ): array {
+	$roles = [];
+	$caps  = [];
+	foreach ( (array) $user->caps as $key => $granted ) {
+		$key = (string) $key;
+		if ( isset( $role_caps[ $key ] ) ) {
+			$roles[] = $key;
+			$caps    = array_merge( $caps, $role_caps[ $key ] );
+		}
+	}
+
+	return [
+		'roles' => $roles,
+		'caps'  => array_merge( $caps, (array) $user->caps ),
+	];
+}
+
+/**
+ * Which suite posts a set of capabilities can edit, given that the suite
+ * post types use capability_type 'post'.
+ *
+ * @param array<string, bool> $caps Capabilities.
+ * @return string 'all', 'own drafts' or 'none'.
+ */
+function suite_access( array $caps ): string {
+	if ( empty( $caps['edit_posts'] ) ) {
+		return 'none';
+	}
+	if ( ! empty( $caps['edit_others_posts'] ) && ! empty( $caps['edit_published_posts'] ) ) {
+		return 'all';
+	}
+	return 'own drafts';
 }
 
 /**
