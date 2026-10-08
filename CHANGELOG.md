@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.0.0] - Unreleased
 
-A rewrite of the plugin, plus the new catalogue sync module. 2.0.0 also includes every fix released on the 1.4.x line after 1.4.17 (1.4.18 to 1.4.23), so a site on any 1.4.x release can update straight to it. See "Included from 1.4.18 to 1.4.23" below.
+A rewrite of the plugin, plus the new catalogue sync module and opt-in block theme support. 2.0.0 also includes every fix released on the 1.4.x line after 1.4.17 (1.4.18 to 1.4.23), so a site on any 1.4.x release can update straight to it. See "Included from 1.4.18 to 1.4.23" below.
 
 ### Architecture
 - **Rewritten** entire plugin from class-based architecture to namespaced functions in `inc/`
@@ -34,6 +34,13 @@ A rewrite of the plugin, plus the new catalogue sync module. 2.0.0 also includes
 - `hk_fs_cache_purged` action, fired after the once-per-request cache purge with the purged post IDs
 - Catalogue sync test harness in `tests/catalogue-sync/` (WP-CLI, for disposable local sites only; left out of the release zip)
 - **`wp hk-fs roles-audit`**: read-only WP-CLI report on the 1.x `funeral_staff` / `funeral_manager` roles. For each role: whether it exists, how many users hold it, which of its 1.4.23 capabilities it lacks, which capabilities other plugins added (kept), what the update does to it, and which suite posts it can edit afterwards (all, own drafts or none). Also lists every user holding a legacy role, users with no role, and users with application passwords (such as a Google Sheets sync account). Runs against a 1.x site from a 2.x copy of the plugin: `wp --require=<path>/inc/cli.php hk-fs roles-audit`
+- **Block theme support**, all opt-in. See `block-theme-guide.md`
+  - **Product Grid block** (`hk-funeral-suite/product-grid`) and the matching `[hk_product_grid]` shortcode, one server-side renderer behind both. Products grouped by category in catalogue order (`menu_order`, then name), or by price or name; formatted prices (whole dollars without decimals, prices with cents to two places) with a configurable POA label, legacy price text shown verbatim, empty prices hidden; semantic `section`/`ul`/`li` markup with configurable heading levels; product names keep basic inline formatting and lose any other tag; responsive images with an alt fallback. Its stylesheet loads only on pages that show a grid. The editor previews it with ServerSideRender
+  - **Block bindings sources** `hk-funeral-suite/price` and `hk-funeral-suite/field`, so core blocks can show HK prices and fields to visitors. `core/post-meta` cannot: every HK key is protected and the post types are not publicly viewable. The field source serves only the fields the plugin registers for the post type and never the catalogue's internal keys. A paragraph or heading bound to an empty value is removed. Values preview in the editor
+  - **Query Loop support**: a `query_loop_block_query_vars` filter restores HK post types that core replaces with blog posts, with catalogue order for loops sorted by menu order (the REST API gets the same tie-break, so the editor preview matches). Query Loop variations per enabled product type ("Caskets (HK)", "Urns (HK)" and so on) with unlinked image and title and a bound price. No post type is made public
+  - **Block patterns** in an "HK Funeral Suite" category: a product grid and Query Loop cards per enabled product type
+  - Filters: `hk_fs_poa_label`, `hk_fs_product_grid_uncategorised_label`, `hk_fs_product_grid_excerpt_length`, `hk_fs_enable_block_bindings`, `hk_fs_enable_query_loop_support`
+  - The four existing shortcodes are unchanged
 - **Generic `[hk_content]` shortcode** renders any HK CPT's freeform content (casket, urn, monument, keepsake, package, staff) with the meta block stripped — for page builders that otherwise leak block markup. `[hk_team_member_content]` is retained as a back-compat alias
 - **Settings link** on Plugins screen (next to Deactivate)
 - **Google Sheets lock indicator** in block editor when price sync is enabled

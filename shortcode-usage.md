@@ -262,6 +262,40 @@ This shortcode:
 
 This allows you to display the biography content that was added as paragraph blocks in the block editor, even when using Beaver Builder or classic themes that don't process Gutenberg blocks automatically.
 
+## hk_product_grid
+
+The `[hk_product_grid]` shortcode shows a grid of caskets, urns, monuments or keepsakes, grouped by category in catalogue order, with formatted prices. It renders exactly what the Product Grid block renders on a block theme, so use it in Beaver Builder text or HTML modules and in classic content.
+
+### Shortcode Attributes
+
+- **type**: `casket` (default), `urn`, `monument` or `keepsake`. Must be an enabled product type.
+- **categories**: comma-separated category slugs. Default: all categories.
+- **group_by_category**: `yes` (default) or `no`.
+- **order_by**: `catalogue` (default, menu order then name), `price` (lowest first, POA and empty prices last) or `title`.
+- **columns**: the most columns on wide screens, 1 to 6. Default `3`.
+- **show_image**: `yes` (default) or `no`.
+- **image_size**: any registered image size. Default `medium_large`.
+- **show_price**: `yes` (default) or `no`.
+- **price_prefix**: text before a numeric price, for example `From`. Default none.
+- **price_suffix**: text after a numeric price. Default `incl. GST`.
+- **poa_label**: shown for a `POA` price. Default `Price on application`.
+- **show_description**: `full` (default), `excerpt` or `none`.
+- **heading_level**: heading level for product names, 2 to 6. Default `3`. Category headings sit one level above.
+
+### Basic Usage
+
+```html
+[hk_product_grid type="casket"]
+```
+
+### Urns From Two Categories, Cheapest First
+
+```html
+[hk_product_grid type="urn" categories="ceramic,timber" order_by="price" price_prefix="From" show_description="none"]
+```
+
+Prices use the same `hk-item-price-container` and `hk-item-price` classes as `[hk_formatted_price]`. See the [Block Theme Guide](block-theme-guide.md) for the full markup, the CSS custom properties and the filters.
+
 ## Using with Beaver Builder
 
 Both shortcodes can be used directly within Beaver Builder modules or Beaver Themer templates.

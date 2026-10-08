@@ -1,0 +1,87 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "hk-funeral-suite/product-grid",
+	"title": "Product Grid",
+	"category": "hk-funeral-suite",
+	"icon": "grid-view",
+	"description": "Caskets, urns, monuments or keepsakes as a grid of cards, grouped by category in catalogue order. Rendered on the server.",
+	"keywords": [ "casket", "urn", "products", "catalogue", "price" ],
+	"textdomain": "hk-funeral-suite",
+	"attributes": {
+		"type": {
+			"type": "string",
+			"enum": [ "casket", "urn", "monument", "keepsake" ],
+			"default": "casket"
+		},
+		"categories": {
+			"type": "array",
+			"items": { "type": "string" },
+			"default": []
+		},
+		"groupByCategory": {
+			"type": "boolean",
+			"default": true
+		},
+		"orderBy": {
+			"type": "string",
+			"enum": [ "catalogue", "price", "title" ],
+			"default": "catalogue"
+		},
+		"columns": {
+			"type": "number",
+			"default": 3
+		},
+		"showImage": {
+			"type": "boolean",
+			"default": true
+		},
+		"imageSize": {
+			"type": "string",
+			"default": "medium_large"
+		},
+		"showPrice": {
+			"type": "boolean",
+			"default": true
+		},
+		"pricePrefix": {
+			"type": "string",
+			"default": ""
+		},
+		"priceSuffix": {
+			"type": "string",
+			"default": "incl. GST"
+		},
+		"poaLabel": {
+			"type": "string",
+			"default": ""
+		},
+		"showDescription": {
+			"type": "string",
+			"enum": [ "none", "excerpt", "full" ],
+			"default": "full"
+		},
+		"headingLevel": {
+			"type": "number",
+			"default": 3
+		}
+	},
+	"supports": {
+		"html": false,
+		"align": [ "wide", "full" ],
+		"spacing": {
+			"margin": true,
+			"padding": true,
+			"blockGap": true
+		},
+		"color": {
+			"text": true,
+			"background": true
+		},
+		"typography": {
+			"fontSize": true
+		}
+	},
+	"editorScript": "file:./index.js",
+	"editorStyle": [ "file:./index.css", "file:./style-index.css" ]
+}

@@ -73,7 +73,18 @@ Enable per product type in **Settings > HK Funeral Suite > Integration**.
 
 **`[hk_custom_field]`** — display any custom field with date formatting, before/after wrappers, and fallback content.
 
+**`[hk_product_grid]`**: a grid of caskets, urns, monuments or keepsakes, grouped by category in catalogue order. The same renderer as the Product Grid block.
+
 See [Shortcode Usage Examples](shortcode-usage.md) for full documentation and [Beaver Themer Integration](beaver-themer-guide.md) for using these with Beaver Builder layouts.
+
+### Block themes
+
+- **Product Grid block**: products grouped by category, in catalogue order, with formatted prices. Rendered on the server, no front-end JavaScript.
+- **Query Loop variations** ("Caskets (HK)", "Urns (HK)" and so on): core Query Loops over the product post types, which core would otherwise replace with blog posts.
+- **Block bindings sources** `hk-funeral-suite/price` and `hk-funeral-suite/field`: prices and fields in core blocks, for visitors, without making any post type public.
+- **Patterns** in an "HK Funeral Suite" category.
+
+See the [Block Theme Guide](block-theme-guide.md).
 
 ### Compatibility
 
@@ -93,6 +104,10 @@ Configure in **Settings > HK Funeral Suite > Compatibility**.
 1. Activate the plugin
 2. Visit **Settings > HK Funeral Suite** to enable the CPTs you need
 3. Start adding content under the new admin menu items
+
+### Block themes
+
+See the [Block Theme Guide](block-theme-guide.md) for the Product Grid block, Query Loop variations and block bindings.
 
 ### Beaver Themer
 
@@ -123,6 +138,10 @@ hk-funeral-suite/
 │   ├── settings-page.php              # React settings page (HK_Funeral_Settings)
 │   ├── google-sheets.php              # Google Sheets price sync integration
 │   ├── shortcodes.php                 # Shortcode registration
+│   ├── display.php                    # Product query, price formatting, category grouping
+│   ├── product-grid.php               # Product grid renderer (block and shortcode)
+│   ├── bindings.php                   # Block bindings sources (price, field)
+│   ├── queries.php                    # Query Loop support and variations
 │   ├── import.php                     # All Import Pro compatibility
 │   └── github-updater.php             # GitHub automatic updates
 ├── src/
@@ -132,8 +151,10 @@ hk-funeral-suite/
 │   │   ├── urn-meta/                  # Urn block
 │   │   ├── package-meta/              # Pricing package block
 │   │   ├── monument-meta/             # Monument block
-│   │   └── keepsake-meta/             # Keepsake block
+│   │   ├── keepsake-meta/             # Keepsake block
+│   │   └── product-grid/              # Product Grid block (ServerSideRender)
 │   └── js/settings/                   # React settings app source
+├── patterns/                          # Block patterns (product grid, Query Loop cards)
 ├── build/                             # Compiled assets (npm run build)
 ├── assets/images/                     # Plugin icons and banner
 ├── uninstall.php                      # Clean uninstall handler
