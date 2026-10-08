@@ -16,7 +16,9 @@
  * deletes products, terms and media, and runs uninstall.php. It refuses
  * to start when HK_FS_CATALOGUE_SECRET is defined or when any post or
  * term carries a master ID it didn't create. Set HKFS_TEST_KEEP=1 to
- * leave the test products in place afterwards for inspection.
+ * leave the test products in place afterwards for inspection, and
+ * HKFS_TEST_SLOW=1 to also run the image time budget checks at their real
+ * defaults (about 80 seconds more).
  *
  * No strict_types or namespace here: wp eval-file evals the file, and
  * both must be the first statement of a real file. Everything is
@@ -51,6 +53,7 @@ function &hk_fs_test_state(): array {
 		'base_url'  => '',
 		'updates'   => [],
 		'http'      => [],
+		'timeouts'  => [],
 		'purges'    => [],
 		'admin_id'  => 0,
 		'test_ids'  => [],
@@ -316,6 +319,76 @@ function hk_fs_test_write_images( string $dir ): void {
  */
 function hk_fs_test_image_url( string $name ): string {
 	return hk_fs_test_state()['base_url'] . '/' . $name . '.png';
+}
+
+/**
+ * URL of a test image the local server sends only after a delay.
+ *
+ * @param float  $seconds Delay.
+ * @param string $name    File name without extension.
+ * @return string
+ */
+function hk_fs_test_slow_url( float $seconds, string $name ): string {
+	return hk_fs_test_state()['base_url'] . '/slow/' . $seconds . '/' . $name . '.png';
+}
+
+/**
+ * Time a /sync call.
+ *
+ * @param array    $products    Payload products.
+ * @param string   $sync_run_id Run ID.
+ * @param int|null $limit       image_fetch_limit, or null to omit it.
+ * @return array{status: int, data: array, seconds: float}
+ */
+function hk_fs_test_timed_sync( array $products, string $sync_run_id, ?int $limit = null ): array {
+	$start             = microtime( true );
+	$result            = hk_fs_test_sync( $products, $sync_run_id, $limit );
+	$result['seconds'] = round( microtime( true ) - $start, 2 );
+	return $result;
+}
+
+/**
+ * A payload with new, slow primary images on C6 to C9.
+ *
+ * @param array  $products Payload products.
+ * @param float  $seconds  Delay for each image.
+ * @param string $version  Version prefix.
+ * @return array
+ */
+function hk_fs_test_with_slow_images( array $products, float $seconds, string $version ): array {
+	$files = [
+		'C6' => 'img-1',
+		'C7' => 'img-2',
+		'C8' => 'img-3',
+		'C9' => 'img-4',
+	];
+	foreach ( $files as $key => $file ) {
+		$products[ $key ]['images'] = [
+			[
+				'role'    => 'primary',
+				'version' => $version . '-' . $key,
+				'url'     => hk_fs_test_slow_url( $seconds, $file ),
+			],
+		];
+	}
+	return $products;
+}
+
+/**
+ * What a time filter resolves to when it returns a given value.
+ *
+ * @param string    $filter hk_fs_catalogue_image_time_budget or hk_fs_catalogue_image_download_timeout.
+ * @param int|float $value  Value the filter returns.
+ * @return float
+ */
+function hk_fs_test_clamped( string $filter, $value ): float {
+	$callback = static fn() => $value;
+	add_filter( $filter, $callback );
+	$resolved = 'hk_fs_catalogue_image_time_budget' === $filter
+		? \HKFuneralSuite\CatalogueSync\resolve_image_time_budget()
+		: \HKFuneralSuite\CatalogueSync\resolve_image_download_timeout();
+	remove_filter( $filter, $callback );
+	return $resolved;
 }
 
 /**
@@ -625,8 +698,9 @@ add_action( 'pre_post_update', static function ( $post_id ) {
 	}
 } );
 add_action( 'http_api_debug', static function ( $response, $context, $transport, $request_args, $url ) {
-	$state                 = &hk_fs_test_state();
-	$state['http'][ $url ] = ( $state['http'][ $url ] ?? 0 ) + 1;
+	$state                     = &hk_fs_test_state();
+	$state['http'][ $url ]     = ( $state['http'][ $url ] ?? 0 ) + 1;
+	$state['timeouts'][ $url ] = is_array( $request_args ) ? ( $request_args['timeout'] ?? null ) : null;
 }, 10, 5 );
 add_action( 'hk_fs_cache_purged', static function ( $post_ids, $contexts ) {
 	$state             = &hk_fs_test_state();
@@ -1114,9 +1188,247 @@ hk_fs_test_check( 'master drops a sync-set image: removed, status none', 'none' 
 hk_fs_test_check( 'adopted urn image (never sync-set) still kept', $hk_fs_legacy_urn_thumb === (int) get_post_thumbnail_id( $hk_fs_state['test_ids']['U1'] ) );
 hk_fs_test_flush_purges();
 
-// ── 10. Editor lock is read-only over /wp/v2/settings ───────────────────────
+// ── 10. Categories that share a slug or differ only in case ─────────────────
 
-hk_fs_test_section( '10. Editor lock via /wp/v2/settings' );
+hk_fs_test_section( '10. Categories that share a slug or differ only in case' );
+
+// The master's category names are unique only case-sensitively, so all of
+// these can exist at once. Each must get its own site term, stamped with
+// its own master ID, and a replay must change nothing.
+// - C6 "Rimu Natural" and C7 "Rimu-Natural": both slugify to rimu-natural.
+// - C8 "Solid Wood": slug solid-wood, already used by C2's adopted term.
+// - C9 "solid wood range": C2's category name in lower case.
+// - C10 "Teak": a site term already has this exact name, stamped by a
+// master category that no longer exists.
+$hk_fs_stale = wp_insert_term( 'Teak', 'hk_fs_casket_category' );
+hk_fs_test_check( 'stale-stamped "Teak" term created', ! is_wp_error( $hk_fs_stale ) );
+$hk_fs_state['term_ids']['stale'] = is_wp_error( $hk_fs_stale ) ? 0 : (int) $hk_fs_stale['term_id'];
+update_term_meta( $hk_fs_state['term_ids']['stale'], '_hk_fs_master_category_id', hk_fs_test_cid( 99 ) );
+update_term_meta( $hk_fs_state['term_ids']['stale'], '_hkfs_test_fixture', '1' );
+
+$hk_fs_shared_cats = [
+	'C6'  => [ 6, 5, 'Rimu Natural' ],
+	'C7'  => [ 7, 6, 'Rimu-Natural' ],
+	'C8'  => [ 8, 7, 'Solid Wood' ],
+	'C9'  => [ 9, 8, 'solid wood range' ],
+	'C10' => [ 10, 9, 'Teak' ],
+];
+$hk_fs_shared      = $hk_fs_removed;
+foreach ( $hk_fs_shared_cats as $hk_fs_key => [ $hk_fs_n, $hk_fs_cn, $hk_fs_cat_name ] ) {
+	$hk_fs_shared[ $hk_fs_key ] = [
+		'master_id'            => hk_fs_test_mid( $hk_fs_n ),
+		'type'                 => 'casket',
+		'name'                 => 'Category test casket ' . $hk_fs_n,
+		'description'          => '',
+		'price'                => 1000 + $hk_fs_n,
+		'price_on_application' => false,
+		'category'             => [
+			'master_id'  => hk_fs_test_cid( $hk_fs_cn ),
+			'name'       => $hk_fs_cat_name,
+			'sort_order' => 10 * $hk_fs_cn,
+		],
+		'sort_order'           => 10 * $hk_fs_n,
+		'attributes'           => [],
+		'images'               => [],
+	];
+}
+
+$hk_fs_solid_before = get_term( $hk_fs_state['term_ids']['solid'], 'hk_fs_casket_category' );
+$hk_fs_sequence     = [];
+$hk_fs_calls        = [];
+for ( $hk_fs_i = 1; $hk_fs_i <= 4; $hk_fs_i++ ) {
+	$hk_fs_r       = hk_fs_test_sync( $hk_fs_shared, sprintf( 'a0000000-0000-4000-b000-%012d', 20 + $hk_fs_i ) );
+	$hk_fs_calls[] = [
+		'counts'  => $hk_fs_r['data']['counts'] ?? [],
+		'updates' => $hk_fs_state['updates'],
+		'purges'  => hk_fs_test_flush_purges(),
+		'terms'   => (int) wp_count_terms( [
+			'taxonomy'   => 'hk_fs_casket_category',
+			'hide_empty' => false,
+		] ),
+	];
+	foreach ( array_keys( $hk_fs_shared_cats ) as $hk_fs_key ) {
+		$hk_fs_sequence[ $hk_fs_key ][] = hk_fs_test_result_for( $hk_fs_r['data'], $hk_fs_shared[ $hk_fs_key ]['master_id'] )['result'] ?? '';
+	}
+}
+
+$hk_fs_expected = [ 'created', 'unchanged', 'unchanged', 'unchanged' ];
+hk_fs_test_check( '"Rimu Natural" and "Rimu-Natural" in one payload: created, then unchanged x3', $hk_fs_expected === $hk_fs_sequence['C6'] && $hk_fs_expected === $hk_fs_sequence['C7'], [ $hk_fs_sequence['C6'], $hk_fs_sequence['C7'] ] );
+hk_fs_test_check( 'other new categories: created, then unchanged x3', $hk_fs_expected === $hk_fs_sequence['C8'] && $hk_fs_expected === $hk_fs_sequence['C9'] && $hk_fs_expected === $hk_fs_sequence['C10'], $hk_fs_sequence );
+hk_fs_test_check( 'call 1: 5 created, the 7 existing products unchanged', 5 === ( $hk_fs_calls[0]['counts']['created'] ?? null ) && 7 === ( $hk_fs_calls[0]['counts']['unchanged'] ?? null ) && 0 === ( $hk_fs_calls[0]['counts']['updated'] ?? null ) && 0 === ( $hk_fs_calls[0]['counts']['errors'] ?? null ), $hk_fs_calls[0]['counts'] );
+$hk_fs_quiet = true;
+foreach ( array_slice( $hk_fs_calls, 1 ) as $hk_fs_call ) {
+	if ( 12 !== ( $hk_fs_call['counts']['unchanged'] ?? null ) || 0 !== ( $hk_fs_call['counts']['updated'] ?? null ) || [] !== $hk_fs_call['updates'] || [] !== $hk_fs_call['purges'] ) {
+		$hk_fs_quiet = false;
+	}
+}
+hk_fs_test_check( 'calls 2 to 4: all 12 unchanged, no post updates, no purges', $hk_fs_quiet, array_slice( $hk_fs_calls, 1 ) );
+hk_fs_test_check( 'term count the same after every call', 1 === count( array_unique( array_column( $hk_fs_calls, 'terms' ) ) ), array_column( $hk_fs_calls, 'terms' ) );
+
+$hk_fs_shared_terms = [];
+$hk_fs_own_stamps   = true;
+foreach ( $hk_fs_shared_cats as $hk_fs_key => [ $hk_fs_n, $hk_fs_cn, $hk_fs_cat_name ] ) {
+	$hk_fs_terms = wp_get_object_terms( hk_fs_test_post_id_for( $hk_fs_shared[ $hk_fs_key ] ), 'hk_fs_casket_category' );
+	$hk_fs_term  = ( ! is_wp_error( $hk_fs_terms ) && 1 === count( $hk_fs_terms ) ) ? $hk_fs_terms[0] : null;
+
+	$hk_fs_shared_terms[ $hk_fs_key ] = $hk_fs_term ? [ (int) $hk_fs_term->term_id, $hk_fs_term->name, $hk_fs_term->slug ] : null;
+	if ( ! $hk_fs_term || hk_fs_test_cid( $hk_fs_cn ) !== get_term_meta( $hk_fs_term->term_id, '_hk_fs_master_category_id', true ) || \HKFuneralSuite\CatalogueSync\decode_text( $hk_fs_term->name ) !== $hk_fs_cat_name ) {
+		$hk_fs_own_stamps = false;
+	}
+}
+$hk_fs_ids = array_map( static fn( $t ) => $t[0] ?? 0, $hk_fs_shared_terms );
+hk_fs_test_check( 'each new category has its own term, stamped with its own master ID and named as sent', $hk_fs_own_stamps, $hk_fs_shared_terms );
+hk_fs_test_check( '"Rimu Natural" and "Rimu-Natural" are two distinct terms', $hk_fs_ids['C6'] && $hk_fs_ids['C7'] && $hk_fs_ids['C6'] !== $hk_fs_ids['C7'], $hk_fs_shared_terms );
+hk_fs_test_check( 'five distinct terms, none of them C2\'s or the stale one', 5 === count( array_unique( array_filter( $hk_fs_ids ) ) ) && ! in_array( $hk_fs_state['term_ids']['solid'], $hk_fs_ids, true ) && ! in_array( $hk_fs_state['term_ids']['stale'], $hk_fs_ids, true ), [ $hk_fs_ids, $hk_fs_state['term_ids'] ] );
+hk_fs_test_check( 'slugs: rimu-natural, rimu-natural-2, solid-wood-2, solid-wood-range, teak-2', [ 'rimu-natural', 'rimu-natural-2', 'solid-wood-2', 'solid-wood-range', 'teak-2' ] === array_values( array_map( static fn( $t ) => $t[2] ?? '', $hk_fs_shared_terms ) ), array_map( static fn( $t ) => $t[2] ?? '', $hk_fs_shared_terms ) );
+
+$hk_fs_solid_after = get_term( $hk_fs_state['term_ids']['solid'], 'hk_fs_casket_category' );
+hk_fs_test_check( 'C2\'s term untouched: same name, slug and stamp, still holds C2', $hk_fs_solid_before->name === $hk_fs_solid_after->name && 'solid-wood' === $hk_fs_solid_after->slug && hk_fs_test_cid( 2 ) === get_term_meta( $hk_fs_state['term_ids']['solid'], '_hk_fs_master_category_id', true ) && [ $hk_fs_state['term_ids']['solid'] ] === array_map( 'intval', wp_get_object_terms( $hk_fs_state['test_ids']['C2'], 'hk_fs_casket_category', [ 'fields' => 'ids' ] ) ), [ $hk_fs_solid_after->name, $hk_fs_solid_after->slug ] );
+hk_fs_test_check( 'stale-stamped "Teak" term left as it was', hk_fs_test_cid( 99 ) === get_term_meta( $hk_fs_state['term_ids']['stale'], '_hk_fs_master_category_id', true ) && 'teak' === get_term( $hk_fs_state['term_ids']['stale'], 'hk_fs_casket_category' )->slug );
+
+// An unstamped term is still adopted when its slug matches.
+$hk_fs_loose = wp_insert_term( 'Kauri', 'hk_fs_casket_category', [ 'slug' => 'kauri-range' ] );
+update_term_meta( is_wp_error( $hk_fs_loose ) ? 0 : (int) $hk_fs_loose['term_id'], '_hkfs_test_fixture', '1' );
+$hk_fs_shared['C10']['category'] = [
+	'master_id'  => hk_fs_test_cid( 10 ),
+	'name'       => 'Kauri Range',
+	'sort_order' => 100,
+];
+
+$hk_fs_r = hk_fs_test_sync( $hk_fs_shared, 'a0000000-0000-4000-b000-000000000025' );
+hk_fs_test_check( 'unstamped term with the matching slug is still adopted', ! is_wp_error( $hk_fs_loose ) && [ (int) $hk_fs_loose['term_id'] ] === array_map( 'intval', wp_get_object_terms( hk_fs_test_post_id_for( $hk_fs_shared['C10'] ), 'hk_fs_casket_category', [ 'fields' => 'ids' ] ) ) && hk_fs_test_cid( 10 ) === get_term_meta( (int) $hk_fs_loose['term_id'], '_hk_fs_master_category_id', true ) );
+$hk_fs_r = hk_fs_test_sync( $hk_fs_shared, 'a0000000-0000-4000-b000-000000000026' );
+hk_fs_test_check( 'replay after that adoption: all unchanged', 12 === ( $hk_fs_r['data']['counts']['unchanged'] ?? null ), $hk_fs_r['data']['counts'] ?? null );
+hk_fs_test_flush_purges();
+
+// ── 11. Block-level HTML in descriptions ────────────────────────────────────
+
+hk_fs_test_section( '11. Block-level HTML in descriptions' );
+
+$hk_fs_missed = [];
+foreach ( [ 'article', 'aside', 'nav', 'header', 'footer', 'section', 'details', 'summary', 'figure', 'dl', 'dd', 'dt', 'tr', 'td', 'th', 'pre', 'hr' ] as $hk_fs_tag ) {
+	$hk_fs_html = 'hr' === $hk_fs_tag ? "Above\n<hr>\nBelow" : "Intro line\n<{$hk_fs_tag} class=\"x\">Text</{$hk_fs_tag}>";
+	if ( ! \HKFuneralSuite\CatalogueSync\has_block_level_html( $hk_fs_html ) ) {
+		$hk_fs_missed[] = $hk_fs_tag;
+	}
+}
+hk_fs_test_check( 'detects article, aside, nav, header, footer, section, details, summary, figure, dl, dd, dt, tr, td, th, pre and hr', [] === $hk_fs_missed, $hk_fs_missed );
+hk_fs_test_check( 'detects <hr /> and upper-case tags', \HKFuneralSuite\CatalogueSync\has_block_level_html( "A\n<hr />\nB" ) && \HKFuneralSuite\CatalogueSync\has_block_level_html( '<DETAILS><SUMMARY>Size</SUMMARY>2 m</DETAILS>' ) );
+hk_fs_test_check( 'inline-only HTML is not block-level', ! \HKFuneralSuite\CatalogueSync\has_block_level_html( "A <strong>solid</strong> <em>rimu</em> casket.\n<a href=\"https://example.com/\">More</a> <span>here</span><br>\n<b>Bold</b> <thead-ish> <track> <header-note>" ) );
+
+$hk_fs_details = \HKFuneralSuite\CatalogueSync\build_content( 'hk_fs_casket', "Hand finished.\n<details>\n<summary>Dimensions</summary>\n2 m x 0.6 m\n</details>" );
+hk_fs_test_check( 'details/summary description: one core/html block, no <p> around block tags', str_contains( $hk_fs_details, '<!-- wp:html -->' ) && ! str_contains( $hk_fs_details, '<!-- wp:paragraph -->' ) && ! preg_match( '#<p>\s*<(details|summary|/details)#i', $hk_fs_details ) && str_contains( $hk_fs_details, '<summary>Dimensions</summary>' ), $hk_fs_details );
+$hk_fs_article = \HKFuneralSuite\CatalogueSync\build_content( 'hk_fs_casket', "<article>\n<header>Rimu</header>\n<dl>\n<dt>Wood</dt>\n<dd>Rimu</dd>\n</dl>\n<footer>Made in NZ</footer>\n</article>" );
+hk_fs_test_check( 'article/header/dl/footer description: one core/html block, no <p> around block tags', str_contains( $hk_fs_article, '<!-- wp:html -->' ) && ! preg_match( '#<p>\s*<(article|header|dl|dt|dd|footer|/article|/dl)#i', $hk_fs_article ) && str_contains( $hk_fs_article, '<dt>Wood</dt>' ), $hk_fs_article );
+$hk_fs_table = \HKFuneralSuite\CatalogueSync\build_content( 'hk_fs_casket', '<tr><td>Length</td><td>2 m</td></tr>' );
+hk_fs_test_check( 'table rows without a table tag: one core/html block', str_contains( $hk_fs_table, '<!-- wp:html -->' ) && ! str_contains( $hk_fs_table, '<!-- wp:paragraph -->' ), $hk_fs_table );
+
+// ── 12. Image time budget and download timeout ──────────────────────────────
+
+hk_fs_test_section( '12. Image time budget and download timeout' );
+
+$hk_fs_slow_response = wp_safe_remote_get( hk_fs_test_slow_url( 0.2, 'img-1' ) );
+hk_fs_test_check( 'image server answers slow URLs', ! is_wp_error( $hk_fs_slow_response ) && 200 === wp_remote_retrieve_response_code( $hk_fs_slow_response ) );
+
+// Four images that each take 1.5 s, with a 2.5 s time budget: the first
+// two start inside the budget, the other two wait for the next call.
+$hk_fs_budget_filter     = static fn() => 2.5;
+add_filter( 'hk_fs_catalogue_image_time_budget', $hk_fs_budget_filter );
+$hk_fs_slow              = hk_fs_test_with_slow_images( $hk_fs_shared, 1.5, 'v-slow' );
+$hk_fs_run_c             = 'a0000000-0000-4000-b000-000000000030';
+$hk_fs_state['http']     = [];
+$hk_fs_state['timeouts'] = [];
+$hk_fs_filters_before    = isset( $GLOBALS['wp_filter']['http_request_args'] ) ? count( $GLOBALS['wp_filter']['http_request_args']->callbacks, COUNT_RECURSIVE ) : 0;
+
+$hk_fs_r = hk_fs_test_timed_sync( $hk_fs_slow, $hk_fs_run_c );
+$hk_fs_c = $hk_fs_r['data']['counts'] ?? [];
+\WP_CLI::log( sprintf( '        time budget call 1 took %.1f s', $hk_fs_r['seconds'] ) );
+hk_fs_test_check( 'time budget: fetched 2, pending 2, complete false (limit 8 not reached)', 2 === ( $hk_fs_c['images_fetched'] ?? null ) && 2 === ( $hk_fs_c['images_pending'] ?? null ) && 0 === ( $hk_fs_c['image_errors'] ?? null ) && false === ( $hk_fs_r['data']['complete'] ?? null ) && 8 === ( $hk_fs_r['data']['image_fetch_limit'] ?? null ), [ $hk_fs_c, $hk_fs_r['seconds'] ] );
+hk_fs_test_check( 'time budget: request returned within budget + one download (< 5.5 s)', $hk_fs_r['seconds'] < 5.5, $hk_fs_r['seconds'] );
+hk_fs_test_check( 'time budget: product data still reconciled for every product', 0 === ( $hk_fs_c['errors'] ?? null ) && 12 === ( $hk_fs_c['unchanged'] ?? 0 ) + ( $hk_fs_c['updated'] ?? 0 ), $hk_fs_c );
+hk_fs_test_check( 'time budget: C8 and C9 pending', 'pending' === ( hk_fs_test_result_for( $hk_fs_r['data'], hk_fs_test_mid( 8 ) )['image_primary'] ?? '' ) && 'pending' === ( hk_fs_test_result_for( $hk_fs_r['data'], hk_fs_test_mid( 9 ) )['image_primary'] ?? '' ) );
+$hk_fs_slow_timeouts = array_values( array_filter( $hk_fs_state['timeouts'], static fn( $url ) => str_contains( (string) $url, '/slow/' ), ARRAY_FILTER_USE_KEY ) );
+hk_fs_test_check( 'sideload downloads ran with the 15 s timeout, not 300 s', [] !== $hk_fs_slow_timeouts && [] === array_filter( $hk_fs_slow_timeouts, static fn( $t ) => 15.0 !== (float) $t ), $hk_fs_state['timeouts'] );
+$hk_fs_filters_after = isset( $GLOBALS['wp_filter']['http_request_args'] ) ? count( $GLOBALS['wp_filter']['http_request_args']->callbacks, COUNT_RECURSIVE ) : 0;
+hk_fs_test_check( 'timeout filter removed after the request (other HTTP calls keep 300 s)', $hk_fs_filters_before === $hk_fs_filters_after && 300 === ( apply_filters( 'http_request_args', [ 'timeout' => 300 ], 'https://example.com/file.zip' )['timeout'] ?? null ) ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Core hook, checked not set.
+
+$hk_fs_r = hk_fs_test_timed_sync( $hk_fs_slow, $hk_fs_run_c );
+$hk_fs_c = $hk_fs_r['data']['counts'] ?? [];
+\WP_CLI::log( sprintf( '        time budget call 2 took %.1f s', $hk_fs_r['seconds'] ) );
+hk_fs_test_check( 'next call drains the rest: fetched 2, pending 0, complete', 2 === ( $hk_fs_c['images_fetched'] ?? null ) && 0 === ( $hk_fs_c['images_pending'] ?? null ) && true === ( $hk_fs_r['data']['complete'] ?? null ), [ $hk_fs_c, $hk_fs_r['seconds'] ] );
+hk_fs_test_check( 'all four slow images now set', 'v-slow-C9' === get_post_meta( hk_fs_test_post_id_for( $hk_fs_slow['C9'] ), '_hk_fs_image_version', true ) && (int) get_post_thumbnail_id( hk_fs_test_post_id_for( $hk_fs_slow['C6'] ) ) > 0 );
+$hk_fs_r = hk_fs_test_timed_sync( $hk_fs_slow, 'a0000000-0000-4000-b000-000000000031' );
+hk_fs_test_check( 'replay: nothing fetched, complete, fast', 0 === ( $hk_fs_r['data']['counts']['images_fetched'] ?? null ) && true === ( $hk_fs_r['data']['complete'] ?? null ) && $hk_fs_r['seconds'] < 1.5, [ $hk_fs_r['data']['counts'] ?? null, $hk_fs_r['seconds'] ] );
+remove_filter( 'hk_fs_catalogue_image_time_budget', $hk_fs_budget_filter );
+
+// A stalled image host: 6 s to answer, 2 s download timeout.
+$hk_fs_timeout_filter          = static fn() => 2;
+add_filter( 'hk_fs_catalogue_image_download_timeout', $hk_fs_timeout_filter );
+$hk_fs_stalled                 = $hk_fs_slow;
+$hk_fs_stalled['C6']['images'] = [
+	[
+		'role'    => 'primary',
+		'version' => 'v-stalled',
+		'url'     => hk_fs_test_slow_url( 6, 'img-6' ),
+	],
+];
+$hk_fs_state['timeouts']       = [];
+$hk_fs_r                       = hk_fs_test_timed_sync( $hk_fs_stalled, 'a0000000-0000-4000-b000-000000000032' );
+$hk_fs_c6                      = hk_fs_test_result_for( $hk_fs_r['data'], hk_fs_test_mid( 6 ) );
+\WP_CLI::log( sprintf( '        stalled image call took %.1f s', $hk_fs_r['seconds'] ) );
+hk_fs_test_check( 'stalled image: gives up after the download timeout (< 4.5 s)', $hk_fs_r['seconds'] < 4.5, $hk_fs_r['seconds'] );
+hk_fs_test_check( 'stalled image: reported as an image error, product not failed', 'error' === ( $hk_fs_c6['image_primary'] ?? '' ) && false !== stripos( (string) ( $hk_fs_c6['image_error'] ?? '' ), 'timed out' ) && 'unchanged' === ( $hk_fs_c6['result'] ?? '' ), $hk_fs_c6 );
+hk_fs_test_check( 'stalled image: download ran with the filtered 2 s timeout', 2.0 === (float) ( $hk_fs_state['timeouts'][ hk_fs_test_slow_url( 6, 'img-6' ) ] ?? 0 ), $hk_fs_state['timeouts'] );
+hk_fs_test_check( 'stalled image: an error is not pending, complete true, old image kept', 0 === ( $hk_fs_r['data']['counts']['images_pending'] ?? null ) && true === ( $hk_fs_r['data']['complete'] ?? null ) && 'v-slow-C6' === get_post_meta( hk_fs_test_post_id_for( $hk_fs_slow['C6'] ), '_hk_fs_image_version', true ) );
+remove_filter( 'hk_fs_catalogue_image_download_timeout', $hk_fs_timeout_filter );
+hk_fs_test_check( 'filters clamp: time budget and timeout stay within 1 to 300 s', 1.0 === hk_fs_test_clamped( 'hk_fs_catalogue_image_time_budget', 0 ) && 300.0 === hk_fs_test_clamped( 'hk_fs_catalogue_image_time_budget', 9999 ) && 1.0 === hk_fs_test_clamped( 'hk_fs_catalogue_image_download_timeout', -5 ) && 35.0 === \HKFuneralSuite\CatalogueSync\resolve_image_time_budget() && 15.0 === \HKFuneralSuite\CatalogueSync\resolve_image_download_timeout() );
+hk_fs_test_flush_purges();
+
+// At the real defaults (opt-in, slow): images that take 12 s each. Three
+// start inside the 35 s budget, the request returns well before a 60 s
+// gateway timeout, and the next call drains the rest. Then a host that
+// never answers in time is cut off by the 15 s download timeout.
+if ( getenv( 'HKFS_TEST_SLOW' ) ) {
+	$hk_fs_defaults                  = hk_fs_test_with_slow_images( $hk_fs_shared, 12, 'v-slow12' );
+	$hk_fs_defaults['C10']['images'] = [
+		[
+			'role'    => 'primary',
+			'version' => 'v-slow12-C10',
+			'url'     => hk_fs_test_slow_url( 12, 'img-5' ),
+		],
+	];
+	$hk_fs_run_d                     = 'a0000000-0000-4000-b000-000000000040';
+
+	$hk_fs_r = hk_fs_test_timed_sync( $hk_fs_defaults, $hk_fs_run_d );
+	$hk_fs_c = $hk_fs_r['data']['counts'] ?? [];
+	\WP_CLI::log( sprintf( '        defaults call 1 took %.1f s', $hk_fs_r['seconds'] ) );
+	hk_fs_test_check( 'defaults: 5 slow images, call 1 returns before 45 s with pending > 0', $hk_fs_r['seconds'] < 45 && ( $hk_fs_c['images_pending'] ?? 0 ) > 0 && false === ( $hk_fs_r['data']['complete'] ?? null ), [ $hk_fs_c, $hk_fs_r['seconds'] ] );
+	hk_fs_test_check( 'defaults: three fetched inside the 35 s budget, two pending', 3 === ( $hk_fs_c['images_fetched'] ?? null ) && 2 === ( $hk_fs_c['images_pending'] ?? null ), $hk_fs_c );
+
+	$hk_fs_r = hk_fs_test_timed_sync( $hk_fs_defaults, $hk_fs_run_d );
+	$hk_fs_c = $hk_fs_r['data']['counts'] ?? [];
+	\WP_CLI::log( sprintf( '        defaults call 2 took %.1f s', $hk_fs_r['seconds'] ) );
+	hk_fs_test_check( 'defaults: call 2 drains the rest, complete', 2 === ( $hk_fs_c['images_fetched'] ?? null ) && 0 === ( $hk_fs_c['images_pending'] ?? null ) && true === ( $hk_fs_r['data']['complete'] ?? null ), [ $hk_fs_c, $hk_fs_r['seconds'] ] );
+
+	$hk_fs_hung                 = $hk_fs_defaults;
+	$hk_fs_hung['C6']['images'] = [
+		[
+			'role'    => 'primary',
+			'version' => 'v-hung',
+			'url'     => hk_fs_test_slow_url( 40, 'img-6' ),
+		],
+	];
+	$hk_fs_r                    = hk_fs_test_timed_sync( $hk_fs_hung, 'a0000000-0000-4000-b000-000000000041' );
+	\WP_CLI::log( sprintf( '        hung host call took %.1f s', $hk_fs_r['seconds'] ) );
+	hk_fs_test_check( 'defaults: a host that takes 40 s is cut off at 15 s', $hk_fs_r['seconds'] >= 14 && $hk_fs_r['seconds'] < 20 && 'error' === ( hk_fs_test_result_for( $hk_fs_r['data'], hk_fs_test_mid( 6 ) )['image_primary'] ?? '' ), [ $hk_fs_r['seconds'], hk_fs_test_result_for( $hk_fs_r['data'], hk_fs_test_mid( 6 ) ) ] );
+	hk_fs_test_flush_purges();
+} else {
+	\WP_CLI::log( '  SKIP  real-default timings (35 s budget, 15 s timeout): set HKFS_TEST_SLOW=1' );
+}
+
+// ── 13. Editor lock is read-only over /wp/v2/settings ───────────────────────
+
+hk_fs_test_section( '13. Editor lock via /wp/v2/settings' );
 
 update_option( 'hk_fs_catalogue_managed_types', [ 'casket' ] );
 hk_fs_test_check( 'update_option (provisioning path) still sets the lock', [ 'casket' ] === \HKFuneralSuite\CatalogueSync\get_locked_types() );
@@ -1151,9 +1463,9 @@ $hk_fs_response = hk_fs_test_request( 'GET', '/hk-fs-catalogue/v1/state', null, 
 hk_fs_test_check( '/state reports locked_types ["casket"]', [ 'casket' ] === ( $hk_fs_response->get_data()['locked_types'] ?? null ) );
 update_option( 'hk_fs_catalogue_managed_types', [] );
 
-// ── 11. Uninstall ───────────────────────────────────────────────────────────
+// ── 14. Uninstall ───────────────────────────────────────────────────────────
 
-hk_fs_test_section( '11. uninstall.php removes catalogue options, keeps post data' );
+hk_fs_test_section( '14. uninstall.php removes catalogue options, keeps post data' );
 
 global $wpdb;
 $hk_fs_snapshot = [];
