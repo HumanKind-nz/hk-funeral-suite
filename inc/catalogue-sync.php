@@ -21,6 +21,17 @@
  *   X-HKFS-Timestamp: unix seconds, accepted within ±5 minutes
  *   X-HKFS-Signature: hex( hmac_sha256( secret, timestamp . "." . raw_body ) )
  *
+ * Image batching: a first publish can need dozens of image sideloads,
+ * more than fit in one request under the host's 60 second gateway
+ * timeout. /sync always reconciles every product's data, but sideloads
+ * at most image_fetch_limit images per request (body field, 1 to 100,
+ * default 8 via the hk_fs_catalogue_image_fetch_limit filter), starts no
+ * new sideload once 35 seconds of the request have gone (filter:
+ * hk_fs_catalogue_image_time_budget), gives each download 15 seconds
+ * (filter: hk_fs_catalogue_image_download_timeout), and reports the rest
+ * as pending. The master replays the same payload until the response
+ * says complete.
+ *
  * @package HKFuneralSuite
  */
 
@@ -39,12 +50,45 @@ const SCHEMA_VERSION = 1;
 const TIMESTAMP_TOLERANCE = 300;
 
 /**
+ * Image sideloads per /sync request when the payload doesn't say.
+ */
+const IMAGE_FETCH_LIMIT_DEFAULT = 8;
+
+/**
+ * Upper bound on image_fetch_limit, whatever the payload asks for.
+ */
+const IMAGE_FETCH_LIMIT_MAX = 100;
+
+/**
+ * Seconds into a /sync request after which no new image sideload starts.
+ * Whatever is left is reported as pending for the next call.
+ */
+const IMAGE_TIME_BUDGET_DEFAULT = 35;
+
+/**
+ * Seconds one image download may take inside /sync. download_url()
+ * otherwise waits up to 300 seconds, far past the gateway timeout.
+ */
+const IMAGE_DOWNLOAD_TIMEOUT_DEFAULT = 15;
+
+/**
+ * How long a failed image download is remembered for its sync run, so
+ * repeated calls in one publish don't spend their image budget on it.
+ */
+const IMAGE_FAILURE_TTL = HOUR_IN_SECONDS;
+
+/**
  * Bootstrap — hook everything.
  */
 function bootstrap(): void {
 	add_action( 'init', __NAMESPACE__ . '\\register_meta_fields', 12 );
 	add_action( 'init', __NAMESPACE__ . '\\register_settings', 12 );
 	add_action( 'rest_api_init', __NAMESPACE__ . '\\register_routes' );
+
+	// The lock is readable through /wp/v2/settings but never writable
+	// there: switching a site to central management is a provisioning
+	// step, not something a site admin does from the browser.
+	add_filter( 'rest_pre_update_setting', __NAMESPACE__ . '\\refuse_rest_lock_update', 10, 2 );
 
 	// Responses on this namespace must never be page-cached: a cached
 	// /state body gets served to unsigned requests, bypassing the HMAC
@@ -175,22 +219,46 @@ function get_locked_types(): array {
 
 /**
  * Register the managed-types option for the settings REST endpoint.
+ *
+ * Exposed read-only: the schema marks it readonly and
+ * refuse_rest_lock_update() drops any write sent to /wp/v2/settings.
+ * WP-CLI and update_option() still set it.
  */
 function register_settings(): void {
 	register_setting( 'hk_fs_settings', 'hk_fs_catalogue_managed_types', [
 		'type'              => 'array',
+		'description'       => __( 'Catalogue types managed by the central catalogue on this site. Read-only here: it is set when the site is provisioned.', 'hk-funeral-suite' ),
 		'default'           => [],
 		'sanitize_callback' => __NAMESPACE__ . '\\sanitize_managed_types',
 		'show_in_rest'      => [
 			'schema' => [
-				'type'  => 'array',
-				'items' => [
+				'type'     => 'array',
+				'readonly' => true,
+				'items'    => [
 					'type' => 'string',
 					'enum' => get_managed_capable_types(),
 				],
 			],
 		],
 	] );
+}
+
+/**
+ * Refuse updates to the editor lock through /wp/v2/settings.
+ *
+ * Returning true tells the settings controller the value was handled, so
+ * the stored lock stays as it is and the response reports it unchanged.
+ * Other settings pass through untouched.
+ *
+ * @param mixed $updated Whether another callback already handled the update.
+ * @param mixed $name    Setting name as shown in REST responses.
+ * @return mixed
+ */
+function refuse_rest_lock_update( $updated, $name ) {
+	if ( 'hk_fs_catalogue_managed_types' === $name ) {
+		return true;
+	}
+	return $updated;
 }
 
 /**
@@ -454,7 +522,7 @@ function export_product( \WP_Post $post, string $type ): array {
 		foreach ( wp_get_object_terms( $post->ID, $taxonomy ) as $term ) {
 			$terms[] = [
 				'term_id'   => $term->term_id,
-				'name'      => $term->name,
+				'name'      => decode_text( $term->name ),
 				'slug'      => $term->slug,
 				'master_id' => get_term_meta( $term->term_id, '_hk_fs_master_category_id', true ) ?: null,
 			];
@@ -466,7 +534,8 @@ function export_product( \WP_Post $post, string $type ): array {
 	return [
 		'post_id'        => $post->ID,
 		'status'         => $post->post_status,
-		'title'          => $post->post_title,
+		// Decoded, so the master sees the name it sent ("&", not "&amp;").
+		'title'          => decode_text( $post->post_title ),
 		'slug'           => $post->post_name,
 		'master_id'      => $master_id ?: null,
 		'menu_order'     => (int) $post->menu_order,
@@ -616,6 +685,12 @@ function rest_stamp( \WP_REST_Request $request ) {
  * deactivated (status → draft). Idempotent: replaying the same payload
  * is a no-op.
  *
+ * Product data is always reconciled in full. Image sideloads are capped
+ * per request by count (resolve_image_fetch_limit()) and by time
+ * (resolve_image_time_budget()); images over either cap are reported as
+ * pending and "complete" stays false until a replay of the same payload
+ * has fetched them all.
+ *
  * @param \WP_REST_Request $request The request.
  * @return \WP_REST_Response|\WP_Error
  */
@@ -639,15 +714,39 @@ function rest_sync( \WP_REST_Request $request ) {
 		);
 	}
 
-	// The initial sync for a site may sideload a hundred-plus images.
+	// Image sideloads are capped by count and time per request, but the
+	// last download and its thumbnails can still run past the time budget.
 	if ( function_exists( 'set_time_limit' ) ) {
 		@set_time_limit( 300 ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
 	}
 	wp_raise_memory_limit( 'admin' );
 
-	$started = microtime( true );
-	$results = [];
-	$counts  = [ 'created' => 0, 'updated' => 0, 'unchanged' => 0, 'deactivated' => 0, 'errors' => 0 ];
+	$started     = microtime( true );
+	$sync_run_id = $body['sync_run_id'] ?? null;
+	$results     = [];
+	$counts      = [
+		'created'        => 0,
+		'updated'        => 0,
+		'unchanged'      => 0,
+		'deactivated'    => 0,
+		'errors'         => 0,
+		'images_fetched' => 0,
+		'images_pending' => 0,
+		'image_errors'   => 0,
+	];
+
+	// The image budget: a count (image_fetch_limit), a clock (no new
+	// sideload after the time budget, measured from here) and a per-download
+	// timeout. Worst case for the sideloads is the time budget plus one
+	// download timeout, plus thumbnail generation for that last image.
+	$image_fetch_limit = resolve_image_fetch_limit( $body['image_fetch_limit'] ?? null );
+	$image_budget      = [
+		'remaining' => $image_fetch_limit,
+		'deadline'  => $started + resolve_image_time_budget(),
+		'timeout'   => resolve_image_download_timeout(),
+		'failures'  => get_image_failures( $sync_run_id ),
+		'dirty'     => false,
+	];
 
 	// Every master ID present in the payload, per type — including ones
 	// whose processing errors — so a mid-run failure can never cause the
@@ -663,7 +762,7 @@ function rest_sync( \WP_REST_Request $request ) {
 			$payload_ids[ $type ][] = $master_id;
 		}
 
-		$result    = reconcile_product( $product, $type, $master_id );
+		$result    = reconcile_product( $product, $type, $master_id, $image_budget );
 		$results[] = $result;
 
 		if ( 'error' === $result['result'] ) {
@@ -672,9 +771,23 @@ function rest_sync( \WP_REST_Request $request ) {
 			$counts[ $result['result'] ]++;
 		}
 
+		foreach ( $result['images'] ?? [] as $image_result ) {
+			if ( 'sideloaded' === $image_result['result'] ) {
+				$counts['images_fetched']++;
+			} elseif ( 'pending' === $image_result['result'] ) {
+				$counts['images_pending']++;
+			} elseif ( 'error' === $image_result['result'] ) {
+				$counts['image_errors']++;
+			}
+		}
+
 		if ( in_array( $result['result'], [ 'created', 'updated' ], true ) && ! empty( $result['post_id'] ) ) {
 			\HKFuneralSuite\Hooks\optimised_cache_purge( (int) $result['post_id'], 'catalogue-sync' );
 		}
+	}
+
+	if ( $image_budget['dirty'] ) {
+		save_image_failures( $sync_run_id, $image_budget['failures'] );
 	}
 
 	// Deactivation + stray scope: the locked (managed) types where they
@@ -693,31 +806,148 @@ function rest_sync( \WP_REST_Request $request ) {
 	}
 
 	return rest_ensure_response( [
-		'schema_version' => SCHEMA_VERSION,
-		'plugin_version' => HK_FS_VERSION,
-		'sync_run_id'    => $body['sync_run_id'] ?? null,
-		'location_id'    => $body['location_id'] ?? null,
-		'counts'         => $counts,
-		'results'        => $results,
-		'strays'         => report_strays( $scope ),
-		'duration_ms'    => (int) round( ( microtime( true ) - $started ) * 1000 ),
+		'schema_version'    => SCHEMA_VERSION,
+		'plugin_version'    => HK_FS_VERSION,
+		'sync_run_id'       => $sync_run_id,
+		'location_id'       => $body['location_id'] ?? null,
+		'complete'          => 0 === $counts['images_pending'],
+		'image_fetch_limit' => $image_fetch_limit,
+		'counts'            => $counts,
+		'results'           => $results,
+		'strays'            => report_strays( $scope ),
+		'duration_ms'       => (int) round( ( microtime( true ) - $started ) * 1000 ),
 	] );
+}
+
+/**
+ * Work out how many image sideloads this request may perform.
+ *
+ * The payload's image_fetch_limit wins when it is a number; otherwise the
+ * default applies. Either way the result is clamped to the range 1 to 100.
+ *
+ * @param mixed $requested The payload's image_fetch_limit, if any.
+ * @return int
+ */
+function resolve_image_fetch_limit( $requested ): int {
+	if ( is_int( $requested ) || ( is_string( $requested ) && is_numeric( $requested ) ) || is_float( $requested ) ) {
+		$limit = (int) $requested;
+	} else {
+		/**
+		 * Filters the default number of image sideloads per /sync request,
+		 * used when the payload doesn't set image_fetch_limit.
+		 *
+		 * Keep it low enough that one request's downloads and thumbnail
+		 * generation finish inside the host's gateway timeout.
+		 *
+		 * @param int $limit Default limit (8).
+		 */
+		$limit = (int) apply_filters( 'hk_fs_catalogue_image_fetch_limit', IMAGE_FETCH_LIMIT_DEFAULT );
+	}
+
+	return max( 1, min( IMAGE_FETCH_LIMIT_MAX, $limit ) );
+}
+
+/**
+ * Seconds into a /sync request after which no new image sideload starts.
+ *
+ * @return float Between 1 and 300.
+ */
+function resolve_image_time_budget(): float {
+	/**
+	 * Filters how many seconds of a /sync request may be spent starting
+	 * image sideloads. After that, the remaining images are reported as
+	 * pending and the master fetches them on its next call.
+	 *
+	 * The default leaves room under a 60 second gateway timeout for one
+	 * last download (see hk_fs_catalogue_image_download_timeout).
+	 *
+	 * @param int|float $seconds Default 35.
+	 */
+	$seconds = (float) apply_filters( 'hk_fs_catalogue_image_time_budget', IMAGE_TIME_BUDGET_DEFAULT );
+	return max( 1.0, min( 300.0, $seconds ) );
+}
+
+/**
+ * Seconds one image download may take inside a /sync request.
+ *
+ * @return float Between 1 and 300.
+ */
+function resolve_image_download_timeout(): float {
+	/**
+	 * Filters the HTTP timeout for each image download during /sync.
+	 * Applies only to the sync's own sideloads, not to other HTTP requests.
+	 *
+	 * @param int|float $seconds Default 15.
+	 */
+	$seconds = (float) apply_filters( 'hk_fs_catalogue_image_download_timeout', IMAGE_DOWNLOAD_TIMEOUT_DEFAULT );
+	return max( 1.0, min( 300.0, $seconds ) );
+}
+
+/**
+ * Transient key for a sync run's remembered image failures.
+ *
+ * @param mixed $sync_run_id The payload's sync_run_id.
+ * @return string Empty when the payload carries no usable run ID.
+ */
+function image_failures_key( $sync_run_id ): string {
+	if ( ! is_string( $sync_run_id ) || '' === trim( $sync_run_id ) ) {
+		return '';
+	}
+	return 'hk_fs_catalogue_image_failures_' . md5( trim( $sync_run_id ) );
+}
+
+/**
+ * Image downloads that already failed earlier in this sync run.
+ *
+ * The master replays the same payload (same sync_run_id) to drain
+ * pending images. Without this memory a broken image URL would be
+ * retried on every replay and use up the per-request budget, so the
+ * images queued behind it would never be fetched. A new run (a later
+ * publish) tries the failed images again.
+ *
+ * @param mixed $sync_run_id The payload's sync_run_id.
+ * @return array<string, string> Failure key → error message.
+ */
+function get_image_failures( $sync_run_id ): array {
+	$key = image_failures_key( $sync_run_id );
+	if ( '' === $key ) {
+		return [];
+	}
+	$failures = get_transient( $key );
+	return is_array( $failures ) ? $failures : [];
+}
+
+/**
+ * Remember this run's failed image downloads for its later replays.
+ *
+ * @param mixed $sync_run_id The payload's sync_run_id.
+ * @param array $failures    Failure key → error message.
+ */
+function save_image_failures( $sync_run_id, array $failures ): void {
+	$key = image_failures_key( $sync_run_id );
+	if ( '' !== $key ) {
+		set_transient( $key, $failures, IMAGE_FAILURE_TTL );
+	}
 }
 
 /**
  * Reconcile one payload product into its local post.
  *
- * @param array  $product   Payload product.
- * @param string $type      Catalogue type (pre-extracted).
- * @param string $master_id Master ID (pre-normalised).
+ * @param array  $product      Payload product.
+ * @param string $type         Catalogue type (pre-extracted).
+ * @param string $master_id    Master ID (pre-normalised).
+ * @param array  $image_budget This request's image budget (see rest_sync()), updated in place.
  * @return array Result entry.
  */
-function reconcile_product( array $product, string $type, string $master_id ): array {
+function reconcile_product( array $product, string $type, string $master_id, array &$image_budget ): array {
 	$result = [
-		'master_id' => $master_id ?: null,
-		'type'      => $type ?: null,
-		'post_id'   => null,
-		'result'    => 'error',
+		'master_id'       => $master_id ?: null,
+		'type'            => $type ?: null,
+		'post_id'         => null,
+		'result'          => 'error',
+		// No image work happens for a product that fails before its images.
+		'image_primary'   => 'none',
+		'image_secondary' => 'none',
 	];
 
 	if ( ! is_uuid( $master_id ) ) {
@@ -767,12 +997,15 @@ function reconcile_product( array $product, string $type, string $master_id ): a
 		$result['post_id'] = $post_id;
 		$post              = get_post( $post_id );
 
+		// Compare like with like: what this request would store, against
+		// what is stored. The sync runs as user 0, so kses encodes "&" as
+		// "&amp;" on save; a raw comparison saw a change on every publish.
 		// Existing slug is kept on rename — no URL churn.
 		$updates = [];
-		if ( $post->post_title !== $name ) {
+		if ( decode_text( $post->post_title ) !== decode_text( db_post_field( 'post_title', $name, $post_id ) ) ) {
 			$updates['post_title'] = $name;
 		}
-		if ( trim( $post->post_content ) !== trim( $content ) ) {
+		if ( trim( $post->post_content ) !== trim( db_post_field( 'post_content', $content, $post_id ) ) ) {
 			$updates['post_content'] = $content;
 		}
 		if ( (int) $post->menu_order !== $menu_order ) {
@@ -823,14 +1056,25 @@ function reconcile_product( array $product, string $type, string $master_id ): a
 		$changed = true;
 	}
 
-	// Images, version-diffed so steady-state publishes re-download nothing.
+	// Images, version-diffed so steady-state publishes re-download nothing,
+	// and capped per request by the image budget. An image problem never
+	// fails the product: its data above is already saved.
 	$images           = is_array( $product['images'] ?? null ) ? $product['images'] : [];
-	$image_results    = sync_images( $post_id, $images, $name );
+	$image_results    = sync_images( $post_id, $images, $name, $image_budget );
 	$result['images'] = $image_results;
+
+	$image_errors = [];
 	foreach ( $image_results as $image_result ) {
 		if ( in_array( $image_result['result'], [ 'sideloaded', 'removed' ], true ) ) {
 			$changed = true;
 		}
+		$result[ 'image_' . $image_result['role'] ] = image_status( $image_result['result'] );
+		if ( 'error' === $image_result['result'] ) {
+			$image_errors[] = $image_result['role'] . ': ' . ( $image_result['error'] ?? 'unknown_error' );
+		}
+	}
+	if ( $image_errors ) {
+		$result['image_error'] = implode( '; ', $image_errors );
 	}
 
 	if ( 'created' !== $result['result'] ) {
@@ -838,6 +1082,76 @@ function reconcile_product( array $product, string $type, string $master_id ): a
 	}
 
 	return $result;
+}
+
+/**
+ * Per-product image status for one role, from that role's image result.
+ *
+ * @param string $image_result Result from sync_images().
+ * @return string One of none, unchanged, fetched, pending, error.
+ */
+function image_status( string $image_result ): string {
+	$map = [
+		'sideloaded' => 'fetched',
+		'unchanged'  => 'unchanged',
+		'pending'    => 'pending',
+		'error'      => 'error',
+		'removed'    => 'none',
+	];
+	return $map[ $image_result ] ?? 'none';
+}
+
+/**
+ * The value WordPress would store for a post field in this request.
+ *
+ * Runs the same pre-save filters wp_insert_post() applies (kses for
+ * users without unfiltered_html, which includes the sync's user 0), so
+ * the result compares like with like against the stored field.
+ *
+ * @param string $field   Post field, e.g. post_title.
+ * @param string $value   Raw value.
+ * @param int    $post_id Post ID.
+ * @return string
+ */
+function db_post_field( string $field, string $value, int $post_id ): string {
+	return (string) wp_unslash( sanitize_post_field( $field, wp_slash( $value ), $post_id, 'db' ) );
+}
+
+/**
+ * The name WordPress would store for a term in this request.
+ *
+ * Term names always go through sanitize_text_field, kses and
+ * _wp_specialchars on save, so "Wood & Bamboo" is stored as
+ * "Wood &amp; Bamboo".
+ *
+ * @param string $name     Raw name.
+ * @param int    $term_id  Term ID (0 for a new term).
+ * @param string $taxonomy Taxonomy.
+ * @return string
+ */
+function db_term_name( string $name, int $term_id, string $taxonomy ): string {
+	return (string) wp_unslash( sanitize_term_field( 'name', wp_slash( $name ), $term_id, $taxonomy, 'db' ) );
+}
+
+/**
+ * Decode HTML entities in a stored title or term name.
+ *
+ * @param string $value Stored value, e.g. "Harper &amp; Lowe".
+ * @return string Plain text, e.g. "Harper & Lowe".
+ */
+function decode_text( string $value ): string {
+	return html_entity_decode( $value, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+}
+
+/**
+ * Normalise a name for case-insensitive matching.
+ *
+ * @param string $value Name, raw or as stored.
+ * @return string
+ */
+function normalise_name( string $value ): string {
+	$value = trim( (string) preg_replace( '/\s+/u', ' ', decode_text( $value ) ) );
+	return function_exists( 'mb_strtolower' ) ? mb_strtolower( $value, 'UTF-8' ) : strtolower( $value );
 }
 
 /**
@@ -880,14 +1194,41 @@ function build_content( string $post_type, string $description ): string {
 		return $content . "\n\n" . wp_kses_post( $description );
 	}
 
-	// Plain text/HTML: one paragraph block per line, same convention as
-	// the WP All Import path in inc/import.php.
+	if ( has_block_level_html( $description ) ) {
+		// Lists, headings, tables and the like can't be split per line:
+		// that wrapped "<ul>" in its own paragraph. Keep the description
+		// whole in one Custom HTML block; wpautop() wraps any loose text
+		// lines in paragraphs and leaves block-level elements alone.
+		return $content . "\n\n<!-- wp:html -->\n" . trim( wp_kses_post( wpautop( $description ) ) ) . "\n<!-- /wp:html -->";
+	}
+
+	// Plain text or inline HTML: one paragraph block per line, same
+	// convention as the WP All Import path in inc/import.php.
 	$paragraphs = array_filter( array_map( 'trim', explode( "\n", $description ) ) );
 	foreach ( $paragraphs as $paragraph ) {
 		$content .= "\n\n<!-- wp:paragraph -->\n<p>" . wp_kses_post( $paragraph ) . "</p>\n<!-- /wp:paragraph -->";
 	}
 
 	return $content;
+}
+
+/**
+ * Whether a description contains block-level HTML elements.
+ *
+ * Any of these means the description can't be split into one paragraph
+ * per line without wrapping a block element in "<p>". Inline tags
+ * (strong, em, a, span, br) don't count.
+ *
+ * @param string $description Description from the master.
+ * @return bool
+ */
+function has_block_level_html( string $description ): bool {
+	$tags = 'p|div|h[1-6]|blockquote|pre|hr|address'
+		. '|ul|ol|li|dl|dd|dt'
+		. '|table|caption|thead|tbody|tfoot|tr|td|th'
+		. '|figure|figcaption|details|summary'
+		. '|section|article|aside|nav|header|footer';
+	return (bool) preg_match( '/<(?:' . $tags . ')[\s>\/]/i', $description );
 }
 
 /**
@@ -935,21 +1276,28 @@ function sync_category( int $post_id, string $type, $category ): bool {
 
 	if ( ! is_wp_error( $existing ) && $existing ) {
 		$term_id = (int) $existing[0]->term_id;
-		if ( $existing[0]->name !== $name ) {
-			wp_update_term( $term_id, $taxonomy, [ 'name' => $name ] );
+		if ( rename_term_if_needed( $existing[0], $name, $taxonomy ) ) {
 			$changed = true;
 		}
 	} else {
-		$inserted = wp_insert_term( $name, $taxonomy );
-		if ( is_wp_error( $inserted ) ) {
-			// Same name already exists unstamped — adopt it.
-			$conflict_id = (int) ( $inserted->get_error_data( 'term_exists' ) ?: 0 );
-			if ( ! $conflict_id ) {
+		// Adopt an unstamped site term that already carries this name,
+		// ignoring case, or this name's slug, before creating one:
+		// wp_insert_term() only catches an exact-case duplicate, so
+		// "solid wood range" with a custom slug would otherwise gain a
+		// near-duplicate sibling. A stamped term belongs to its own master
+		// category and is only ever matched by that master ID (above).
+		$term_id = find_adoptable_term( $taxonomy, $name );
+
+		if ( $term_id ) {
+			$term = get_term( $term_id, $taxonomy );
+			if ( $term instanceof \WP_Term ) {
+				rename_term_if_needed( $term, $name, $taxonomy );
+			}
+		} else {
+			$term_id = insert_category_term( $taxonomy, $name );
+			if ( ! $term_id ) {
 				return $changed;
 			}
-			$term_id = $conflict_id;
-		} else {
-			$term_id = (int) $inserted['term_id'];
 		}
 		update_term_meta( $term_id, '_hk_fs_master_category_id', $master_id );
 		$changed = true;
@@ -964,6 +1312,132 @@ function sync_category( int $post_id, string $type, $category ): bool {
 }
 
 /**
+ * Rename a term to the master's name if the stored name differs.
+ *
+ * Compares like with like (the name as WordPress would store it, both
+ * sides entity-decoded), so "Wood & Bamboo" never counts as a rename of
+ * "Wood &amp; Bamboo". The slug is kept: wp_update_term() only changes
+ * it when one is passed.
+ *
+ * @param \WP_Term $term     Existing term.
+ * @param string   $name     Master name.
+ * @param string   $taxonomy Taxonomy.
+ * @return bool Whether the term was renamed.
+ */
+function rename_term_if_needed( \WP_Term $term, string $name, string $taxonomy ): bool {
+	$stored = decode_text( $term->name );
+	if ( decode_text( db_term_name( $name, (int) $term->term_id, $taxonomy ) ) === $stored ) {
+		return false;
+	}
+	$updated = wp_update_term( (int) $term->term_id, $taxonomy, wp_slash( [ 'name' => $name ] ) );
+	return ! is_wp_error( $updated );
+}
+
+/**
+ * Find an existing unstamped term a master category should adopt.
+ *
+ * Matches the name case-insensitively (entities decoded, whitespace
+ * collapsed), or the slug WordPress derives from the name. A name match
+ * wins over a slug match; ties go to the oldest term.
+ *
+ * Terms stamped with a master category ID are never adopted here, even
+ * when the stamp is stale. The master's category names are unique only
+ * case-sensitively, so "Solid Wood" and "Solid-Wood" (same slug) or
+ * "Solid Wood" and "solid wood" can both exist; adopting a stamped term
+ * would let two master categories take turns restamping one site term on
+ * every publish.
+ *
+ * @param string $taxonomy Taxonomy.
+ * @param string $name     Master category name.
+ * @return int Term ID, or 0 when nothing matches.
+ */
+function find_adoptable_term( string $taxonomy, string $name ): int {
+	$terms = get_terms( [
+		'taxonomy'   => $taxonomy,
+		'hide_empty' => false,
+		'orderby'    => 'term_id',
+		'order'      => 'ASC',
+	] );
+	if ( is_wp_error( $terms ) || ! $terms ) {
+		return 0;
+	}
+
+	$wanted_name = normalise_name( $name );
+	$wanted_slug = sanitize_title( $name );
+	$best_id     = 0;
+	$best_rank   = PHP_INT_MAX;
+
+	foreach ( $terms as $term ) {
+		if ( normalise_name( $term->name ) === $wanted_name ) {
+			$rank = 0;
+		} elseif ( '' !== $wanted_slug && $term->slug === $wanted_slug ) {
+			$rank = 1;
+		} else {
+			continue;
+		}
+		if ( is_stamped_term( (int) $term->term_id ) ) {
+			continue;
+		}
+		if ( $rank < $best_rank ) {
+			$best_id   = (int) $term->term_id;
+			$best_rank = $rank;
+		}
+	}
+
+	return $best_id;
+}
+
+/**
+ * Whether a term carries a master category ID.
+ *
+ * @param int $term_id Term ID.
+ * @return bool
+ */
+function is_stamped_term( int $term_id ): bool {
+	return '' !== (string) get_term_meta( $term_id, '_hk_fs_master_category_id', true );
+}
+
+/**
+ * Create the site term for a master category that has none yet.
+ *
+ * WordPress refuses a new term whose name already exists (ignoring case
+ * for the duplicate check). If that term is unstamped it is adopted. If
+ * another master category owns it, a separate term is created under the
+ * same name with the next free slug ("solid-wood-2"), so each master
+ * category keeps its own term.
+ *
+ * @param string $taxonomy Taxonomy.
+ * @param string $name     Master category name.
+ * @return int Term ID, or 0 on failure.
+ */
+function insert_category_term( string $taxonomy, string $name ): int {
+	$inserted = wp_insert_term( wp_slash( $name ), $taxonomy );
+	if ( ! is_wp_error( $inserted ) ) {
+		return (int) $inserted['term_id'];
+	}
+
+	$conflict_id = (int) ( $inserted->get_error_data( 'term_exists' ) ?: 0 );
+	if ( ! $conflict_id ) {
+		return 0;
+	}
+	if ( ! is_stamped_term( $conflict_id ) ) {
+		return $conflict_id;
+	}
+
+	$base = sanitize_title( $name );
+	if ( '' === $base ) {
+		return 0;
+	}
+	$new_term = (object) [
+		'taxonomy' => $taxonomy,
+		'parent'   => 0,
+	];
+	$inserted = wp_insert_term( wp_slash( $name ), $taxonomy, [ 'slug' => wp_unique_term_slug( $base, $new_term ) ] );
+
+	return is_wp_error( $inserted ) ? 0 : (int) $inserted['term_id'];
+}
+
+/**
  * Sync a product's images, diffed on the version hash so unchanged
  * images are never re-downloaded.
  *
@@ -971,12 +1445,20 @@ function sync_category( int $post_id, string $type, $category ): bool {
  * attachment + meta for future template use. Replaced attachments stay
  * in the media library (media retained, per design).
  *
+ * Each download spends one unit of the request's image budget. When the
+ * budget is used up, or the request's time budget has run out, remaining
+ * downloads are reported as "pending" and the post keeps whatever image
+ * it has until a later call fetches them.
+ * A download that failed earlier in the same sync run is reported as an
+ * error again without retrying it.
+ *
  * @param int    $post_id Post ID.
  * @param array  $images  Payload images: [ { role, version, url }, … ].
  * @param string $title   Product name, used as the attachment description.
+ * @param array  $budget  This request's image budget, updated in place.
  * @return array Per-role results.
  */
-function sync_images( int $post_id, array $images, string $title ): array {
+function sync_images( int $post_id, array $images, string $title, array &$budget ): array {
 	$roles = [
 		'primary'   => [ 'version_meta' => '_hk_fs_image_version', 'id_meta' => '_thumbnail_id' ],
 		'secondary' => [ 'version_meta' => '_hk_fs_image_version_2', 'id_meta' => '_hk_fs_image_id_2' ],
@@ -1019,8 +1501,8 @@ function sync_images( int $post_id, array $images, string $title ): array {
 			continue;
 		}
 
-		$version = (string) ( $image['version'] ?? '' );
 		$url     = (string) ( $image['url'] ?? '' );
+		$version = (string) ( $image['version'] ?? '' );
 
 		if ( '' === $url ) {
 			$entry['result'] = 'error';
@@ -1029,24 +1511,44 @@ function sync_images( int $post_id, array $images, string $title ): array {
 			continue;
 		}
 
+		// Without a version, an image would never count as unchanged and
+		// every replay would download it again. The master's storage paths
+		// are content-addressed, so the URL stands in as the version.
+		if ( '' === $version ) {
+			$version = $url;
+		}
+
 		$attachment_exists = $current_id && get_post( $current_id );
-		if ( '' !== $version && $version === $current_version && $attachment_exists ) {
+		if ( $version === $current_version && $attachment_exists ) {
 			$entry['result']        = 'unchanged';
 			$entry['attachment_id'] = $current_id;
 			$results[]              = $entry;
 			continue;
 		}
 
-		require_once ABSPATH . 'wp-admin/includes/media.php';
-		require_once ABSPATH . 'wp-admin/includes/file.php';
-		require_once ABSPATH . 'wp-admin/includes/image.php';
+		$failure_key = implode( '|', [ $post_id, $role, $version, $url ] );
+		if ( isset( $budget['failures'][ $failure_key ] ) ) {
+			$entry['result'] = 'error';
+			$entry['error']  = (string) $budget['failures'][ $failure_key ];
+			$results[]       = $entry;
+			continue;
+		}
 
-		$attachment_id = media_sideload_image( esc_url_raw( $url ), $post_id, $title, 'id' );
+		if ( $budget['remaining'] < 1 || microtime( true ) >= $budget['deadline'] ) {
+			$entry['result'] = 'pending';
+			$results[]       = $entry;
+			continue;
+		}
+		--$budget['remaining'];
+
+		$attachment_id = sideload_image( $url, $post_id, $title, (float) $budget['timeout'] );
 
 		if ( is_wp_error( $attachment_id ) ) {
-			$entry['result'] = 'error';
-			$entry['error']  = $attachment_id->get_error_message();
-			$results[]       = $entry;
+			$entry['result']                    = 'error';
+			$entry['error']                     = $attachment_id->get_error_message();
+			$budget['failures'][ $failure_key ] = $entry['error'];
+			$budget['dirty']                    = true;
+			$results[]                          = $entry;
 			continue;
 		}
 
@@ -1063,6 +1565,42 @@ function sync_images( int $post_id, array $images, string $title ): array {
 	}
 
 	return $results;
+}
+
+/**
+ * Sideload one image with a capped download timeout.
+ *
+ * WordPress sideloads through download_url(), which asks for a 300 second
+ * timeout. The http_request_args filter lowers it for this
+ * download only: it is added just before the call and removed straight
+ * after, so no other HTTP request in the site is affected.
+ *
+ * @param string $url     Image URL.
+ * @param int    $post_id Post the attachment belongs to.
+ * @param string $title   Attachment description.
+ * @param float  $timeout Seconds the download may take.
+ * @return int|\WP_Error Attachment ID, or the error.
+ */
+function sideload_image( string $url, int $post_id, string $title, float $timeout ) {
+	require_once ABSPATH . 'wp-admin/includes/media.php';
+	require_once ABSPATH . 'wp-admin/includes/file.php';
+	require_once ABSPATH . 'wp-admin/includes/image.php';
+
+	$cap_timeout = static function ( $args ) use ( $timeout ) {
+		if ( is_array( $args ) && ( ! isset( $args['timeout'] ) || (float) $args['timeout'] > $timeout ) ) {
+			$args['timeout'] = $timeout;
+		}
+		return $args;
+	};
+
+	add_filter( 'http_request_args', $cap_timeout, PHP_INT_MAX );
+	try {
+		$attachment_id = media_sideload_image( esc_url_raw( $url ), $post_id, $title, 'id' );
+	} finally {
+		remove_filter( 'http_request_args', $cap_timeout, PHP_INT_MAX );
+	}
+
+	return is_wp_error( $attachment_id ) ? $attachment_id : (int) $attachment_id;
 }
 
 /**
@@ -1113,10 +1651,12 @@ function deactivate_absent( array $scope_types, array $payload_ids ): array {
 				'post_status' => 'draft',
 			] );
 			$results[] = [
-				'master_id' => (string) get_post_meta( $post_id, '_hk_fs_master_id', true ),
-				'type'      => $type,
-				'post_id'   => (int) $post_id,
-				'result'    => 'deactivated',
+				'master_id'       => (string) get_post_meta( $post_id, '_hk_fs_master_id', true ),
+				'type'            => $type,
+				'post_id'         => (int) $post_id,
+				'result'          => 'deactivated',
+				'image_primary'   => 'none',
+				'image_secondary' => 'none',
 			];
 		}
 	}
@@ -1163,7 +1703,7 @@ function report_strays( array $scope_types ): array {
 			$strays[] = [
 				'type'    => $type,
 				'post_id' => $post->ID,
-				'title'   => $post->post_title,
+				'title'   => decode_text( $post->post_title ),
 				'status'  => $post->post_status,
 			];
 		}
