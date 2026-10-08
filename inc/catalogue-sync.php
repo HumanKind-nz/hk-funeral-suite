@@ -25,9 +25,12 @@
  * more than fit in one request under the host's 60 second gateway
  * timeout. /sync always reconciles every product's data, but sideloads
  * at most image_fetch_limit images per request (body field, 1 to 100,
- * default 8 via the hk_fs_catalogue_image_fetch_limit filter) and
- * reports the rest as pending. The master replays the same payload until
- * the response says complete.
+ * default 8 via the hk_fs_catalogue_image_fetch_limit filter), starts no
+ * new sideload once 35 seconds of the request have gone (filter:
+ * hk_fs_catalogue_image_time_budget), gives each download 15 seconds
+ * (filter: hk_fs_catalogue_image_download_timeout), and reports the rest
+ * as pending. The master replays the same payload until the response
+ * says complete.
  *
  * @package HKFuneralSuite
  */
@@ -55,6 +58,18 @@ const IMAGE_FETCH_LIMIT_DEFAULT = 8;
  * Upper bound on image_fetch_limit, whatever the payload asks for.
  */
 const IMAGE_FETCH_LIMIT_MAX = 100;
+
+/**
+ * Seconds into a /sync request after which no new image sideload starts.
+ * Whatever is left is reported as pending for the next call.
+ */
+const IMAGE_TIME_BUDGET_DEFAULT = 35;
+
+/**
+ * Seconds one image download may take inside /sync. download_url()
+ * otherwise waits up to 300 seconds, far past the gateway timeout.
+ */
+const IMAGE_DOWNLOAD_TIMEOUT_DEFAULT = 15;
 
 /**
  * How long a failed image download is remembered for its sync run, so
@@ -671,9 +686,10 @@ function rest_stamp( \WP_REST_Request $request ) {
  * is a no-op.
  *
  * Product data is always reconciled in full. Image sideloads are capped
- * per request (see resolve_image_fetch_limit()); images over the cap are
- * reported as pending and "complete" stays false until a replay of the
- * same payload has fetched them all.
+ * per request by count (resolve_image_fetch_limit()) and by time
+ * (resolve_image_time_budget()); images over either cap are reported as
+ * pending and "complete" stays false until a replay of the same payload
+ * has fetched them all.
  *
  * @param \WP_REST_Request $request The request.
  * @return \WP_REST_Response|\WP_Error
@@ -698,8 +714,8 @@ function rest_sync( \WP_REST_Request $request ) {
 		);
 	}
 
-	// Image sideloads are capped per request, but a slow image host can
-	// still make one request long.
+	// Image sideloads are capped by count and time per request, but the
+	// last download and its thumbnails can still run past the time budget.
 	if ( function_exists( 'set_time_limit' ) ) {
 		@set_time_limit( 300 ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
 	}
@@ -719,9 +735,15 @@ function rest_sync( \WP_REST_Request $request ) {
 		'image_errors'   => 0,
 	];
 
+	// The image budget: a count (image_fetch_limit), a clock (no new
+	// sideload after the time budget, measured from here) and a per-download
+	// timeout. Worst case for the sideloads is the time budget plus one
+	// download timeout, plus thumbnail generation for that last image.
 	$image_fetch_limit = resolve_image_fetch_limit( $body['image_fetch_limit'] ?? null );
 	$image_budget      = [
 		'remaining' => $image_fetch_limit,
+		'deadline'  => $started + resolve_image_time_budget(),
+		'timeout'   => resolve_image_download_timeout(),
 		'failures'  => get_image_failures( $sync_run_id ),
 		'dirty'     => false,
 	];
@@ -823,6 +845,42 @@ function resolve_image_fetch_limit( $requested ): int {
 	}
 
 	return max( 1, min( IMAGE_FETCH_LIMIT_MAX, $limit ) );
+}
+
+/**
+ * Seconds into a /sync request after which no new image sideload starts.
+ *
+ * @return float Between 1 and 300.
+ */
+function resolve_image_time_budget(): float {
+	/**
+	 * Filters how many seconds of a /sync request may be spent starting
+	 * image sideloads. After that, the remaining images are reported as
+	 * pending and the master fetches them on its next call.
+	 *
+	 * The default leaves room under a 60 second gateway timeout for one
+	 * last download (see hk_fs_catalogue_image_download_timeout).
+	 *
+	 * @param int|float $seconds Default 35.
+	 */
+	$seconds = (float) apply_filters( 'hk_fs_catalogue_image_time_budget', IMAGE_TIME_BUDGET_DEFAULT );
+	return max( 1.0, min( 300.0, $seconds ) );
+}
+
+/**
+ * Seconds one image download may take inside a /sync request.
+ *
+ * @return float Between 1 and 300.
+ */
+function resolve_image_download_timeout(): float {
+	/**
+	 * Filters the HTTP timeout for each image download during /sync.
+	 * Applies only to the sync's own sideloads, not to other HTTP requests.
+	 *
+	 * @param int|float $seconds Default 15.
+	 */
+	$seconds = (float) apply_filters( 'hk_fs_catalogue_image_download_timeout', IMAGE_DOWNLOAD_TIMEOUT_DEFAULT );
+	return max( 1.0, min( 300.0, $seconds ) );
 }
 
 /**
@@ -1157,11 +1215,20 @@ function build_content( string $post_type, string $description ): string {
 /**
  * Whether a description contains block-level HTML elements.
  *
+ * Any of these means the description can't be split into one paragraph
+ * per line without wrapping a block element in "<p>". Inline tags
+ * (strong, em, a, span, br) don't count.
+ *
  * @param string $description Description from the master.
  * @return bool
  */
 function has_block_level_html( string $description ): bool {
-	return (bool) preg_match( '/<(?:p|div|ul|ol|li|dl|h[1-6]|table|blockquote|pre|figure|hr|section)[\s>\/]/i', $description );
+	$tags = 'p|div|h[1-6]|blockquote|pre|hr|address'
+		. '|ul|ol|li|dl|dd|dt'
+		. '|table|caption|thead|tbody|tfoot|tr|td|th'
+		. '|figure|figcaption|details|summary'
+		. '|section|article|aside|nav|header|footer';
+	return (bool) preg_match( '/<(?:' . $tags . ')[\s>\/]/i', $description );
 }
 
 /**
@@ -1213,10 +1280,12 @@ function sync_category( int $post_id, string $type, $category ): bool {
 			$changed = true;
 		}
 	} else {
-		// Adopt a site term that already carries this name, ignoring case,
-		// or this name's slug, before creating one: wp_insert_term() only
-		// catches an exact-case duplicate, so "solid wood range" with a
-		// custom slug would otherwise gain a near-duplicate sibling.
+		// Adopt an unstamped site term that already carries this name,
+		// ignoring case, or this name's slug, before creating one:
+		// wp_insert_term() only catches an exact-case duplicate, so
+		// "solid wood range" with a custom slug would otherwise gain a
+		// near-duplicate sibling. A stamped term belongs to its own master
+		// category and is only ever matched by that master ID (above).
 		$term_id = find_adoptable_term( $taxonomy, $name );
 
 		if ( $term_id ) {
@@ -1225,16 +1294,9 @@ function sync_category( int $post_id, string $type, $category ): bool {
 				rename_term_if_needed( $term, $name, $taxonomy );
 			}
 		} else {
-			$inserted = wp_insert_term( wp_slash( $name ), $taxonomy );
-			if ( is_wp_error( $inserted ) ) {
-				// Same name already exists unstamped — adopt it.
-				$conflict_id = (int) ( $inserted->get_error_data( 'term_exists' ) ?: 0 );
-				if ( ! $conflict_id ) {
-					return $changed;
-				}
-				$term_id = $conflict_id;
-			} else {
-				$term_id = (int) $inserted['term_id'];
+			$term_id = insert_category_term( $taxonomy, $name );
+			if ( ! $term_id ) {
+				return $changed;
 			}
 		}
 		update_term_meta( $term_id, '_hk_fs_master_category_id', $master_id );
@@ -1272,13 +1334,18 @@ function rename_term_if_needed( \WP_Term $term, string $name, string $taxonomy )
 }
 
 /**
- * Find an existing term a master category should adopt.
+ * Find an existing unstamped term a master category should adopt.
  *
  * Matches the name case-insensitively (entities decoded, whitespace
- * collapsed), or the slug WordPress derives from the name. Preference:
- * unstamped name match, unstamped slug match, then the same for terms
- * stamped by a different master category (stale stamps from a deleted
- * category are the usual cause). Ties go to the oldest term.
+ * collapsed), or the slug WordPress derives from the name. A name match
+ * wins over a slug match; ties go to the oldest term.
+ *
+ * Terms stamped with a master category ID are never adopted here, even
+ * when the stamp is stale. The master's category names are unique only
+ * case-sensitively, so "Solid Wood" and "Solid-Wood" (same slug) or
+ * "Solid Wood" and "solid wood" can both exist; adopting a stamped term
+ * would let two master categories take turns restamping one site term on
+ * every publish.
  *
  * @param string $taxonomy Taxonomy.
  * @param string $name     Master category name.
@@ -1308,8 +1375,8 @@ function find_adoptable_term( string $taxonomy, string $name ): int {
 		} else {
 			continue;
 		}
-		if ( '' !== (string) get_term_meta( $term->term_id, '_hk_fs_master_category_id', true ) ) {
-			$rank += 2;
+		if ( is_stamped_term( (int) $term->term_id ) ) {
+			continue;
 		}
 		if ( $rank < $best_rank ) {
 			$best_id   = (int) $term->term_id;
@@ -1321,6 +1388,56 @@ function find_adoptable_term( string $taxonomy, string $name ): int {
 }
 
 /**
+ * Whether a term carries a master category ID.
+ *
+ * @param int $term_id Term ID.
+ * @return bool
+ */
+function is_stamped_term( int $term_id ): bool {
+	return '' !== (string) get_term_meta( $term_id, '_hk_fs_master_category_id', true );
+}
+
+/**
+ * Create the site term for a master category that has none yet.
+ *
+ * WordPress refuses a new term whose name already exists (ignoring case
+ * for the duplicate check). If that term is unstamped it is adopted. If
+ * another master category owns it, a separate term is created under the
+ * same name with the next free slug ("solid-wood-2"), so each master
+ * category keeps its own term.
+ *
+ * @param string $taxonomy Taxonomy.
+ * @param string $name     Master category name.
+ * @return int Term ID, or 0 on failure.
+ */
+function insert_category_term( string $taxonomy, string $name ): int {
+	$inserted = wp_insert_term( wp_slash( $name ), $taxonomy );
+	if ( ! is_wp_error( $inserted ) ) {
+		return (int) $inserted['term_id'];
+	}
+
+	$conflict_id = (int) ( $inserted->get_error_data( 'term_exists' ) ?: 0 );
+	if ( ! $conflict_id ) {
+		return 0;
+	}
+	if ( ! is_stamped_term( $conflict_id ) ) {
+		return $conflict_id;
+	}
+
+	$base = sanitize_title( $name );
+	if ( '' === $base ) {
+		return 0;
+	}
+	$new_term = (object) [
+		'taxonomy' => $taxonomy,
+		'parent'   => 0,
+	];
+	$inserted = wp_insert_term( wp_slash( $name ), $taxonomy, [ 'slug' => wp_unique_term_slug( $base, $new_term ) ] );
+
+	return is_wp_error( $inserted ) ? 0 : (int) $inserted['term_id'];
+}
+
+/**
  * Sync a product's images, diffed on the version hash so unchanged
  * images are never re-downloaded.
  *
@@ -1329,8 +1446,9 @@ function find_adoptable_term( string $taxonomy, string $name ): int {
  * in the media library (media retained, per design).
  *
  * Each download spends one unit of the request's image budget. When the
- * budget is used up, remaining downloads are reported as "pending" and
- * the post keeps whatever image it has until a later call fetches them.
+ * budget is used up, or the request's time budget has run out, remaining
+ * downloads are reported as "pending" and the post keeps whatever image
+ * it has until a later call fetches them.
  * A download that failed earlier in the same sync run is reported as an
  * error again without retrying it.
  *
@@ -1416,18 +1534,14 @@ function sync_images( int $post_id, array $images, string $title, array &$budget
 			continue;
 		}
 
-		if ( $budget['remaining'] < 1 ) {
+		if ( $budget['remaining'] < 1 || microtime( true ) >= $budget['deadline'] ) {
 			$entry['result'] = 'pending';
 			$results[]       = $entry;
 			continue;
 		}
 		--$budget['remaining'];
 
-		require_once ABSPATH . 'wp-admin/includes/media.php';
-		require_once ABSPATH . 'wp-admin/includes/file.php';
-		require_once ABSPATH . 'wp-admin/includes/image.php';
-
-		$attachment_id = media_sideload_image( esc_url_raw( $url ), $post_id, $title, 'id' );
+		$attachment_id = sideload_image( $url, $post_id, $title, (float) $budget['timeout'] );
 
 		if ( is_wp_error( $attachment_id ) ) {
 			$entry['result']                    = 'error';
@@ -1451,6 +1565,42 @@ function sync_images( int $post_id, array $images, string $title, array &$budget
 	}
 
 	return $results;
+}
+
+/**
+ * Sideload one image with a capped download timeout.
+ *
+ * WordPress sideloads through download_url(), which asks for a 300 second
+ * timeout. The http_request_args filter lowers it for this
+ * download only: it is added just before the call and removed straight
+ * after, so no other HTTP request in the site is affected.
+ *
+ * @param string $url     Image URL.
+ * @param int    $post_id Post the attachment belongs to.
+ * @param string $title   Attachment description.
+ * @param float  $timeout Seconds the download may take.
+ * @return int|\WP_Error Attachment ID, or the error.
+ */
+function sideload_image( string $url, int $post_id, string $title, float $timeout ) {
+	require_once ABSPATH . 'wp-admin/includes/media.php';
+	require_once ABSPATH . 'wp-admin/includes/file.php';
+	require_once ABSPATH . 'wp-admin/includes/image.php';
+
+	$cap_timeout = static function ( $args ) use ( $timeout ) {
+		if ( is_array( $args ) && ( ! isset( $args['timeout'] ) || (float) $args['timeout'] > $timeout ) ) {
+			$args['timeout'] = $timeout;
+		}
+		return $args;
+	};
+
+	add_filter( 'http_request_args', $cap_timeout, PHP_INT_MAX );
+	try {
+		$attachment_id = media_sideload_image( esc_url_raw( $url ), $post_id, $title, 'id' );
+	} finally {
+		remove_filter( 'http_request_args', $cap_timeout, PHP_INT_MAX );
+	}
+
+	return is_wp_error( $attachment_id ) ? $attachment_id : (int) $attachment_id;
 }
 
 /**
