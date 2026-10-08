@@ -24,7 +24,7 @@
  * Image batching: a first publish can need dozens of image sideloads,
  * more than fit in one request under the host's 60 second gateway
  * timeout. /sync always reconciles every product's data, but sideloads
- * at most image_fetch_limit images per request (body field, 1–100,
+ * at most image_fetch_limit images per request (body field, 1 to 100,
  * default 8 via the hk_fs_catalogue_image_fetch_limit filter) and
  * reports the rest as pending. The master replays the same payload until
  * the response says complete.
@@ -801,7 +801,7 @@ function rest_sync( \WP_REST_Request $request ) {
  * Work out how many image sideloads this request may perform.
  *
  * The payload's image_fetch_limit wins when it is a number; otherwise the
- * default applies. Either way the result is clamped to 1–100.
+ * default applies. Either way the result is clamped to the range 1 to 100.
  *
  * @param mixed $requested The payload's image_fetch_limit, if any.
  * @return int
