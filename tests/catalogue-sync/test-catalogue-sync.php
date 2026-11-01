@@ -1433,6 +1433,12 @@ hk_fs_test_section( '13. Editor lock via /wp/v2/settings' );
 update_option( 'hk_fs_catalogue_managed_types', [ 'casket' ] );
 hk_fs_test_check( 'update_option (provisioning path) still sets the lock', [ 'casket' ] === \HKFuneralSuite\CatalogueSync\get_locked_types() );
 
+// The category lock is applied at registration, so test the filter directly.
+$hk_fs_caps = \HKFuneralSuite\CatalogueSync\lock_taxonomy_caps( [], 'hk_fs_casket_category' );
+hk_fs_test_check( 'locked type: its category terms cannot be managed, edited, deleted or assigned', [ 'do_not_allow' ] === array_values( array_unique( $hk_fs_caps['capabilities'] ?? [] ) ) && 4 === count( $hk_fs_caps['capabilities'] ) );
+hk_fs_test_check( 'unlocked type: its categories are left alone', [] === \HKFuneralSuite\CatalogueSync\lock_taxonomy_caps( [], 'hk_fs_urn_category' ) );
+hk_fs_test_check( 'other taxonomies are left alone', [] === \HKFuneralSuite\CatalogueSync\lock_taxonomy_caps( [], 'hk_fs_location' ) );
+
 wp_set_current_user( $hk_fs_state['admin_id'] );
 $hk_fs_settings = new \WP_REST_Request( 'POST', '/wp/v2/settings' );
 $hk_fs_settings->set_header( 'Content-Type', 'application/json' );

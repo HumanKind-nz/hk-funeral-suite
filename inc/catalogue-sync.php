@@ -122,8 +122,10 @@ function bootstrap(): void {
 	// Editor lock for catalogue-managed types (hk_fs_catalogue_managed_types
 	// option — flipping it is the per-site switchover). Server-side
 	// capability denial: nothing can save around it. The sync itself writes
-	// via wp_insert_post / wp_update_post, which do not check capabilities.
+	// via wp_insert_post / wp_update_post and the term functions, which do
+	// not check capabilities.
 	add_filter( 'register_post_type_args', __NAMESPACE__ . '\\lock_post_type_caps', 10, 2 );
+	add_filter( 'register_taxonomy_args', __NAMESPACE__ . '\\lock_taxonomy_caps', 10, 2 );
 	add_filter( 'map_meta_cap', __NAMESPACE__ . '\\lock_meta_caps', 10, 4 );
 	add_filter( 'display_post_states', __NAMESPACE__ . '\\lock_post_state', 10, 2 );
 	add_action( 'admin_notices', __NAMESPACE__ . '\\lock_admin_notice' );
@@ -1774,6 +1776,31 @@ function lock_post_type_caps( array $args, string $post_type ): array {
 }
 
 /**
+ * Lock the category taxonomy of a locked type: the catalogue owns these
+ * names and matches terms on _hk_fs_master_category_id, so a local rename or
+ * delete would be overwritten or orphan products on the next publish.
+ *
+ * Without manage_terms WordPress drops the menu item and refuses the screen.
+ * Reading terms needs no capability, so grids and filters are unaffected.
+ *
+ * @param array  $args     Taxonomy registration args.
+ * @param string $taxonomy Taxonomy slug.
+ * @return array
+ */
+function lock_taxonomy_caps( array $args, string $taxonomy ): array {
+	if ( ! in_array( $taxonomy, array_map( __NAMESPACE__ . '\\taxonomy_for', get_locked_types() ), true ) ) {
+		return $args;
+	}
+
+	$args['capabilities'] = array_merge(
+		isset( $args['capabilities'] ) && is_array( $args['capabilities'] ) ? $args['capabilities'] : [],
+		array_fill_keys( [ 'manage_terms', 'edit_terms', 'delete_terms', 'assign_terms' ], 'do_not_allow' )
+	);
+
+	return $args;
+}
+
+/**
  * Deny edit and delete on posts of locked types.
  *
  * @param string[]   $caps    Primitive capabilities required.
@@ -1828,7 +1855,7 @@ function lock_admin_notice(): void {
 			<?php
 			printf(
 				/* translators: %s: post type plural name */
-				esc_html__( '%s on this site are managed by the central catalogue. Adding, editing and deleting here is disabled — changes arrive automatically when the catalogue publishes.', 'hk-funeral-suite' ),
+				esc_html__( '%s and their categories on this site are managed by the central catalogue. Adding, editing and deleting here is disabled. Changes arrive automatically when the catalogue publishes.', 'hk-funeral-suite' ),
 				esc_html( $plural )
 			);
 			?>
