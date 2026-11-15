@@ -53,6 +53,8 @@ A rewrite of the plugin, plus the new catalogue sync module and opt-in block the
 - **Simplified** capabilities: suite post types use the standard post capabilities and the settings screen needs `manage_options`. The 1.x `funeral_staff` and `funeral_manager` roles are kept, so their users keep working
 - **Modernised** GitHub updater: private constructor, constants, debug logging, better error handling
 - **Improved** admin menu ordering — all CPTs now group together below Posts regardless of enable/disable state
+- **Improved** the Image column on suite lists. Team photos fill a portrait frame held to the top, so heads aren't cut off, and caskets, urns and other products show whole on a white tile. The list loads the medium size, not the original upload
+- **Added** Posts sits below Pages in the Website Owner menu built by the Weave Dashboard plugin, as funeral sites rarely blog. `hk_fs_posts_below_pages` switches it off
 - **Improved** uninstall cleanup — all options, transients, and compatibility settings properly removed
 - **Updated** settings page with tabbed interface: General, Integration, Compatibility, About
 - **The editor lock is read-only through `/wp/v2/settings`.** `hk_fs_catalogue_managed_types` is still readable there, but marked `readonly` and any write is ignored, so a site admin can't unlock catalogue-managed types from the browser. Set it with WP-CLI or `update_option()` when provisioning

@@ -94,10 +94,16 @@ function display_featured_image( string $column, int $post_id ): void {
 		return;
 	}
 
+	// Staff photos fill a portrait frame, kept to the top so heads are never
+	// cut. Product photos show whole on a white tile. Medium size, not full,
+	// so a long list does not load every original upload.
+	$is_staff = get_post_type( $post_id ) === 'hk_fs_staff';
+	$class    = $is_staff ? 'hk-fs-thumb hk-fs-thumb--portrait' : 'hk-fs-thumb hk-fs-thumb--product';
+
 	if ( has_post_thumbnail( $post_id ) ) {
-		echo '<img src="' . esc_url( get_the_post_thumbnail_url( $post_id, 'full' ) ) . '" style="width:150px; height:auto; max-height:150px; object-fit:cover;">';
+		echo get_the_post_thumbnail( $post_id, 'medium', [ 'class' => $class, 'loading' => 'lazy', 'alt' => '' ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- core builds and escapes the tag.
 	} else {
-		echo '<div style="width:150px; height:100px; background:#f0f0f0; display:flex; align-items:center; justify-content:center; border:1px solid #ddd; border-radius:3px;"><span class="dashicons dashicons-format-image" style="font-size:30px; color:#bbb;"></span></div>';
+		echo '<span class="' . esc_attr( $class ) . ' hk-fs-thumb--empty"><span class="dashicons dashicons-format-image" aria-hidden="true"></span></span>';
 	}
 }
 
@@ -351,8 +357,12 @@ function admin_column_styles(): void {
 	}
 	?>
 	<style>
-		.column-featured_image { width: 150px !important; overflow: hidden; }
-		.column-featured_image img { border-radius: 3px; border: 1px solid #ddd; }
+		.column-featured_image { width: 112px !important; }
+		.hk-fs-thumb { display: block; width: 96px; height: auto; border-radius: 4px; border: 1px solid #dcdcde; box-sizing: border-box; }
+		.hk-fs-thumb--portrait { aspect-ratio: 4 / 5; object-fit: cover; object-position: 50% 15%; }
+		.hk-fs-thumb--product { aspect-ratio: 4 / 3; object-fit: contain; background: #fff; padding: 4px; }
+		.hk-fs-thumb--empty { display: flex; align-items: center; justify-content: center; background: #f6f7f7; }
+		.hk-fs-thumb--empty .dashicons { width: 30px; height: 30px; font-size: 30px; color: #a7aaad; }
 		.column-price, .column-order { width: 100px; }
 		.column-shortcode { width: 350px !important; }
 		.hk-shortcode-container { display: flex; align-items: center; }
