@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.0.0] - Unreleased
 
-A rewrite of the plugin, plus the new catalogue sync module and opt-in block theme support. 2.0.0 also includes every fix released on the 1.4.x line after 1.4.17 (1.4.18 to 1.4.23), so a site on any 1.4.x release can update straight to it. See "Included from 1.4.18 to 1.4.23" below.
+A rewrite of the plugin, plus the new catalogue sync module and opt-in block theme support. 2.0.0 also includes every fix released on the 1.4.x line after 1.4.17 (1.4.18 to 1.4.24), so a site on any 1.4.x release can update straight to it. See "Included from 1.4.18 to 1.4.24" below.
 
 ### Architecture
 - **Rewritten** entire plugin from class-based architecture to namespaced functions in `inc/`
@@ -75,7 +75,7 @@ A rewrite of the plugin, plus the new catalogue sync module and opt-in block the
 - Team admin columns date position now appears after taxonomies
 - Proper output escaping on price column formatting
 
-### Included from 1.4.18 to 1.4.23
+### Included from 1.4.18 to 1.4.24
 Every 1.4.x fix released after 1.4.17 is in 2.0.0. Each release keeps its own entry further down.
 - **1.4.18** The `[hk_content]` shortcode, with `[hk_team_member_content]` kept as an alias (see Added)
 - **1.4.19** The GitHub updater stays quiet under `WP_DEBUG`. In 2.0.0 every updater log line is opt-in via the `WEAVE_UPDATER_DEBUG` constant, not just the version line
@@ -83,6 +83,12 @@ Every 1.4.x fix released after 1.4.17 is in 2.0.0. Each release keeps its own en
 - **1.4.21** The Beaver Builder fatal after saving a suite post, and the page cache purge that never ran (see Fixed). The admin output escaping is covered by the rewrite: the settings page is React, and the admin output left in `inc/` is escaped for its context
 - **1.4.22** Withdrawn, so there is nothing to carry over
 - **1.4.23** The Pricing Packages admin list shows package names again. 2.0.0 never had the jQuery hack that caused it: packages rename their title column through the `manage_{cpt}_posts_columns` filter, like every other CPT
+- **1.4.24** Funeral Staff and Funeral Manager users don't see Tools or Presto Player in the sidebar. In 2.0.0 it lives in `inc/admin-menu.php` (`tidy_staff_menu()`), with the same `hk_fs_staff_hidden_menus` filter
+
+## [1.4.24] - 2026-11-25
+
+### Changed
+- Funeral Staff and Funeral Manager users no longer see Tools or Presto Player in the admin sidebar. Both menus need capabilities staff keep for notices (edit_posts, publish_posts), so the menus are hidden rather than the capabilities removed. Administrators are unaffected. Sites can change the list with the `hk_fs_staff_hidden_menus` filter.
 
 ## [1.4.23] - 2026-09-22
 
