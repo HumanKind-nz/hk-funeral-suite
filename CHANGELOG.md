@@ -5,6 +5,11 @@ All notable changes to the HumanKind Funeral Suite plugin will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.24] - 2026-11-25
+
+### Changed
+- Funeral Staff and Funeral Manager users no longer see Tools or Presto Player in the admin sidebar. Both menus need capabilities staff keep for notices (edit_posts, publish_posts), so the menus are hidden rather than the capabilities removed. Administrators are unaffected. Sites can change the list with the `hk_fs_staff_hidden_menus` filter.
+
 ## [1.4.23] - 2026-09-22
 
 ### Fixed

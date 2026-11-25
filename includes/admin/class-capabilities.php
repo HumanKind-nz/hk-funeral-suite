@@ -27,6 +27,34 @@ class HK_Funeral_Capabilities {
 		
 		// Register custom roles on activation and plugin update
 		add_action('init', array(__CLASS__, 'register_custom_roles'));
+
+		// Keep the staff sidebar to funeral work (late, after other plugins add their menus)
+		add_action('admin_menu', array(__CLASS__, 'tidy_staff_menu'), 9999);
+	}
+
+	/**
+	 * Hide menus funeral staff have no use for.
+	 *
+	 * Tools needs edit_posts and Presto Player needs publish_posts, both of
+	 * which funeral staff keep for notices, so the menus are hidden rather than
+	 * the capabilities removed. Cosmetic only: the screens still open by URL.
+	 * Applies to Funeral Staff and Funeral Manager users who are not
+	 * Administrators. Sites change the list with hk_fs_staff_hidden_menus.
+	 */
+	public static function tidy_staff_menu() {
+		if (current_user_can('manage_options')) {
+			return;
+		}
+
+		$user = wp_get_current_user();
+		if (!array_intersect(array('funeral_staff', 'funeral_manager'), (array) $user->roles)) {
+			return;
+		}
+
+		$menus = (array) apply_filters('hk_fs_staff_hidden_menus', array('tools.php', 'presto-dashboard'), $user);
+		foreach ($menus as $slug) {
+			remove_menu_page((string) $slug);
+		}
 	}
 
 	/**
