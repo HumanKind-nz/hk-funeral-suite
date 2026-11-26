@@ -54,6 +54,7 @@ A rewrite of the plugin, plus the new catalogue sync module and opt-in block the
 - **Modernised** GitHub updater: private constructor, constants, debug logging, better error handling
 - **Improved** admin menu ordering — all CPTs now group together below Posts regardless of enable/disable state
 - **Improved** the Image column on suite lists. Team photos fill a portrait frame held to the top, so heads aren't cut off, and caskets, urns and other products show whole on a white tile. The list loads the medium size, not the original upload
+- **Funeral Staff see notices only.** A user whose only funeral role is Funeral Staff no longer sees Posts, the suite post types (team members, pricing packages, caskets, urns, monuments, keepsakes) or Relevanssi in the sidebar, nor those types in the admin bar's New menu: they add and remove notices and change their own password. Funeral Managers, Website Owners, Editors and Administrators keep everything. Cosmetic like the Tools and Presto Player hiding: the screens still open by URL. Filters `hk_fs_funeral_staff_hidden_types`, `hk_fs_funeral_staff_hidden_menus` and `hk_fs_full_menu_roles` (2.0.0-rc.6)
 - **Added** Posts sits below Pages in the Website Owner menu built by the Weave Dashboard plugin, as funeral sites rarely blog. `hk_fs_posts_below_pages` switches it off
 - **Improved** uninstall cleanup — all options, transients, and compatibility settings properly removed
 - **Updated** settings page with tabbed interface: General, Integration, Compatibility, About
